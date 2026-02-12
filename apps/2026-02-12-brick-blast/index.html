@@ -7,8 +7,8 @@
   <style>
     :root {
       --bg: #081320;
-      --panel: #12243a;
-      --panel-soft: #1b3453;
+      --panel: #10233a;
+      --panel-soft: #173352;
       --ink: #f4f8ff;
       --muted: #a6b8d0;
       --accent: #ffd166;
@@ -23,7 +23,9 @@
     html,
     body {
       margin: 0;
-      min-height: 100%;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
       background:
         radial-gradient(90rem 65rem at 90% -12%, #1f4d7d 0%, transparent 56%),
         radial-gradient(70rem 50rem at -15% 105%, #14355a 0%, transparent 57%),
@@ -32,94 +34,75 @@
       font-family: "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
     }
 
-    body {
-      padding-top: var(--safe-top);
-      padding-bottom: var(--safe-bottom);
-    }
-
     .app {
-      max-width: 520px;
+      max-width: 560px;
       margin: 0 auto;
-      min-height: 100vh;
+      height: 100dvh;
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      padding: 12px;
+      gap: 8px;
+      padding: calc(8px + var(--safe-top)) 10px calc(8px + var(--safe-bottom));
     }
 
-    .top {
-      background: linear-gradient(145deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.02));
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 18px;
-      padding: 12px;
-      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.32);
-    }
-
-    h1 {
-      margin: 0;
-      font-size: clamp(1.2rem, 5vw, 1.55rem);
-      letter-spacing: 0.02em;
-    }
-
-    .sub {
-      margin-top: 6px;
-      color: var(--muted);
-      font-size: 0.86rem;
-      line-height: 1.55;
+    .hud {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.02));
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 14px;
+      padding: 8px;
+      box-shadow: 0 10px 22px rgba(0, 0, 0, 0.3);
     }
 
     .stats {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 8px;
-      margin-top: 10px;
+      gap: 6px;
     }
 
     .stat {
       background: var(--panel);
       border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 8px 7px;
+      border-radius: 10px;
+      padding: 6px;
       text-align: center;
     }
 
     .label {
       display: block;
-      font-size: 0.7rem;
+      font-size: 0.64rem;
       color: var(--muted);
       letter-spacing: 0.03em;
       text-transform: uppercase;
+      line-height: 1;
     }
 
     .value {
       display: block;
-      margin-top: 4px;
-      font-size: 1.03rem;
+      margin-top: 3px;
+      font-size: 0.98rem;
       font-weight: 700;
       color: var(--accent);
+      line-height: 1.15;
     }
 
-    .board {
-      background: #0d1c2d;
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 8px;
-      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03), 0 15px 32px rgba(0, 0, 0, 0.28);
-    }
-
-    canvas {
-      width: 100%;
-      display: block;
-      border-radius: 12px;
-      background: linear-gradient(180deg, #0c233a, #0a1728 50%, #091425);
-      touch-action: none;
-    }
-
-    .controls {
+    .hud-actions {
       display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      align-items: center;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 5px;
+      min-width: 90px;
+    }
+
+    .toast {
+      min-height: 1.1em;
+      color: #9ef0c2;
+      font-size: 0.74rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      text-align: right;
     }
 
     button {
@@ -127,81 +110,59 @@
       background: linear-gradient(120deg, #1b3a5e, #214972);
       color: var(--ink);
       border-radius: 999px;
-      padding: 10px 14px;
-      font-size: 0.88rem;
+      padding: 7px 12px;
+      font-size: 0.8rem;
       font-weight: 700;
       cursor: pointer;
+      line-height: 1;
+      white-space: nowrap;
     }
 
     button:active {
       transform: scale(0.98);
     }
 
-    .hint {
-      margin-left: auto;
-      color: var(--muted);
-      font-size: 0.78rem;
-      line-height: 1.45;
-      text-align: right;
-    }
-
-    .power-guide {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 7px;
-      margin-top: 8px;
-    }
-
-    .power {
+    .board {
+      flex: 1;
+      min-height: 0;
+      background: #0d1c2d;
       border: 1px solid var(--line);
-      background: var(--panel-soft);
-      border-radius: 10px;
-      padding: 7px;
-      font-size: 0.77rem;
-      color: var(--muted);
+      border-radius: 16px;
+      padding: 6px;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03), 0 15px 32px rgba(0, 0, 0, 0.28);
     }
 
-    .chip {
-      display: inline-block;
-      min-width: 42px;
-      text-align: center;
-      margin-right: 6px;
-      border-radius: 999px;
-      padding: 2px 7px;
-      font-size: 0.68rem;
-      font-weight: 700;
-      color: #101820;
-      background: var(--accent);
-    }
-
-    .toast {
-      min-height: 1.3em;
-      color: #9ef0c2;
-      font-size: 0.82rem;
-      margin-top: 5px;
-      font-weight: 700;
-      letter-spacing: 0.02em;
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      border-radius: 11px;
+      background: linear-gradient(180deg, #0c233a, #0a1728 50%, #091425);
+      touch-action: none;
     }
 
     @media (max-width: 420px) {
-      .app { padding: 10px; }
-      .top { padding: 10px; }
-      .hint {
-        width: 100%;
-        margin-left: 0;
+      .app {
+        padding-left: 8px;
+        padding-right: 8px;
+      }
+      .hud {
+        grid-template-columns: 1fr;
+      }
+      .hud-actions {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .toast {
         text-align: left;
       }
-      .stats { gap: 6px; }
-      .value { font-size: 0.98rem; }
     }
   </style>
 </head>
 <body>
   <main class="app">
-    <section class="top">
-      <h1>Brick Blast Lab</h1>
-      <p class="sub">ドラッグで角度を決めてボールを発射。ターン終了ごとにブロックが1段下がります。下段に到達する前に壊し切ってください。</p>
-
+    <section class="hud">
       <div class="stats" aria-live="polite">
         <div class="stat">
           <span class="label">Score</span>
@@ -213,32 +174,23 @@
         </div>
         <div class="stat">
           <span class="label">Balls</span>
-          <span class="value" id="balls">1</span>
+          <span class="value" id="balls">20</span>
         </div>
       </div>
-
-      <div class="toast" id="toast" aria-live="polite"></div>
-
-      <div class="power-guide">
-        <div class="power"><span class="chip">+BALL</span> 次ターンのボール数+1</div>
-        <div class="power"><span class="chip">LASER</span> 同じ行のブロックを一掃</div>
-        <div class="power"><span class="chip">x3</span> 一時的に分裂ショット</div>
-        <div class="power"><span class="chip">REDIR</span> 反射角を強制変更</div>
+      <div class="hud-actions">
+        <div class="toast" id="toast" aria-live="polite"></div>
+        <button id="restart" type="button">リスタート</button>
       </div>
     </section>
 
-    <section class="board">
+    <section class="board" id="board">
       <canvas id="game" aria-label="ブリックブラストのゲーム画面"></canvas>
-    </section>
-
-    <section class="controls">
-      <button id="restart" type="button">リスタート</button>
-      <div class="hint">操作: 画面を引っ張って離すと発射</div>
     </section>
   </main>
 
   <script>
     const canvas = document.getElementById("game");
+    const boardEl = document.getElementById("board");
     const ctx = canvas.getContext("2d");
     const scoreEl = document.getElementById("score");
     const turnEl = document.getElementById("turn");
@@ -270,7 +222,7 @@
       launchedCount: 0,
       launchTick: 0,
       launchAngle: -Math.PI / 3,
-      ballCount: 1,
+      ballCount: 20,
       collectedBalls: 0,
       turn: 1,
       score: 0,
@@ -307,9 +259,9 @@
     }
 
     function resize() {
-      const maxWidth = Math.min(window.innerWidth - 28, 500);
-      const cssWidth = Math.max(280, maxWidth);
-      const cssHeight = Math.round(cssWidth * 1.42);
+      const rect = boardEl.getBoundingClientRect();
+      const cssWidth = Math.max(280, Math.floor(rect.width - 12));
+      const cssHeight = Math.max(300, Math.floor(rect.height - 12));
 
       state.dpr = Math.max(1, window.devicePixelRatio || 1);
       state.width = cssWidth;
@@ -321,14 +273,14 @@
       canvas.height = Math.round(cssHeight * state.dpr);
       ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
 
-      const sidePadding = 12;
-      state.cellGap = 4;
+      const sidePadding = 10;
+      state.cellGap = Math.max(3, Math.floor(cssWidth * 0.008));
       state.cellSize = Math.floor((cssWidth - sidePadding * 2 - state.cellGap * (COLS - 1)) / COLS);
       state.rowHeight = state.cellSize + state.cellGap;
       state.gridLeft = Math.round((cssWidth - (state.cellSize * COLS + state.cellGap * (COLS - 1))) / 2);
-      state.gridTop = 18;
-      state.launchY = cssHeight - 24;
-      state.maxRows = Math.floor((state.launchY - state.gridTop - 8) / state.rowHeight);
+      state.gridTop = 12;
+      state.launchY = cssHeight - 18;
+      state.maxRows = Math.max(7, Math.floor((state.launchY - state.gridTop - 8) / state.rowHeight));
       state.launchX = clamp(state.launchX, state.gridLeft + 10, state.width - state.gridLeft - 10);
 
       if (!state.runningShot && !state.aiming) {
@@ -337,9 +289,9 @@
     }
 
     function blockColor(hp) {
-      const hue = clamp(210 - hp * 8, 15, 210);
-      const sat = 78;
-      const light = clamp(42 + hp * 0.4, 42, 60);
+      const hue = clamp(215 - hp * 1.3, 12, 215);
+      const sat = 80;
+      const light = clamp(43 + hp * 0.15, 43, 60);
       return `hsl(${hue} ${sat}% ${light}%)`;
     }
 
@@ -365,18 +317,18 @@
     function createRow(rowIndex, initial = false) {
       const row = [];
       let hasBlock = false;
-      const blockChance = initial ? 0.74 : 0.67;
-      const powerChance = initial ? 0.12 : 0.2;
+      const blockChance = initial ? 0.76 : 0.7;
+      const powerChance = initial ? 0.08 : 0.16;
 
       for (let col = 0; col < COLS; col += 1) {
         const roll = Math.random();
         if (roll < blockChance) {
-          const base = Math.max(1, state.level + (initial ? -1 : 0));
+          const base = Math.max(18, 18 + state.level * 4 + (initial ? 0 : 4));
           row.push({
             row: rowIndex,
             col,
             type: "block",
-            hp: randomInt(base, base + 3)
+            hp: randomInt(base, base + 18)
           });
           hasBlock = true;
           continue;
@@ -393,11 +345,12 @@
 
       if (!hasBlock) {
         const forcedCol = randomInt(0, COLS - 1);
+        const forcedBase = Math.max(18, 18 + state.level * 4);
         row.push({
           row: rowIndex,
           col: forcedCol,
           type: "block",
-          hp: randomInt(Math.max(1, state.level - 1), state.level + 2)
+          hp: randomInt(forcedBase, forcedBase + 16)
         });
       }
 
@@ -450,7 +403,7 @@
     }
 
     function spawnBall(angle, x, y, temporary = false) {
-      const speed = temporary ? 480 : 440;
+      const speed = temporary ? 500 : 460;
       state.balls.push({
         x,
         y,
@@ -496,7 +449,7 @@
 
       if (item.type === "redirect") {
         const angle = (-160 + Math.random() * 140) * Math.PI / 180;
-        const speed = 460;
+        const speed = 470;
         ball.vx = Math.cos(angle) * speed;
         ball.vy = Math.sin(angle) * speed;
         state.score += 10;
@@ -570,8 +523,8 @@
 
       if (state.runningShot) {
         state.launchTick += dt;
-        while (state.launchTick >= 0.07 && state.launchedCount < state.ballsToLaunch) {
-          state.launchTick -= 0.07;
+        while (state.launchTick >= 0.028 && state.launchedCount < state.ballsToLaunch) {
+          state.launchTick -= 0.028;
           spawnBall(state.launchAngle, state.launchX, state.launchY);
           state.launchedCount += 1;
         }
@@ -657,7 +610,7 @@
         return;
       }
 
-      const len = Math.min(state.height * 0.45, 260);
+      const len = Math.min(state.height * 0.45, 290);
       const ex = state.launchX + Math.cos(angle) * len;
       const ey = state.launchY + Math.sin(angle) * len;
 
@@ -706,7 +659,7 @@
           ctx.stroke();
 
           ctx.fillStyle = "rgba(255,255,255,0.94)";
-          ctx.font = "700 15px system-ui, sans-serif";
+          ctx.font = item.hp >= 100 ? "700 13px system-ui, sans-serif" : "700 15px system-ui, sans-serif";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.fillText(String(item.hp), x + size / 2, y + size / 2 + 1);
@@ -766,7 +719,7 @@
       }
 
       const dangerY = rowToY(state.maxRows - 1) - state.cellGap * 0.5;
-      ctx.strokeStyle = "rgba(255, 95, 86, 0.7)";
+      ctx.strokeStyle = "rgba(255, 95, 86, 0.72)";
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(state.gridLeft, dangerY);
@@ -828,7 +781,7 @@
       state.score = 0;
       state.turn = 1;
       state.level = 1;
-      state.ballCount = 1;
+      state.ballCount = 20;
       state.collectedBalls = 0;
       state.runningShot = false;
       state.balls.length = 0;
