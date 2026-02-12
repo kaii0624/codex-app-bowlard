@@ -73,12 +73,12 @@
       align-items: center;
       justify-content: space-between;
       gap: 10px;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
     }
 
     .calendar-title {
       margin: 0;
-      font-size: 1.1rem;
+      font-size: 1.12rem;
       letter-spacing: 0.01em;
     }
 
@@ -99,102 +99,94 @@
 
     button:hover { background: #1b3f6a; }
 
-    .week {
-      display: grid;
-      grid-template-columns: repeat(7, minmax(0, 1fr));
-      gap: 7px;
-      margin-bottom: 8px;
-      color: var(--muted);
-      font-size: 0.82rem;
-      text-align: center;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(7, minmax(0, 1fr));
-      gap: 8px;
-    }
-
-    .cell,
-    .blank {
-      min-height: 108px;
-      border-radius: 14px;
-    }
-
-    .blank {
-      border: 1px dashed rgba(157, 176, 204, 0.22);
-      opacity: 0.5;
-    }
-
-    .cell {
-      background: var(--card);
-      border: 1px solid var(--line);
-      padding: 9px;
+    .list {
       display: flex;
       flex-direction: column;
       gap: 8px;
+    }
+
+    .day-row {
+      display: grid;
+      grid-template-columns: 130px 1fr;
+      gap: 10px;
+      align-items: center;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 10px;
       transition: transform 0.14s ease, box-shadow 0.14s ease;
     }
 
-    .cell:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
+    .day-row:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
     }
 
-    .date-num {
-      font-weight: 700;
-      font-size: 1rem;
-    }
-
-    .is-today {
+    .day-row.today {
       border-color: var(--today);
-      box-shadow: 0 0 0 1px rgba(56, 211, 159, 0.35) inset;
+      box-shadow: 0 0 0 1px rgba(56, 211, 159, 0.38) inset;
+      background: linear-gradient(145deg, rgba(56, 211, 159, 0.18), rgba(255, 203, 69, 0.1)), var(--card);
     }
 
-    .is-today.has-entry {
-      background: linear-gradient(145deg, rgba(56, 211, 159, 0.22), rgba(255, 203, 69, 0.16)), var(--card);
-      box-shadow:
-        0 0 0 1px rgba(56, 211, 159, 0.55) inset,
-        0 0 28px rgba(56, 211, 159, 0.35);
-      animation: pulse 1.8s ease-in-out infinite;
+    .day-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
     }
 
-    @keyframes pulse {
-      0% { box-shadow: 0 0 0 1px rgba(56, 211, 159, 0.5) inset, 0 0 18px rgba(56, 211, 159, 0.25); }
-      50% { box-shadow: 0 0 0 1px rgba(255, 203, 69, 0.7) inset, 0 0 28px rgba(255, 203, 69, 0.35); }
-      100% { box-shadow: 0 0 0 1px rgba(56, 211, 159, 0.5) inset, 0 0 18px rgba(56, 211, 159, 0.25); }
-    }
-
-    .entry-link {
-      margin-top: auto;
-      display: block;
-      width: 100%;
-      background: linear-gradient(120deg, var(--accent), var(--accent-strong));
-      color: #212121;
-      text-decoration: none;
-      border-radius: 999px;
+    .date-main {
+      font-size: 1rem;
       font-weight: 700;
-      text-align: center;
-      padding: 8px;
-      font-size: 0.86rem;
-      line-height: 1.2;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      line-height: 1.1;
     }
 
-    .entry-link:hover { filter: brightness(1.04); }
+    .date-sub {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
 
     .badge {
       display: inline-block;
       width: fit-content;
       padding: 3px 7px;
       border-radius: 999px;
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       font-weight: 700;
       background: rgba(56, 211, 159, 0.18);
       color: #8ce9c9;
       border: 1px solid rgba(56, 211, 159, 0.5);
+    }
+
+    .day-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .entry-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 36px;
+      max-width: 100%;
+      background: linear-gradient(120deg, var(--accent), var(--accent-strong));
+      color: #212121;
+      text-decoration: none;
+      border-radius: 999px;
+      font-weight: 700;
+      text-align: center;
+      padding: 8px 12px;
+      font-size: 0.86rem;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+
+    .entry-link:hover { filter: brightness(1.04); }
+
+    .empty {
+      color: var(--muted);
+      font-size: 0.82rem;
     }
 
     .hint {
@@ -206,13 +198,16 @@
 
     @media (max-width: 760px) {
       .calendar { padding: 14px; }
-      .cell, .blank { min-height: 95px; }
       .calendar-head { flex-direction: column; align-items: stretch; }
       .btns { justify-content: space-between; }
       button { flex: 1; }
+      .day-row {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
       .entry-link {
-        font-size: 0.72rem;
-        padding: 6px 4px;
+        font-size: 0.8rem;
+        padding: 7px 10px;
       }
     }
   </style>
@@ -223,11 +218,11 @@
       <h1>App Advent Hub</h1>
       <p>
         毎日つくるアプリを、日付ごとに並べるハブページです。<br>
-        今日の枠は光り、公開済みアプリがあればそのまま起動できます。
+        カレンダーではなく1日1行で表示し、同じ日に複数アプリがあればボタンを並べます。
       </p>
     </section>
 
-    <section class="calendar" aria-label="アドベントカレンダー">
+    <section class="calendar" aria-label="日別アプリ一覧">
       <div class="calendar-head">
         <h2 class="calendar-title" id="calendarTitle"></h2>
         <div class="btns">
@@ -237,13 +232,10 @@
         </div>
       </div>
 
-      <div class="week" aria-hidden="true">
-        <div>日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div>土</div>
-      </div>
-      <div class="grid" id="calendarGrid"></div>
+      <div class="list" id="dayList"></div>
 
       <p class="hint">
-        追加方法: <code>entries</code> に <code>YYYY-MM-DD</code> の日付とリンクを1件ずつ追加すると、該当日セルにボタンが出ます。
+        追加方法: <code>entries</code> に <code>date</code> が同じデータを複数追加すると、同じ日の行にボタンが増えます。
       </p>
     </section>
   </main>
@@ -256,11 +248,16 @@
         date: "2026-02-12",
         title: "Brick Blast",
         href: "./apps/2026-02-12-brick-blast/"
+      },
+      {
+        date: "2026-02-12",
+        title: "Bowlard",
+        href: "./apps/bowlard/"
       }
     ];
 
     const monthLabel = document.getElementById("calendarTitle");
-    const grid = document.getElementById("calendarGrid");
+    const dayList = document.getElementById("dayList");
     const prevBtn = document.getElementById("prevMonth");
     const nextBtn = document.getElementById("nextMonth");
     const todayBtn = document.getElementById("goToday");
@@ -268,7 +265,14 @@
     let viewYear = today.getFullYear();
     let viewMonth = today.getMonth();
 
-    const entryMap = new Map(entries.map((entry) => [entry.date, entry]));
+    const weekNames = ["日", "月", "火", "水", "木", "金", "土"];
+
+    const groupedEntries = entries.reduce((map, entry) => {
+      const bucket = map.get(entry.date) ?? [];
+      bucket.push(entry);
+      map.set(entry.date, bucket);
+      return map;
+    }, new Map());
 
     function pad2(value) {
       return String(value).padStart(2, "0");
@@ -278,31 +282,19 @@
       return `${year}-${pad2(monthIndex + 1)}-${pad2(day)}`;
     }
 
-    function renderCalendar(year, monthIndex) {
-      grid.innerHTML = "";
+    function renderList(year, monthIndex) {
+      dayList.innerHTML = "";
       monthLabel.textContent = `${year}年 ${monthIndex + 1}月`;
 
-      const firstDay = new Date(year, monthIndex, 1);
-      const startWeekday = firstDay.getDay();
       const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
-
-      for (let i = 0; i < startWeekday; i += 1) {
-        const blank = document.createElement("div");
-        blank.className = "blank";
-        grid.appendChild(blank);
-      }
 
       for (let day = 1; day <= daysInMonth; day += 1) {
         const key = dateKey(year, monthIndex, day);
-        const entry = entryMap.get(key);
+        const dayEntries = groupedEntries.get(key) ?? [];
+        const weekDay = new Date(year, monthIndex, day).getDay();
 
-        const cell = document.createElement("article");
-        cell.className = "cell";
-
-        const num = document.createElement("div");
-        num.className = "date-num";
-        num.textContent = day;
-        cell.appendChild(num);
+        const row = document.createElement("article");
+        row.className = "day-row";
 
         const isToday =
           year === today.getFullYear() &&
@@ -310,27 +302,52 @@
           day === today.getDate();
 
         if (isToday) {
-          cell.classList.add("is-today");
+          row.classList.add("today");
+        }
+
+        const meta = document.createElement("div");
+        meta.className = "day-meta";
+
+        const main = document.createElement("div");
+        main.className = "date-main";
+        main.textContent = `${pad2(monthIndex + 1)}/${pad2(day)}`;
+        meta.appendChild(main);
+
+        const sub = document.createElement("div");
+        sub.className = "date-sub";
+        sub.textContent = `${key} (${weekNames[weekDay]})`;
+        meta.appendChild(sub);
+
+        if (isToday) {
           const badge = document.createElement("span");
           badge.className = "badge";
           badge.textContent = "TODAY";
-          cell.appendChild(badge);
+          meta.appendChild(badge);
         }
 
-        if (entry) {
-          const link = document.createElement("a");
-          link.className = "entry-link";
-          link.href = entry.href;
-          link.textContent = entry.title;
-          link.setAttribute("aria-label", `${key} ${entry.title} を開く`);
-          cell.appendChild(link);
+        row.appendChild(meta);
 
-          if (isToday) {
-            cell.classList.add("has-entry");
+        const actions = document.createElement("div");
+        actions.className = "day-actions";
+
+        if (dayEntries.length > 0) {
+          for (const entry of dayEntries) {
+            const link = document.createElement("a");
+            link.className = "entry-link";
+            link.href = entry.href;
+            link.textContent = entry.title;
+            link.setAttribute("aria-label", `${key} ${entry.title} を開く`);
+            actions.appendChild(link);
           }
+        } else {
+          const empty = document.createElement("span");
+          empty.className = "empty";
+          empty.textContent = "未公開";
+          actions.appendChild(empty);
         }
 
-        grid.appendChild(cell);
+        row.appendChild(actions);
+        dayList.appendChild(row);
       }
     }
 
@@ -340,7 +357,7 @@
         viewMonth = 11;
         viewYear -= 1;
       }
-      renderCalendar(viewYear, viewMonth);
+      renderList(viewYear, viewMonth);
     });
 
     nextBtn.addEventListener("click", () => {
@@ -349,16 +366,16 @@
         viewMonth = 0;
         viewYear += 1;
       }
-      renderCalendar(viewYear, viewMonth);
+      renderList(viewYear, viewMonth);
     });
 
     todayBtn.addEventListener("click", () => {
       viewYear = today.getFullYear();
       viewMonth = today.getMonth();
-      renderCalendar(viewYear, viewMonth);
+      renderList(viewYear, viewMonth);
     });
 
-    renderCalendar(viewYear, viewMonth);
+    renderList(viewYear, viewMonth);
   </script>
 </body>
 </html>
