@@ -122,6 +122,27 @@
       transform: scale(0.98);
     }
 
+    .mode-controls {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .mode-btn {
+      padding: 6px 10px;
+      font-size: 0.7rem;
+      border-color: #2b4e77;
+      background: #153253;
+      color: var(--muted);
+    }
+
+    .mode-btn.active {
+      background: linear-gradient(120deg, var(--accent), var(--accent-strong));
+      color: #1b1f24;
+      border-color: #ffcb45;
+    }
+
     .board {
       flex: 1;
       min-height: 0;
@@ -154,6 +175,9 @@
         justify-content: space-between;
         align-items: center;
       }
+      .mode-controls {
+        justify-content: flex-start;
+      }
       .toast {
         text-align: left;
       }
@@ -179,6 +203,11 @@
       </div>
       <div class="hud-actions">
         <div class="toast" id="toast" aria-live="polite"></div>
+        <div class="mode-controls" role="group" aria-label="難易度">
+          <button class="mode-btn active" type="button" data-mode="easy">EASY</button>
+          <button class="mode-btn" type="button" data-mode="medium">MEDIUM</button>
+          <button class="mode-btn" type="button" data-mode="hard">HARD</button>
+        </div>
         <button id="restart" type="button">リスタート</button>
       </div>
     </section>
@@ -196,9 +225,48 @@
     const turnEl = document.getElementById("turn");
     const ballsEl = document.getElementById("balls");
     const toastEl = document.getElementById("toast");
+    const modeButtons = Array.from(document.querySelectorAll("[data-mode]"));
 
     const COLS = 7;
     const POWER_TYPES = ["plus", "laser", "mult", "redirect"];
+    const MODE_SETTINGS = {
+      easy: {
+        label: "EASY",
+        rowBonus: 2,
+        blockChanceInitial: 0.56,
+        blockChance: 0.5,
+        powerChanceInitial: 0.2,
+        powerChance: 0.28,
+        hpBase: 9,
+        hpGrowth: 2,
+        hpRange: 9,
+        hpRoundBonus: 2
+      },
+      medium: {
+        label: "MEDIUM",
+        rowBonus: 1,
+        blockChanceInitial: 0.66,
+        blockChance: 0.6,
+        powerChanceInitial: 0.14,
+        powerChance: 0.2,
+        hpBase: 15,
+        hpGrowth: 3,
+        hpRange: 12,
+        hpRoundBonus: 3
+      },
+      hard: {
+        label: "HARD",
+        rowBonus: 0,
+        blockChanceInitial: 0.76,
+        blockChance: 0.7,
+        powerChanceInitial: 0.08,
+        powerChance: 0.14,
+        hpBase: 24,
+        hpGrowth: 4,
+        hpRange: 18,
+        hpRoundBonus: 5
+      }
+    };
 
     const state = {
       width: 360,
@@ -223,6 +291,7 @@
       launchTick: 0,
       launchAngle: -Math.PI / 3,
       ballCount: 20,
+      mode: "easy",
       collectedBalls: 0,
       turn: 1,
       score: 0,
@@ -258,10 +327,32 @@
       ballsEl.textContent = String(state.ballCount);
     }
 
+    function getModeConfig() {
+      return MODE_SETTINGS[state.mode];
+    }
+
+    function syncModeButtons() {
+      for (const button of modeButtons) {
+        button.classList.toggle("active", button.dataset.mode === state.mode);
+      }
+    }
+
+    function setMode(nextMode) {
+      if (!MODE_SETTINGS[nextMode]) {
+        return;
+      }
+      state.mode = nextMode;
+      syncModeButtons();
+      resize();
+      resetGame();
+      showToast(`${MODE_SETTINGS[nextMode].label} MODE`);
+    }
+
     function resize() {
       const rect = boardEl.getBoundingClientRect();
       const cssWidth = Math.max(280, Math.floor(rect.width - 12));
       const cssHeight = Math.max(300, Math.floor(rect.height - 12));
+      const mode = getModeConfig();
 
       state.dpr = Math.max(1, window.devicePixelRatio || 1);
       state.width = cssWidth;
@@ -280,7 +371,8 @@
       state.gridLeft = Math.round((cssWidth - (state.cellSize * COLS + state.cellGap * (COLS - 1))) / 2);
       state.gridTop = 12;
       state.launchY = cssHeight - 18;
-      state.maxRows = Math.max(7, Math.floor((state.launchY - state.gridTop - 8) / state.rowHeight));
+      const baseRows = Math.floor((state.launchY - state.gridTop - 8) / state.rowHeight) + 1;
+      state.maxRows = Math.max(8, baseRows + mode.rowBonus);
       state.launchX = clamp(state.launchX, state.gridLeft + 10, state.width - state.gridLeft - 10);
 
       if (!state.runningShot && !state.aiming) {
@@ -315,20 +407,21 @@
     }
 
     function createRow(rowIndex, initial = false) {
+      const mode = getModeConfig();
       const row = [];
       let hasBlock = false;
-      const blockChance = initial ? 0.76 : 0.7;
-      const powerChance = initial ? 0.08 : 0.16;
+      const blockChance = initial ? mode.blockChanceInitial : mode.blockChance;
+      const powerChance = initial ? mode.powerChanceInitial : mode.powerChance;
 
       for (let col = 0; col < COLS; col += 1) {
         const roll = Math.random();
         if (roll < blockChance) {
-          const base = Math.max(18, 18 + state.level * 4 + (initial ? 0 : 4));
+          const base = mode.hpBase + state.level * mode.hpGrowth + (initial ? 0 : mode.hpRoundBonus);
           row.push({
             row: rowIndex,
             col,
             type: "block",
-            hp: randomInt(base, base + 18)
+            hp: randomInt(base, base + mode.hpRange)
           });
           hasBlock = true;
           continue;
@@ -345,12 +438,12 @@
 
       if (!hasBlock) {
         const forcedCol = randomInt(0, COLS - 1);
-        const forcedBase = Math.max(18, 18 + state.level * 4);
+        const forcedBase = mode.hpBase + state.level * mode.hpGrowth;
         row.push({
           row: rowIndex,
           col: forcedCol,
           type: "block",
-          hp: randomInt(forcedBase, forcedBase + 16)
+          hp: randomInt(forcedBase, forcedBase + mode.hpRange)
         });
       }
 
@@ -374,7 +467,7 @@
       state.blocks.push(...newRow);
 
       for (const item of state.blocks) {
-        if (item.row >= state.maxRows - 1) {
+        if (item.row >= state.maxRows) {
           state.gameOver = true;
           showToast("GAME OVER");
           break;
@@ -718,7 +811,7 @@
         }
       }
 
-      const dangerY = rowToY(state.maxRows - 1) - state.cellGap * 0.5;
+      const dangerY = rowToY(state.maxRows) - state.cellGap * 0.5;
       ctx.strokeStyle = "rgba(255, 95, 86, 0.72)";
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -837,6 +930,12 @@
       resetGame();
     });
 
+    for (const button of modeButtons) {
+      button.addEventListener("click", () => {
+        setMode(button.dataset.mode);
+      });
+    }
+
     window.addEventListener("resize", () => {
       resize();
       if (!state.runningShot) {
@@ -844,6 +943,7 @@
       }
     });
 
+    syncModeButtons();
     resize();
     resetGame();
     requestAnimationFrame(gameLoop);
