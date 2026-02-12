@@ -227,9 +227,15 @@ function resize() {
   tW = W - RAIL_W * 2;
   tH = H - RAIL_W * 2;
 
+  // Side pockets are on left/right rails (horizontal placement), not top/bottom center.
+  const sidePocketOffset = Math.round(3 * dpr);
   pockets = [
-    {x: tX, y: tY}, {x: tX + tW/2, y: tY - Math.round(3*dpr)}, {x: tX + tW, y: tY},
-    {x: tX, y: tY + tH}, {x: tX + tW/2, y: tY + tH + Math.round(3*dpr)}, {x: tX + tW, y: tY + tH},
+    { x: tX, y: tY },
+    { x: tX + tW, y: tY },
+    { x: tX - sidePocketOffset, y: tY + tH / 2 },
+    { x: tX + tW + sidePocketOffset, y: tY + tH / 2 },
+    { x: tX, y: tY + tH },
+    { x: tX + tW, y: tY + tH },
   ];
 }
 
@@ -875,9 +881,10 @@ function newGame() {
   animating = false; dragging = false;
   frames = [];
   for (let i = 0; i < 10; i++) frames.push({ throws: [], type: '', cumulative: null });
+  // Build scoreboard first so gameArea height is final before sizing canvas.
+  updateInfo(); updateScoreboard();
   resize();
   rackBalls(true);
-  updateInfo(); updateScoreboard();
 }
 document.getElementById('btnReset').addEventListener('click', newGame);
 
