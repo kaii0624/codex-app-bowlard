@@ -167,7 +167,8 @@
 
     .entry-link {
       margin-top: auto;
-      display: inline-block;
+      display: block;
+      width: 100%;
       background: linear-gradient(120deg, var(--accent), var(--accent-strong));
       color: #212121;
       text-decoration: none;
@@ -176,6 +177,10 @@
       text-align: center;
       padding: 8px;
       font-size: 0.86rem;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .entry-link:hover { filter: brightness(1.04); }
@@ -205,6 +210,10 @@
       .calendar-head { flex-direction: column; align-items: stretch; }
       .btns { justify-content: space-between; }
       button { flex: 1; }
+      .entry-link {
+        font-size: 0.72rem;
+        padding: 6px 4px;
+      }
     }
   </style>
 </head>
@@ -245,8 +254,8 @@
     const entries = [
       {
         date: "2026-02-12",
-        title: "Bowlard",
-        href: "./apps/bowlard/"
+        title: "Brick Blast",
+        href: "./apps/2026-02-12-brick-blast/"
       }
     ];
 
