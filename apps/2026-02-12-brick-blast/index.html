@@ -25,9 +25,9 @@
       height: 100%;
       overflow: hidden;
       background:
-        radial-gradient(95rem 70rem at 92% -10%, #1b4a7a 0%, transparent 58%),
-        radial-gradient(78rem 55rem at -20% 110%, #14355a 0%, transparent 58%),
-        linear-gradient(180deg, #081320, #081726 60%, #071423);
+        radial-gradient(80rem 50rem at 80% -8%, #a8d8ff 0%, transparent 56%),
+        radial-gradient(70rem 48rem at -12% 95%, #7abf63 0%, transparent 52%),
+        linear-gradient(180deg, #d6edff, #98d36f 65%, #5d9444);
       color: var(--ink);
       font-family: "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
     }
@@ -287,7 +287,6 @@
       aimPoint: null,
       balls: [],
       blocks: [],
-      particles: [],
       runningShot: false,
       ballsToLaunch: 0,
       launchedCount: 0,
@@ -303,7 +302,6 @@
       gameOver: false,
       message: "",
       messageTimer: 0,
-      shake: 0,
       muzzleFlash: 0,
       muzzleAngle: -Math.PI / 3,
       lastHitSoundAt: 0,
@@ -326,6 +324,15 @@
 
     function rand(min, max) {
       return min + Math.random() * (max - min);
+    }
+
+    function randomCrackPattern() {
+      return Array.from({ length: 7 }, () => ({
+        sx: rand(0.2, 0.8),
+        sy: rand(0.14, 0.86),
+        ex: rand(0.2, 0.8),
+        ey: rand(0.14, 0.86)
+      }));
     }
 
     function showToast(text, seconds = 1.1) {
@@ -393,26 +400,28 @@
         return;
       }
       const now = audio.ctx.currentTime;
+      const startAt = opts.startAt ?? 0;
       const duration = opts.duration ?? 0.07;
       const type = opts.type ?? "square";
       const freq = opts.freq ?? 260;
       const freqEnd = opts.freqEnd ?? freq;
       const gainPeak = opts.gain ?? 0.06;
+      const start = now + Math.max(0, startAt);
 
       const osc = audio.ctx.createOscillator();
       const gain = audio.ctx.createGain();
       osc.type = type;
-      osc.frequency.setValueAtTime(freq, now);
-      osc.frequency.exponentialRampToValueAtTime(Math.max(20, freqEnd), now + duration);
+      osc.frequency.setValueAtTime(freq, start);
+      osc.frequency.exponentialRampToValueAtTime(Math.max(20, freqEnd), start + duration);
 
-      gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(gainPeak, now + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(gainPeak, start + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
 
       osc.connect(gain);
       gain.connect(audio.master);
-      osc.start(now);
-      osc.stop(now + duration + 0.01);
+      osc.start(start);
+      osc.stop(start + duration + 0.01);
     }
 
     function playNoiseBurst(opts = {}) {
@@ -420,9 +429,11 @@
         return;
       }
       const now = audio.ctx.currentTime;
+      const startAt = opts.startAt ?? 0;
       const duration = opts.duration ?? 0.09;
       const gainPeak = opts.gain ?? 0.08;
       const highpassFreq = opts.highpass ?? 350;
+      const start = now + Math.max(0, startAt);
 
       const sampleRate = audio.ctx.sampleRate;
       const frameCount = Math.max(1, Math.floor(sampleRate * duration));
@@ -440,15 +451,15 @@
       filter.frequency.value = highpassFreq;
 
       const gain = audio.ctx.createGain();
-      gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(gainPeak, now + 0.012);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(gainPeak, start + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
 
       src.connect(filter);
       filter.connect(gain);
       gain.connect(audio.master);
-      src.start(now);
-      src.stop(now + duration + 0.01);
+      src.start(start);
+      src.stop(start + duration + 0.01);
     }
 
     function playShootSound() {
@@ -462,12 +473,15 @@
         return;
       }
       state.lastHitSoundAt = now;
-      playTone({ freq: rand(460, 620), freqEnd: rand(240, 320), duration: 0.045, gain: 0.03, type: "triangle" });
+      playTone({ freq: rand(500, 660), freqEnd: rand(260, 340), duration: 0.05, gain: 0.032, type: "triangle" });
     }
 
     function playBreakSound() {
-      playTone({ freq: 320, freqEnd: 115, duration: 0.1, gain: 0.07, type: "square" });
-      playNoiseBurst({ duration: 0.11, gain: 0.09, highpass: 520 });
+      playTone({ freq: 310, freqEnd: 110, duration: 0.11, gain: 0.085, type: "square" });
+      playTone({ freq: 520, freqEnd: 210, duration: 0.09, gain: 0.055, type: "triangle", startAt: 0.008 });
+      playTone({ freq: 780, freqEnd: 460, duration: 0.06, gain: 0.03, type: "sine", startAt: 0.02 });
+      playNoiseBurst({ duration: 0.12, gain: 0.1, highpass: 540 });
+      playNoiseBurst({ duration: 0.08, gain: 0.06, highpass: 900, startAt: 0.014 });
     }
 
     function playPowerSound(scale = 1) {
@@ -533,7 +547,8 @@
         type: "block",
         hp,
         maxHp: hp,
-        tint: randomInt(-6, 6)
+        tint: randomInt(-6, 6),
+        cracks: randomCrackPattern()
       };
     }
 
@@ -641,92 +656,6 @@
       });
       state.muzzleFlash = 1;
       state.muzzleAngle = angle;
-      spawnParticles(x + Math.cos(angle) * 14, y + Math.sin(angle) * 14, 8, {
-        hue: 36,
-        sat: 95,
-        light: 64,
-        speedMin: 80,
-        speedMax: 260,
-        lifeMin: 0.08,
-        lifeMax: 0.2,
-        sizeMin: 1.4,
-        sizeMax: 2.7,
-        gravity: 220
-      });
-    }
-
-    function spawnParticles(x, y, count, opts = {}) {
-      const hue = opts.hue ?? 30;
-      const sat = opts.sat ?? 95;
-      const light = opts.light ?? 60;
-      const speedMin = opts.speedMin ?? 120;
-      const speedMax = opts.speedMax ?? 320;
-      const lifeMin = opts.lifeMin ?? 0.15;
-      const lifeMax = opts.lifeMax ?? 0.4;
-      const sizeMin = opts.sizeMin ?? 1.4;
-      const sizeMax = opts.sizeMax ?? 3.8;
-      const gravity = opts.gravity ?? 280;
-
-      for (let i = 0; i < count; i += 1) {
-        const angle = Math.random() * Math.PI * 2;
-        const speed = rand(speedMin, speedMax);
-        state.particles.push({
-          x,
-          y,
-          vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed,
-          size: rand(sizeMin, sizeMax),
-          life: rand(lifeMin, lifeMax),
-          maxLife: rand(lifeMin, lifeMax),
-          hue: hue + rand(-7, 7),
-          sat: sat + rand(-8, 8),
-          light: light + rand(-8, 8),
-          gravity
-        });
-      }
-    }
-
-    function spawnBrickBurst(x, y, size, block) {
-      const damageHue = clamp(16 + block.maxHp * 0.7 + block.tint, 14, 36);
-      spawnParticles(x + size / 2, y + size / 2, 18, {
-        hue: damageHue,
-        sat: 88,
-        light: 58,
-        speedMin: 140,
-        speedMax: 420,
-        lifeMin: 0.2,
-        lifeMax: 0.52,
-        sizeMin: 1.5,
-        sizeMax: 4.4,
-        gravity: 520
-      });
-      spawnParticles(x + size / 2, y + size / 2, 6, {
-        hue: 46,
-        sat: 95,
-        light: 66,
-        speedMin: 170,
-        speedMax: 390,
-        lifeMin: 0.1,
-        lifeMax: 0.24,
-        sizeMin: 1,
-        sizeMax: 2.6,
-        gravity: 350
-      });
-    }
-
-    function spawnHitSpark(x, y) {
-      spawnParticles(x, y, 3, {
-        hue: 35,
-        sat: 95,
-        light: 64,
-        speedMin: 60,
-        speedMax: 200,
-        lifeMin: 0.06,
-        lifeMax: 0.16,
-        sizeMin: 1,
-        sizeMax: 2.2,
-        gravity: 300
-      });
     }
 
     function triggerPower(item, ball) {
@@ -735,7 +664,6 @@
         state.score += 8;
         showToast("AMMO +1");
         playPowerSound(1);
-        spawnParticles(ball.x, ball.y, 10, { hue: 125, sat: 70, light: 72, speedMin: 80, speedMax: 260, lifeMin: 0.12, lifeMax: 0.28, gravity: 260 });
         return;
       }
 
@@ -749,11 +677,9 @@
           return !remove;
         });
         state.score += 20 + removed * 6;
-        state.shake = Math.min(8, state.shake + 1.5);
         showToast("CANNON LASER");
         playPowerSound(0.75);
         playNoiseBurst({ duration: 0.08, gain: 0.07, highpass: 700 });
-        spawnParticles(ball.x, ball.y, 20, { hue: 335, sat: 88, light: 64, speedMin: 150, speedMax: 420, lifeMin: 0.12, lifeMax: 0.34, gravity: 200 });
         return;
       }
 
@@ -765,7 +691,6 @@
         state.score += 12;
         showToast("TRIPLE SHOT");
         playPowerSound(1.2);
-        spawnParticles(ball.x, ball.y, 14, { hue: 52, sat: 92, light: 68, speedMin: 120, speedMax: 300, lifeMin: 0.1, lifeMax: 0.26, gravity: 300 });
         return;
       }
 
@@ -777,7 +702,6 @@
         state.score += 10;
         showToast("RICOCHET BOOST");
         playPowerSound(0.9);
-        spawnParticles(ball.x, ball.y, 8, { hue: 205, sat: 88, light: 72, speedMin: 100, speedMax: 250, lifeMin: 0.1, lifeMax: 0.22, gravity: 240 });
       }
     }
 
@@ -851,20 +775,7 @@
         }
       }
 
-      state.shake = Math.max(0, state.shake - dt * 9.5);
       state.muzzleFlash = Math.max(0, state.muzzleFlash - dt * 9);
-
-      for (let i = state.particles.length - 1; i >= 0; i -= 1) {
-        const p = state.particles[i];
-        p.vx *= 0.985;
-        p.vy += p.gravity * dt;
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
-        p.life -= dt;
-        if (p.life <= 0) {
-          state.particles.splice(i, 1);
-        }
-      }
 
       if (state.runningShot) {
         state.launchTick += dt;
@@ -923,7 +834,6 @@
           }
 
           bounceFromRect(ball, x, y, size);
-          spawnHitSpark(ball.x, ball.y);
 
           if (item.type === "block") {
             item.hp -= 1;
@@ -933,8 +843,6 @@
               state.blocks.splice(i, 1);
               state.score += 5;
               state.shotBreaks += 1;
-              state.shake = Math.min(8, state.shake + 1.25);
-              spawnBrickBurst(x, y, size, item);
               playBreakSound();
             }
           } else {
@@ -982,22 +890,73 @@
     }
 
     function drawBackdrop() {
+      const t = clamp((state.level - 1) / 30, 0, 1);
+      const skyHue = 198 - t * 162;
+      const skyTop = 78 - t * 32;
+      const skyBottom = 58 - t * 36;
+      const grassHue = 126 - t * 52;
+      const grassTop = 48 - t * 16;
+      const grassBottom = 34 - t * 20;
+
       const grad = ctx.createLinearGradient(0, 0, 0, state.height);
-      grad.addColorStop(0, "#0e2a44");
-      grad.addColorStop(0.55, "#0a1f33");
-      grad.addColorStop(1, "#081724");
+      grad.addColorStop(0, `hsl(${skyHue} 72% ${skyTop}%)`);
+      grad.addColorStop(0.52, `hsl(${skyHue - 8} 66% ${skyBottom}%)`);
+      grad.addColorStop(1, `hsl(${grassHue} 52% ${grassBottom}%)`);
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, state.width, state.height);
 
-      ctx.globalAlpha = 0.11;
-      ctx.strokeStyle = "#8eb6df";
-      for (let y = 10; y < state.height; y += 54) {
+      const sunX = state.width * 0.82;
+      const sunY = state.height * 0.2;
+      const sunR = 26;
+      const sunGrad = ctx.createRadialGradient(sunX, sunY, 2, sunX, sunY, sunR);
+      sunGrad.addColorStop(0, `hsla(${44 - t * 12}, 96%, ${84 - t * 12}%, 0.95)`);
+      sunGrad.addColorStop(1, "rgba(255, 214, 122, 0)");
+      ctx.fillStyle = sunGrad;
+      ctx.beginPath();
+      ctx.arc(sunX, sunY, sunR, 0, Math.PI * 2);
+      ctx.fill();
+
+      const horizonY = state.height * 0.63;
+
+      ctx.fillStyle = `hsl(${grassHue - 22} 34% ${31 - t * 10}%)`;
+      ctx.beginPath();
+      ctx.moveTo(0, horizonY + 18);
+      ctx.quadraticCurveTo(state.width * 0.18, horizonY - 8, state.width * 0.38, horizonY + 15);
+      ctx.quadraticCurveTo(state.width * 0.6, horizonY + 36, state.width * 0.86, horizonY + 10);
+      ctx.quadraticCurveTo(state.width * 0.95, horizonY + 4, state.width, horizonY + 16);
+      ctx.lineTo(state.width, state.height);
+      ctx.lineTo(0, state.height);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = `hsl(${grassHue} 56% ${grassTop}%)`;
+      ctx.beginPath();
+      ctx.moveTo(0, horizonY + 36);
+      ctx.quadraticCurveTo(state.width * 0.2, horizonY + 8, state.width * 0.45, horizonY + 34);
+      ctx.quadraticCurveTo(state.width * 0.72, horizonY + 54, state.width, horizonY + 24);
+      ctx.lineTo(state.width, state.height);
+      ctx.lineTo(0, state.height);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
+      ctx.lineWidth = 1;
+      for (let y = 12; y < state.height; y += 58) {
         ctx.beginPath();
-        ctx.moveTo(0, y + (y % 108 === 0 ? 0 : 8));
-        ctx.lineTo(state.width, y + (y % 108 === 0 ? 0 : 8));
+        ctx.moveTo(0, y);
+        ctx.lineTo(state.width, y);
         ctx.stroke();
       }
-      ctx.globalAlpha = 1;
+
+      ctx.fillStyle = `hsla(${grassHue + 4} 60% ${grassBottom}%, 0.45)`;
+      for (let i = 0; i < 16; i += 1) {
+        const x = (state.width / 15) * i + (i % 2) * 4;
+        const baseY = horizonY + 40 + (i % 3) * 7;
+        ctx.beginPath();
+        ctx.moveTo(x, state.height);
+        ctx.quadraticCurveTo(x + 3, baseY, x + 6, state.height);
+        ctx.fill();
+      }
     }
 
     function drawBrick(item, x, y, size) {
@@ -1040,11 +999,13 @@
       if (crackCount > 0) {
         ctx.strokeStyle = `rgba(35, 16, 8, ${0.22 + damage * 0.35})`;
         ctx.lineWidth = 1.4;
-        for (let i = 0; i < crackCount; i += 1) {
-          const sx = x + rand(size * 0.2, size * 0.8);
-          const sy = y + rand(size * 0.15, size * 0.85);
-          const ex = sx + rand(-size * 0.24, size * 0.24);
-          const ey = sy + rand(-size * 0.24, size * 0.24);
+        const cracks = item.cracks ?? [];
+        for (let i = 0; i < crackCount && i < cracks.length; i += 1) {
+          const crack = cracks[i];
+          const sx = x + crack.sx * size;
+          const sy = y + crack.sy * size;
+          const ex = x + crack.ex * size;
+          const ey = y + crack.ey * size;
           ctx.beginPath();
           ctx.moveTo(sx, sy);
           ctx.lineTo(ex, ey);
@@ -1065,6 +1026,12 @@
         ctx.fillStyle = `hsl(${90 * ratio} 85% 62%)`;
         ctx.fill();
       }
+
+      ctx.fillStyle = "rgba(255, 247, 238, 0.95)";
+      ctx.font = item.hp >= 100 ? "700 13px system-ui, sans-serif" : "700 15px system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(String(item.hp), x + size / 2, y + size / 2 + 2);
     }
 
     function drawPower(item, x, y, size) {
@@ -1182,19 +1149,6 @@
       ctx.restore();
     }
 
-    function drawParticles() {
-      ctx.save();
-      ctx.globalCompositeOperation = "lighter";
-      for (const p of state.particles) {
-        const alpha = clamp(p.life / Math.max(0.001, p.maxLife), 0, 1);
-        ctx.fillStyle = `hsla(${p.hue}, ${p.sat}%, ${p.light}%, ${alpha})`;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.restore();
-    }
-
     function drawBalls() {
       for (const ball of state.balls) {
         const trailLen = ball.trail.length;
@@ -1218,13 +1172,6 @@
 
     function drawBoard() {
       ctx.clearRect(0, 0, state.width, state.height);
-
-      ctx.save();
-      if (state.shake > 0.01) {
-        const sx = (Math.random() - 0.5) * state.shake;
-        const sy = (Math.random() - 0.5) * state.shake;
-        ctx.translate(sx, sy);
-      }
 
       drawBackdrop();
 
@@ -1261,7 +1208,6 @@
       drawAimGuide();
       drawCannon();
       drawBalls();
-      drawParticles();
 
       if (state.gameOver) {
         ctx.fillStyle = "rgba(3, 10, 18, 0.78)";
@@ -1277,8 +1223,6 @@
         ctx.font = "600 14px system-ui, sans-serif";
         ctx.fillText(`Score ${state.score}`, state.width / 2, state.height / 2 + 14);
       }
-
-      ctx.restore();
     }
 
     function gameLoop(ts) {
@@ -1311,9 +1255,7 @@
       state.runningShot = false;
       state.balls.length = 0;
       state.blocks.length = 0;
-      state.particles.length = 0;
       state.shotBreaks = 0;
-      state.shake = 0;
       state.muzzleFlash = 0;
       state.aiming = false;
       state.aimPoint = null;
