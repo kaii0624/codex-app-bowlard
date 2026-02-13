@@ -228,15 +228,16 @@
     const restartBtn = document.getElementById("restart");
     const modeButtons = Array.from(document.querySelectorAll("[data-mode]"));
 
-    const COLS = 7;
+    const COLS = 8;
+    const ROWS = 9;
     const POWER_TYPES = ["plus", "laser", "mult", "redirect"];
 
     const MODE_SETTINGS = {
       easy: {
         label: "EASY",
-        rowBonus: 2,
         blockChanceInitial: 0.56,
         blockChance: 0.5,
+        triangleChance: 0.16,
         powerChanceInitial: 0.2,
         powerChance: 0.28,
         hpBase: 9,
@@ -246,9 +247,9 @@
       },
       medium: {
         label: "MEDIUM",
-        rowBonus: 1,
         blockChanceInitial: 0.66,
         blockChance: 0.6,
+        triangleChance: 0.2,
         powerChanceInitial: 0.14,
         powerChance: 0.2,
         hpBase: 15,
@@ -258,9 +259,9 @@
       },
       hard: {
         label: "HARD",
-        rowBonus: 0,
         blockChanceInitial: 0.76,
         blockChance: 0.7,
+        triangleChance: 0.24,
         powerChanceInitial: 0.08,
         powerChance: 0.14,
         hpBase: 24,
@@ -279,7 +280,7 @@
       cellSize: 40,
       cellGap: 4,
       rowHeight: 44,
-      maxRows: 10,
+      maxRows: ROWS,
       launchX: 180,
       launchY: 540,
       nextLaunchX: null,
@@ -493,7 +494,6 @@
       const rect = boardEl.getBoundingClientRect();
       const cssWidth = Math.max(280, Math.floor(rect.width - 12));
       const cssHeight = Math.max(300, Math.floor(rect.height - 12));
-      const mode = getModeConfig();
 
       state.dpr = Math.max(1, window.devicePixelRatio || 1);
       state.width = cssWidth;
@@ -512,8 +512,7 @@
       state.gridLeft = Math.round((cssWidth - (state.cellSize * COLS + state.cellGap * (COLS - 1))) / 2);
       state.gridTop = 12;
       state.launchY = cssHeight - 18;
-      const baseRows = Math.floor((state.launchY - state.gridTop - 8) / state.rowHeight) + 1;
-      state.maxRows = Math.max(8, baseRows + mode.rowBonus);
+      state.maxRows = ROWS;
       state.launchX = clamp(state.launchX, state.gridLeft + 10, state.width - state.gridLeft - 10);
 
       if (!state.runningShot && !state.aiming) {
@@ -547,9 +546,16 @@
         type: "block",
         hp,
         maxHp: hp,
+        shape: "square",
+        triType: null,
         tint: randomInt(-6, 6),
         cracks: randomCrackPattern()
       };
+    }
+
+    function randomTriangleType() {
+      const types = ["slashLow", "slashHigh", "backLow", "backHigh"];
+      return types[randomInt(0, types.length - 1)];
     }
 
     function createRow(rowIndex, initial = false) {
@@ -564,7 +570,12 @@
         if (roll < blockChance) {
           const base = mode.hpBase + state.level * mode.hpGrowth + (initial ? 0 : mode.hpRoundBonus);
           const hp = randomInt(base, base + mode.hpRange);
-          row.push(createBlock(rowIndex, col, hp));
+          const block = createBlock(rowIndex, col, hp);
+          if (Math.random() < mode.triangleChance) {
+            block.shape = "triangle";
+            block.triType = randomTriangleType();
+          }
+          row.push(block);
           hasBlock = true;
           continue;
         }
@@ -713,6 +724,52 @@
       return dx * dx + dy * dy <= ball.r * ball.r;
     }
 
+    function triangleSideValue(triType, lx, ly, size) {
+      if (triType === "slashLow") {
+        return lx + ly - size;
+      }
+      if (triType === "slashHigh") {
+        return size - (lx + ly);
+      }
+      if (triType === "backLow") {
+        return ly - lx;
+      }
+      return lx - ly;
+    }
+
+    function isTriangleHit(ball, block, x, y, size) {
+      if (!circleHitsRect(ball, x, y, size)) {
+        return false;
+      }
+      const lx = ball.x - x;
+      const ly = ball.y - y;
+      const side = triangleSideValue(block.triType, lx, ly, size);
+      if (side >= 0) {
+        return true;
+      }
+      const distToDiagonal = Math.abs(side) / Math.SQRT2;
+      return distToDiagonal <= ball.r + 0.7;
+    }
+
+    function bounceFromTriangle(ball, block, x, y, size) {
+      const lx = ball.x - x;
+      const ly = ball.y - y;
+      const side = triangleSideValue(block.triType, lx, ly, size);
+      const distToDiagonal = Math.abs(side) / Math.SQRT2;
+
+      if (distToDiagonal <= ball.r + 1.4) {
+        const useSlash = block.triType === "slashLow" || block.triType === "slashHigh";
+        const nx = useSlash ? Math.SQRT1_2 : -Math.SQRT1_2;
+        const ny = Math.SQRT1_2;
+        const dot = ball.vx * nx + ball.vy * ny;
+        ball.vx -= 2 * dot * nx;
+        ball.vy -= 2 * dot * ny;
+        return;
+      }
+
+      bounceFromRect(ball, x, y, size);
+    }
+
     function bounceFromRect(ball, x, y, size) {
       const distLeft = Math.abs(ball.x - x);
       const distRight = Math.abs(ball.x - (x + size));
@@ -828,12 +885,20 @@
           const x = colToX(item.col);
           const y = rowToY(item.row);
           const size = state.cellSize;
+          const isTriangle = item.type === "block" && item.shape === "triangle";
+          const hit = isTriangle
+            ? isTriangleHit(ball, item, x, y, size)
+            : circleHitsRect(ball, x, y, size);
 
-          if (!circleHitsRect(ball, x, y, size)) {
+          if (!hit) {
             continue;
           }
 
-          bounceFromRect(ball, x, y, size);
+          if (isTriangle) {
+            bounceFromTriangle(ball, item, x, y, size);
+          } else {
+            bounceFromRect(ball, x, y, size);
+          }
 
           if (item.type === "block") {
             item.hp -= 1;
@@ -1034,6 +1099,94 @@
       ctx.fillText(String(item.hp), x + size / 2, y + size / 2 + 2);
     }
 
+    function triangleVertices(triType, x, y, size) {
+      if (triType === "slashLow") {
+        return [
+          { x, y: y + size },
+          { x: x + size, y },
+          { x: x + size, y: y + size }
+        ];
+      }
+      if (triType === "slashHigh") {
+        return [
+          { x, y },
+          { x, y: y + size },
+          { x: x + size, y }
+        ];
+      }
+      if (triType === "backLow") {
+        return [
+          { x, y },
+          { x, y: y + size },
+          { x: x + size, y: y + size }
+        ];
+      }
+      return [
+        { x, y },
+        { x: x + size, y },
+        { x: x + size, y: y + size }
+      ];
+    }
+
+    function trianglePath(vertices) {
+      ctx.beginPath();
+      ctx.moveTo(vertices[0].x, vertices[0].y);
+      ctx.lineTo(vertices[1].x, vertices[1].y);
+      ctx.lineTo(vertices[2].x, vertices[2].y);
+      ctx.closePath();
+    }
+
+    function drawTriangleBrick(item, x, y, size) {
+      const ratio = clamp(item.hp / item.maxHp, 0, 1);
+      const damage = 1 - ratio;
+      const hue = clamp(15 + item.maxHp * 0.72 + item.tint, 12, 40);
+      const sat = 84;
+      const topLight = clamp(62 - item.maxHp * 0.2, 42, 64);
+      const lowLight = clamp(43 - item.maxHp * 0.14, 27, 48);
+      const vertices = triangleVertices(item.triType, x, y, size);
+
+      trianglePath(vertices);
+      const grad = ctx.createLinearGradient(x, y, x, y + size);
+      grad.addColorStop(0, `hsl(${hue} ${sat}% ${topLight}%)`);
+      grad.addColorStop(1, `hsl(${hue + 3} ${sat}% ${lowLight}%)`);
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.18)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      const crackCount = Math.floor(damage * 7);
+      if (crackCount > 0) {
+        ctx.save();
+        trianglePath(vertices);
+        ctx.clip();
+        ctx.strokeStyle = `rgba(35, 16, 8, ${0.22 + damage * 0.35})`;
+        ctx.lineWidth = 1.4;
+        const cracks = item.cracks ?? [];
+        for (let i = 0; i < crackCount && i < cracks.length; i += 1) {
+          const crack = cracks[i];
+          const sx = x + crack.sx * size;
+          const sy = y + crack.sy * size;
+          const ex = x + crack.ex * size;
+          const ey = y + crack.ey * size;
+          ctx.beginPath();
+          ctx.moveTo(sx, sy);
+          ctx.lineTo(ex, ey);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      const centroidX = (vertices[0].x + vertices[1].x + vertices[2].x) / 3;
+      const centroidY = (vertices[0].y + vertices[1].y + vertices[2].y) / 3;
+      ctx.fillStyle = "rgba(255, 247, 238, 0.95)";
+      ctx.font = item.hp >= 100 ? "700 12px system-ui, sans-serif" : "700 14px system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(String(item.hp), centroidX, centroidY + 1);
+    }
+
     function drawPower(item, x, y, size) {
       addRoundRect(x, y, size, size, 10);
       const panelGrad = ctx.createLinearGradient(x, y, x, y + size);
@@ -1191,7 +1344,11 @@
         const size = state.cellSize;
 
         if (item.type === "block") {
-          drawBrick(item, x, y, size);
+          if (item.shape === "triangle") {
+            drawTriangleBrick(item, x, y, size);
+          } else {
+            drawBrick(item, x, y, size);
+          }
         } else {
           drawPower(item, x, y, size);
         }
