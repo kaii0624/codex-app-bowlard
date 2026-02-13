@@ -1,0 +1,690 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>くるりん間取りチャレンジ</title>
+  <style>
+    :root {
+      --bg: #111317;
+      --panel: #1d2027;
+      --line: #3b404a;
+      --text: #f2f4f7;
+      --muted: #b5bbc6;
+      --accent: #f3b43c;
+      --safe: #ffffff;
+      --goal: #44b15f;
+      --start: #3d7df0;
+      --wall: #6f7480;
+      --danger: #ff6b6b;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+      background:
+        radial-gradient(90vw 80vh at 85% -20%, #2d3444 0%, transparent 60%),
+        radial-gradient(80vw 60vh at -15% 115%, #1f2736 0%, transparent 60%),
+        var(--bg);
+      display: flex;
+      justify-content: center;
+      padding: 10px 10px 18px;
+    }
+
+    .app {
+      width: min(100%, 430px);
+      display: grid;
+      gap: 10px;
+    }
+
+    .panel {
+      background: rgba(33, 36, 44, 0.94);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+    }
+
+    .intro {
+      padding: 12px 14px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.2rem;
+      letter-spacing: 0.03em;
+    }
+
+    .intro p {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+
+    .hud {
+      padding: 10px 12px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 7px;
+    }
+
+    .chip {
+      background: rgba(0, 0, 0, 0.28);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 7px 8px;
+      min-height: 52px;
+      display: grid;
+      align-content: center;
+      gap: 2px;
+    }
+
+    .chip .k {
+      font-size: 0.68rem;
+      color: var(--muted);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    .chip .v {
+      font-size: 0.95rem;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    .stage-panel {
+      padding: 8px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .stage-wrap {
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #4f5663;
+      background: #8f949f;
+      aspect-ratio: 360 / 860;
+      width: 100%;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      touch-action: none;
+    }
+
+    .status {
+      margin: 0;
+      min-height: 1.35rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .status.warn { color: #ffc95a; }
+    .status.ok { color: #73e08f; }
+    .status.bad { color: var(--danger); }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .main-btn {
+      min-height: 44px;
+      border: 0;
+      border-radius: 12px;
+      color: #1d1f24;
+      background: linear-gradient(120deg, #f7c75f, #f3a529);
+      font-size: 0.95rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .main-btn:active {
+      transform: scale(0.99);
+    }
+
+    .stick-note {
+      font-size: 0.76rem;
+      color: var(--muted);
+      text-align: right;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .pad-wrap {
+      padding: 10px;
+      display: grid;
+      justify-items: center;
+      gap: 8px;
+    }
+
+    .pad-label {
+      margin: 0;
+      font-size: 0.77rem;
+      color: var(--muted);
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .pad {
+      width: min(72vw, 240px);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      border: 1px solid #525a67;
+      background:
+        radial-gradient(circle at center, rgba(85, 95, 110, 0.62) 0%, rgba(29, 35, 44, 0.88) 72%),
+        #171a20;
+      position: relative;
+      touch-action: none;
+      user-select: none;
+    }
+
+    .pad::before,
+    .pad::after {
+      content: "";
+      position: absolute;
+      background: rgba(200, 208, 219, 0.15);
+    }
+
+    .pad::before {
+      left: 50%;
+      top: 10%;
+      width: 1px;
+      height: 80%;
+      transform: translateX(-50%);
+    }
+
+    .pad::after {
+      top: 50%;
+      left: 10%;
+      height: 1px;
+      width: 80%;
+      transform: translateY(-50%);
+    }
+
+    .knob {
+      position: absolute;
+      width: 34%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      background: radial-gradient(circle at 35% 30%, #f6f8fc, #a4aebc);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      box-shadow: 0 5px 16px rgba(0, 0, 0, 0.42);
+      pointer-events: none;
+    }
+
+    @media (max-width: 390px) {
+      .hud {
+        grid-template-columns: 1fr;
+      }
+
+      .chip {
+        min-height: 46px;
+      }
+
+      .controls {
+        grid-template-columns: 1fr;
+      }
+
+      .stick-note {
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="panel intro">
+      <h1>くるりん間取りチャレンジ</h1>
+      <p>
+        上バルコニーから下バルコニーへ。棒が回転しながら進む「くるりん」風ゲームです。<br>
+        間取り図をもとに、部屋とホールの構成をステージ化しています。
+      </p>
+    </section>
+
+    <section class="panel hud" aria-label="ゲーム情報">
+      <div class="chip"><span class="k">TIME</span><span class="v" id="timeValue">00:00.00</span></div>
+      <div class="chip"><span class="k">MISS</span><span class="v" id="missValue">0</span></div>
+      <div class="chip"><span class="k">BEST</span><span class="v" id="bestValue">--:--.--</span></div>
+    </section>
+
+    <section class="panel stage-panel" aria-label="ステージ">
+      <div class="stage-wrap">
+        <canvas id="stage" width="360" height="860"></canvas>
+      </div>
+      <p id="status" class="status">STARTで開始。壁に棒が触れると上バルコニーに戻ります。</p>
+      <div class="controls">
+        <button class="main-btn" id="startBtn" type="button">START / RESTART</button>
+        <div class="stick-note">棒の長さ: 86px<br>矢印キー操作対応</div>
+      </div>
+    </section>
+
+    <section class="panel pad-wrap" aria-label="移動パッド">
+      <p class="pad-label">移動パッド（押している方向へ移動）</p>
+      <div class="pad" id="pad">
+        <div class="knob" id="knob"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const WORLD_W = 360;
+    const WORLD_H = 860;
+    const STICK_LENGTH = 86;
+    const STICK_RADIUS = 4;
+    const ROTATION_SPEED = 1.52;
+    const MOVE_SPEED = 120;
+    const RESPAWN_GRACE = 0.52;
+    const BEST_KEY = "kururin-floor-plan-best";
+
+    const stageRects = [
+      { x: 38, y: 20, w: 284, h: 96, label: "Balcony" },
+      { x: 38, y: 116, w: 150, h: 248, label: "Bedroom 6.0J" },
+      { x: 188, y: 86, w: 134, h: 188, label: "Bedroom 5.0J" },
+      { x: 168, y: 274, w: 154, h: 122, label: "Hall / Ent" },
+      { x: 38, y: 364, w: 150, h: 168, label: "Bath / Kitchen" },
+      { x: 188, y: 396, w: 134, h: 164, label: "Bedroom 5.0J" },
+      { x: 38, y: 560, w: 284, h: 198, label: "Living Dining 13.0J" },
+      { x: 38, y: 758, w: 284, h: 96, label: "Balcony" }
+    ];
+
+    const doors = [
+      { x: 104, y: 108, w: 56, h: 16 },
+      { x: 228, y: 108, w: 58, h: 16 },
+      { x: 180, y: 286, w: 16, h: 56 },
+      { x: 230, y: 266, w: 56, h: 16 },
+      { x: 156, y: 330, w: 16, h: 40 },
+      { x: 230, y: 388, w: 56, h: 16 },
+      { x: 104, y: 524, w: 70, h: 16 },
+      { x: 232, y: 552, w: 54, h: 16 },
+      { x: 168, y: 750, w: 88, h: 16 }
+    ];
+
+    const walkable = [...stageRects, ...doors];
+
+    const startArea = { x: 118, y: 40, w: 124, h: 54 };
+    const goalArea = { x: 118, y: 776, w: 124, h: 58 };
+    const startPoint = {
+      x: startArea.x + startArea.w / 2,
+      y: startArea.y + startArea.h / 2
+    };
+
+    const canvas = document.getElementById("stage");
+    const ctx = canvas.getContext("2d");
+    const startBtn = document.getElementById("startBtn");
+    const statusEl = document.getElementById("status");
+    const timeEl = document.getElementById("timeValue");
+    const missEl = document.getElementById("missValue");
+    const bestEl = document.getElementById("bestValue");
+    const pad = document.getElementById("pad");
+    const knob = document.getElementById("knob");
+
+    const keys = {
+      ArrowUp: false,
+      ArrowDown: false,
+      ArrowLeft: false,
+      ArrowRight: false,
+      KeyW: false,
+      KeyS: false,
+      KeyA: false,
+      KeyD: false
+    };
+
+    let player = { x: startPoint.x, y: startPoint.y };
+    let angle = -Math.PI / 2;
+    let missCount = 0;
+    let elapsed = 0;
+    let bestMs = loadBest();
+    let playing = false;
+    let cleared = false;
+    let grace = RESPAWN_GRACE;
+    let lastTs = performance.now();
+    let touchVector = { x: 0, y: 0 };
+    let activePointerId = null;
+
+    bestEl.textContent = bestMs === null ? "--:--.--" : formatTime(bestMs);
+    draw();
+
+    function loadBest() {
+      const raw = localStorage.getItem(BEST_KEY);
+      if (!raw) return null;
+      const value = Number(raw);
+      return Number.isFinite(value) && value > 0 ? value : null;
+    }
+
+    function saveBest(value) {
+      localStorage.setItem(BEST_KEY, String(value));
+    }
+
+    function setStatus(text, type = "") {
+      statusEl.textContent = text;
+      statusEl.className = `status ${type}`.trim();
+    }
+
+    function formatTime(ms) {
+      const total = Math.max(0, ms);
+      const minutes = Math.floor(total / 60000);
+      const seconds = Math.floor((total % 60000) / 1000);
+      const cent = Math.floor((total % 1000) / 10);
+      return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}.${String(cent).padStart(2, "0")}`;
+    }
+
+    function inside(rect, x, y, margin = 0) {
+      return (
+        x >= rect.x + margin &&
+        x <= rect.x + rect.w - margin &&
+        y >= rect.y + margin &&
+        y <= rect.y + rect.h - margin
+      );
+    }
+
+    function pointWalkable(x, y) {
+      for (const rect of walkable) {
+        if (inside(rect, x, y, 0.6)) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function stickSafe(cx, cy, theta) {
+      const half = STICK_LENGTH * 0.5;
+      const ux = Math.cos(theta);
+      const uy = Math.sin(theta);
+      const nx = -uy;
+      const ny = ux;
+      const steps = 34;
+      const offsets = [-STICK_RADIUS * 0.62, 0, STICK_RADIUS * 0.62];
+
+      for (let i = 0; i <= steps; i += 1) {
+        const t = -half + (i / steps) * STICK_LENGTH;
+        for (const off of offsets) {
+          const x = cx + ux * t + nx * off;
+          const y = cy + uy * t + ny * off;
+          if (!pointWalkable(x, y)) {
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    function getInputVector() {
+      const keyX = Number(keys.ArrowRight || keys.KeyD) - Number(keys.ArrowLeft || keys.KeyA);
+      const keyY = Number(keys.ArrowDown || keys.KeyS) - Number(keys.ArrowUp || keys.KeyW);
+      const x = keyX + touchVector.x;
+      const y = keyY + touchVector.y;
+      const len = Math.hypot(x, y);
+      if (len < 0.0001) return { x: 0, y: 0 };
+      const scale = len > 1 ? 1 / len : 1;
+      return { x: x * scale, y: y * scale };
+    }
+
+    function respawn() {
+      missCount += 1;
+      missEl.textContent = String(missCount);
+      player.x = startPoint.x;
+      player.y = startPoint.y;
+      angle = -Math.PI / 2;
+      grace = RESPAWN_GRACE;
+      setStatus("壁に接触。上バルコニーから再開します。", "bad");
+    }
+
+    function resetGame() {
+      player.x = startPoint.x;
+      player.y = startPoint.y;
+      angle = -Math.PI / 2;
+      missCount = 0;
+      elapsed = 0;
+      grace = RESPAWN_GRACE;
+      playing = true;
+      cleared = false;
+      missEl.textContent = "0";
+      timeEl.textContent = "00:00.00";
+      setStatus("上バルコニーから下バルコニーへ。", "warn");
+    }
+
+    function clearGame() {
+      playing = false;
+      cleared = true;
+      const finishedMs = Math.round(elapsed);
+      setStatus(`GOAL! クリア: ${formatTime(finishedMs)} / ミス: ${missCount}`, "ok");
+      if (bestMs === null || finishedMs < bestMs) {
+        bestMs = finishedMs;
+        saveBest(bestMs);
+        bestEl.textContent = formatTime(bestMs);
+      }
+    }
+
+    function update(dt) {
+      angle += ROTATION_SPEED * dt;
+      if (angle > Math.PI * 2) {
+        angle -= Math.PI * 2;
+      }
+
+      const input = getInputVector();
+      const moveX = input.x * MOVE_SPEED * dt;
+      const moveY = input.y * MOVE_SPEED * dt;
+
+      const tryX = player.x + moveX;
+      if (pointWalkable(tryX, player.y) && (grace > 0 || stickSafe(tryX, player.y, angle))) {
+        player.x = tryX;
+      }
+
+      const tryY = player.y + moveY;
+      if (pointWalkable(player.x, tryY) && (grace > 0 || stickSafe(player.x, tryY, angle))) {
+        player.y = tryY;
+      }
+
+      if (grace > 0) {
+        grace = Math.max(0, grace - dt);
+      }
+
+      if (grace <= 0 && !stickSafe(player.x, player.y, angle)) {
+        respawn();
+      }
+
+      if (inside(goalArea, player.x, player.y, 8) && stickSafe(player.x, player.y, angle)) {
+        clearGame();
+      }
+    }
+
+    function drawRoomLabel(text, x, y, size = 15) {
+      ctx.fillStyle = "rgba(30, 32, 37, 0.72)";
+      ctx.font = `600 ${size}px Georgia, serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, x, y);
+    }
+
+    function draw() {
+      const dpr = window.devicePixelRatio || 1;
+      const cw = canvas.clientWidth;
+      const ch = canvas.clientHeight;
+      const needW = Math.floor(cw * dpr);
+      const needH = Math.floor(ch * dpr);
+      if (canvas.width !== needW || canvas.height !== needH) {
+        canvas.width = needW;
+        canvas.height = needH;
+      }
+
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const scale = Math.min(cw / WORLD_W, ch / WORLD_H);
+      const ox = (cw - WORLD_W * scale) * 0.5;
+      const oy = (ch - WORLD_H * scale) * 0.5;
+      ctx.setTransform(scale * dpr, 0, 0, scale * dpr, ox * dpr, oy * dpr);
+      ctx.clearRect(0, 0, WORLD_W, WORLD_H);
+
+      ctx.fillStyle = "#8f949f";
+      ctx.fillRect(0, 0, WORLD_W, WORLD_H);
+
+      for (const rect of walkable) {
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+      }
+
+      for (const rect of walkable) {
+        ctx.strokeStyle = "#727782";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
+      }
+
+      ctx.fillStyle = "rgba(61, 125, 240, 0.2)";
+      ctx.fillRect(startArea.x, startArea.y, startArea.w, startArea.h);
+      ctx.strokeStyle = "#3d7df0";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(startArea.x, startArea.y, startArea.w, startArea.h);
+
+      ctx.fillStyle = "rgba(68, 177, 95, 0.22)";
+      ctx.fillRect(goalArea.x, goalArea.y, goalArea.w, goalArea.h);
+      ctx.strokeStyle = "#44b15f";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(goalArea.x, goalArea.y, goalArea.w, goalArea.h);
+
+      drawRoomLabel("Balcony", 180, 62, 18);
+      drawRoomLabel("Bedroom 6.0J", 112, 240, 17);
+      drawRoomLabel("Bedroom 5.0J", 255, 180, 16);
+      drawRoomLabel("Hall / Ent", 246, 334, 14);
+      drawRoomLabel("Bath / Kitchen", 112, 448, 14);
+      drawRoomLabel("Bedroom 5.0J", 255, 475, 16);
+      drawRoomLabel("Living Dining 13.0J", 180, 658, 20);
+      drawRoomLabel("Balcony", 180, 806, 18);
+
+      ctx.fillStyle = "#2f69d6";
+      ctx.font = "700 12px 'Hiragino Sans', sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("START", startArea.x + startArea.w / 2, startArea.y + startArea.h / 2 + 4);
+
+      ctx.fillStyle = "#2d8f46";
+      ctx.fillText("GOAL", goalArea.x + goalArea.w / 2, goalArea.y + goalArea.h / 2 + 4);
+
+      const ux = Math.cos(angle);
+      const uy = Math.sin(angle);
+      const hx = ux * STICK_LENGTH * 0.5;
+      const hy = uy * STICK_LENGTH * 0.5;
+
+      const blink = grace > 0 && Math.floor(performance.now() / 85) % 2 === 0;
+      ctx.globalAlpha = blink ? 0.42 : 1;
+
+      ctx.strokeStyle = "#f3b43c";
+      ctx.lineWidth = STICK_RADIUS * 2;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(player.x - hx, player.y - hy);
+      ctx.lineTo(player.x + hx, player.y + hy);
+      ctx.stroke();
+
+      ctx.fillStyle = "#2131d6";
+      ctx.beginPath();
+      ctx.arc(player.x, player.y, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.globalAlpha = 1;
+    }
+
+    function frame(ts) {
+      const dt = Math.min(0.033, (ts - lastTs) / 1000);
+      lastTs = ts;
+
+      if (playing && !cleared) {
+        elapsed += dt * 1000;
+        timeEl.textContent = formatTime(elapsed);
+        update(dt);
+      }
+
+      draw();
+      requestAnimationFrame(frame);
+    }
+
+    function updatePadFromPointer(event) {
+      const rect = pad.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const max = rect.width * 0.34;
+      const dx = event.clientX - cx;
+      const dy = event.clientY - cy;
+      const dist = Math.hypot(dx, dy);
+      const clamp = dist > max ? max / dist : 1;
+      const x = dx * clamp;
+      const y = dy * clamp;
+
+      knob.style.left = `${50 + (x / max) * 29}%`;
+      knob.style.top = `${50 + (y / max) * 29}%`;
+
+      touchVector = {
+        x: x / max,
+        y: y / max
+      };
+    }
+
+    function resetPad() {
+      activePointerId = null;
+      touchVector = { x: 0, y: 0 };
+      knob.style.left = "50%";
+      knob.style.top = "50%";
+    }
+
+    startBtn.addEventListener("click", () => {
+      resetGame();
+      lastTs = performance.now();
+    });
+
+    pad.addEventListener("pointerdown", (event) => {
+      activePointerId = event.pointerId;
+      pad.setPointerCapture(event.pointerId);
+      updatePadFromPointer(event);
+    });
+
+    pad.addEventListener("pointermove", (event) => {
+      if (event.pointerId !== activePointerId) return;
+      updatePadFromPointer(event);
+    });
+
+    pad.addEventListener("pointerup", (event) => {
+      if (event.pointerId !== activePointerId) return;
+      resetPad();
+    });
+
+    pad.addEventListener("pointercancel", (event) => {
+      if (event.pointerId !== activePointerId) return;
+      resetPad();
+    });
+
+    window.addEventListener("keydown", (event) => {
+      if (event.code in keys) {
+        keys[event.code] = true;
+        event.preventDefault();
+      }
+    }, { passive: false });
+
+    window.addEventListener("keyup", (event) => {
+      if (event.code in keys) {
+        keys[event.code] = false;
+        event.preventDefault();
+      }
+    }, { passive: false });
+
+    requestAnimationFrame((ts) => {
+      lastTs = ts;
+      requestAnimationFrame(frame);
+    });
+  </script>
+</body>
+</html>
