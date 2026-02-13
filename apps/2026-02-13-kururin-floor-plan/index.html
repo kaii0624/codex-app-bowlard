@@ -142,18 +142,30 @@
       align-items: center;
     }
 
-    .main-btn {
+    .main-btn,
+    .sub-btn {
       min-height: 44px;
       border: 0;
       border-radius: 12px;
-      color: #1d1f24;
-      background: linear-gradient(120deg, #f7c75f, #f3a529);
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       font-weight: 800;
       cursor: pointer;
     }
 
-    .main-btn:active {
+    .main-btn {
+      color: #1d1f24;
+      background: linear-gradient(120deg, #f7c75f, #f3a529);
+    }
+
+    .sub-btn {
+      min-width: 108px;
+      color: #d7deea;
+      background: #2c3444;
+      border: 1px solid #566078;
+    }
+
+    .main-btn:active,
+    .sub-btn:active {
       transform: scale(0.99);
     }
 
@@ -163,6 +175,16 @@
       text-align: right;
       font-weight: 700;
       line-height: 1.35;
+      grid-column: 1 / -1;
+    }
+
+    .coord-readout {
+      margin: 0;
+      text-align: center;
+      color: #9cc5ff;
+      font-size: 0.78rem;
+      font-weight: 700;
+      min-height: 1.05rem;
     }
 
     .pad-wrap {
@@ -243,6 +265,10 @@
         grid-template-columns: 1fr;
       }
 
+      .sub-btn {
+        width: 100%;
+      }
+
       .stick-note {
         text-align: center;
       }
@@ -255,7 +281,7 @@
       <h1>くるりん間取りチャレンジ</h1>
       <p>
         上バルコニーから下バルコニーへ。棒が回転しながら進む「くるりん」風ゲームです。<br>
-        間取り図をもとに、部屋とホールの構成をステージ化しています。
+        間取り図の形状をもとに、廊下・ホール・開口を座標ベースで再構成しています。
       </p>
     </section>
 
@@ -270,9 +296,11 @@
         <canvas id="stage" width="360" height="860"></canvas>
       </div>
       <p id="status" class="status">STARTで開始。壁に棒が触れると上バルコニーに戻ります。</p>
+      <p id="coordReadout" class="coord-readout"></p>
       <div class="controls">
         <button class="main-btn" id="startBtn" type="button">START / RESTART</button>
-        <div class="stick-note">棒の長さ: 86px<br>矢印キー操作対応</div>
+        <button class="sub-btn" id="guideBtn" type="button" aria-pressed="false">座標ガイド: OFF</button>
+        <div class="stick-note">棒の長さ: 86px / 矢印キー操作対応</div>
       </div>
     </section>
 
@@ -290,37 +318,149 @@
     const STICK_LENGTH = 86;
     const STICK_RADIUS = 4;
     const ROTATION_SPEED = 1.52;
-    const MOVE_SPEED = 120;
-    const RESPAWN_GRACE = 0.52;
+    const MOVE_SPEED = 114;
+    const RESPAWN_GRACE = 0.58;
     const BEST_KEY = "kururin-floor-plan-best";
 
-    const stageRects = [
-      { x: 38, y: 20, w: 284, h: 96, label: "Balcony" },
-      { x: 38, y: 116, w: 150, h: 248, label: "Bedroom 6.0J" },
-      { x: 188, y: 86, w: 134, h: 188, label: "Bedroom 5.0J" },
-      { x: 168, y: 274, w: 154, h: 122, label: "Hall / Ent" },
-      { x: 38, y: 364, w: 150, h: 168, label: "Bath / Kitchen" },
-      { x: 188, y: 396, w: 134, h: 164, label: "Bedroom 5.0J" },
-      { x: 38, y: 560, w: 284, h: 198, label: "Living Dining 13.0J" },
-      { x: 38, y: 758, w: 284, h: 96, label: "Balcony" }
+    const ROOM_AREAS = [
+      {
+        id: "balcony-top",
+        label: "Balcony",
+        labelPos: [180, 61],
+        points: [
+          [36, 20],
+          [324, 20],
+          [324, 86],
+          [188, 86],
+          [188, 120],
+          [36, 120]
+        ]
+      },
+      {
+        id: "bedroom-left",
+        label: "Bedroom 6.0J",
+        labelPos: [110, 250],
+        points: [
+          [36, 124],
+          [184, 124],
+          [184, 378],
+          [36, 378]
+        ]
+      },
+      {
+        id: "bedroom-top-right",
+        label: "Bedroom 5.0J",
+        labelPos: [257, 184],
+        points: [
+          [190, 90],
+          [324, 90],
+          [324, 274],
+          [190, 274]
+        ]
+      },
+      {
+        id: "hall",
+        label: "Hall",
+        labelPos: [227, 334],
+        points: [
+          [190, 284],
+          [268, 284],
+          [268, 390],
+          [190, 390]
+        ]
+      },
+      {
+        id: "entry",
+        label: "Ent",
+        labelPos: [294, 350],
+        points: [
+          [274, 314],
+          [324, 314],
+          [324, 382],
+          [252, 382],
+          [252, 350],
+          [274, 350]
+        ]
+      },
+      {
+        id: "service",
+        label: "Bath / Kitchen",
+        labelPos: [104, 472],
+        points: [
+          [36, 384],
+          [168, 384],
+          [168, 560],
+          [36, 560]
+        ]
+      },
+      {
+        id: "corridor",
+        label: "Corridor",
+        labelPos: [194, 478],
+        points: [
+          [174, 396],
+          [214, 396],
+          [214, 560],
+          [174, 560]
+        ]
+      },
+      {
+        id: "bedroom-bottom-right",
+        label: "Bedroom 5.0J",
+        labelPos: [270, 490],
+        points: [
+          [220, 396],
+          [324, 396],
+          [324, 560],
+          [220, 560]
+        ]
+      },
+      {
+        id: "living",
+        label: "Living Dining 13.0J",
+        labelPos: [180, 664],
+        points: [
+          [36, 566],
+          [324, 566],
+          [324, 768],
+          [36, 768]
+        ]
+      },
+      {
+        id: "balcony-bottom",
+        label: "Balcony",
+        labelPos: [180, 812],
+        points: [
+          [36, 774],
+          [324, 774],
+          [324, 848],
+          [236, 848],
+          [236, 834],
+          [124, 834],
+          [124, 848],
+          [36, 848]
+        ]
+      }
     ];
 
-    const doors = [
-      { x: 104, y: 108, w: 56, h: 16 },
-      { x: 228, y: 108, w: 58, h: 16 },
-      { x: 180, y: 286, w: 16, h: 56 },
-      { x: 230, y: 266, w: 56, h: 16 },
-      { x: 156, y: 330, w: 16, h: 40 },
-      { x: 230, y: 388, w: 56, h: 16 },
-      { x: 104, y: 524, w: 70, h: 16 },
-      { x: 232, y: 552, w: 54, h: 16 },
-      { x: 168, y: 750, w: 88, h: 16 }
+    const DOOR_AREAS = [
+      { id: "door-1", points: [[98, 120], [152, 120], [152, 124], [98, 124]] },
+      { id: "door-2", points: [[230, 86], [286, 86], [286, 90], [230, 90]] },
+      { id: "door-3", points: [[184, 320], [190, 320], [190, 352], [184, 352]] },
+      { id: "door-4", points: [[230, 274], [262, 274], [262, 284], [230, 284]] },
+      { id: "door-5", points: [[186, 390], [208, 390], [208, 396], [186, 396]] },
+      { id: "door-6", points: [[268, 334], [274, 334], [274, 356], [268, 356]] },
+      { id: "door-7", points: [[168, 338], [190, 338], [190, 362], [168, 362]] },
+      { id: "door-8", points: [[168, 452], [174, 452], [174, 482], [168, 482]] },
+      { id: "door-9", points: [[214, 438], [220, 438], [220, 468], [214, 468]] },
+      { id: "door-10", points: [[182, 560], [208, 560], [208, 566], [182, 566]] },
+      { id: "door-11", points: [[98, 560], [140, 560], [140, 566], [98, 566]] },
+      { id: "door-12", points: [[250, 560], [286, 560], [286, 566], [250, 566]] },
+      { id: "door-13", points: [[170, 768], [250, 768], [250, 774], [170, 774]] }
     ];
 
-    const walkable = [...stageRects, ...doors];
-
-    const startArea = { x: 118, y: 40, w: 124, h: 54 };
-    const goalArea = { x: 118, y: 776, w: 124, h: 58 };
+    const startArea = { x: 130, y: 34, w: 100, h: 46 };
+    const goalArea = { x: 128, y: 792, w: 104, h: 42 };
     const startPoint = {
       x: startArea.x + startArea.w / 2,
       y: startArea.y + startArea.h / 2
@@ -329,10 +469,12 @@
     const canvas = document.getElementById("stage");
     const ctx = canvas.getContext("2d");
     const startBtn = document.getElementById("startBtn");
+    const guideBtn = document.getElementById("guideBtn");
     const statusEl = document.getElementById("status");
     const timeEl = document.getElementById("timeValue");
     const missEl = document.getElementById("missValue");
     const bestEl = document.getElementById("bestValue");
+    const coordReadoutEl = document.getElementById("coordReadout");
     const pad = document.getElementById("pad");
     const knob = document.getElementById("knob");
 
@@ -347,6 +489,10 @@
       KeyD: false
     };
 
+    const rooms = ROOM_AREAS.map(prepareArea);
+    const doors = DOOR_AREAS.map(prepareArea);
+    const walkAreas = [...rooms, ...doors];
+
     let player = { x: startPoint.x, y: startPoint.y };
     let angle = -Math.PI / 2;
     let missCount = 0;
@@ -358,9 +504,35 @@
     let lastTs = performance.now();
     let touchVector = { x: 0, y: 0 };
     let activePointerId = null;
+    let showGuide = false;
+    let viewScale = 1;
+    let viewOffsetX = 0;
+    let viewOffsetY = 0;
 
     bestEl.textContent = bestMs === null ? "--:--.--" : formatTime(bestMs);
     draw();
+
+    function prepareArea(raw) {
+      let minX = Number.POSITIVE_INFINITY;
+      let minY = Number.POSITIVE_INFINITY;
+      let maxX = Number.NEGATIVE_INFINITY;
+      let maxY = Number.NEGATIVE_INFINITY;
+
+      for (const [x, y] of raw.points) {
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+      }
+
+      return {
+        ...raw,
+        minX,
+        minY,
+        maxX,
+        maxY
+      };
+    }
 
     function loadBest() {
       const raw = localStorage.getItem(BEST_KEY);
@@ -386,7 +558,7 @@
       return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}.${String(cent).padStart(2, "0")}`;
     }
 
-    function inside(rect, x, y, margin = 0) {
+    function insideRect(rect, x, y, margin = 0) {
       return (
         x >= rect.x + margin &&
         x <= rect.x + rect.w - margin &&
@@ -395,9 +567,77 @@
       );
     }
 
+    function pointOnSegment(x, y, x1, y1, x2, y2, eps = 0.5) {
+      const vx = x2 - x1;
+      const vy = y2 - y1;
+      const wx = x - x1;
+      const wy = y - y1;
+
+      const c1 = vx * wx + vy * wy;
+      if (c1 < 0) return false;
+
+      const c2 = vx * vx + vy * vy;
+      if (c1 > c2) return false;
+
+      const projX = x1 + (c1 / c2) * vx;
+      const projY = y1 + (c1 / c2) * vy;
+      return Math.hypot(x - projX, y - projY) <= eps;
+    }
+
+    function pointInPolygonRaw(x, y, points) {
+      let inside = false;
+      for (let i = 0, j = points.length - 1; i < points.length; j = i, i += 1) {
+        const [xi, yi] = points[i];
+        const [xj, yj] = points[j];
+
+        if (pointOnSegment(x, y, xj, yj, xi, yi)) {
+          return true;
+        }
+
+        const intersects =
+          yi > y !== yj > y &&
+          x < ((xj - xi) * (y - yi)) / (yj - yi + Number.EPSILON) + xi;
+
+        if (intersects) {
+          inside = !inside;
+        }
+      }
+      return inside;
+    }
+
+    function pointInArea(area, x, y, margin = 0) {
+      if (
+        x < area.minX - margin ||
+        x > area.maxX + margin ||
+        y < area.minY - margin ||
+        y > area.maxY + margin
+      ) {
+        return false;
+      }
+
+      if (margin <= 0) {
+        return pointInPolygonRaw(x, y, area.points);
+      }
+
+      const probes = [
+        [0, 0],
+        [margin, 0],
+        [-margin, 0],
+        [0, margin],
+        [0, -margin]
+      ];
+
+      for (const [dx, dy] of probes) {
+        if (!pointInPolygonRaw(x + dx, y + dy, area.points)) {
+          return false;
+        }
+      }
+      return true;
+    }
+
     function pointWalkable(x, y) {
-      for (const rect of walkable) {
-        if (inside(rect, x, y, 0.6)) {
+      for (const area of walkAreas) {
+        if (pointInArea(area, x, y, 0.72)) {
           return true;
         }
       }
@@ -410,8 +650,8 @@
       const uy = Math.sin(theta);
       const nx = -uy;
       const ny = ux;
-      const steps = 34;
-      const offsets = [-STICK_RADIUS * 0.62, 0, STICK_RADIUS * 0.62];
+      const steps = 38;
+      const offsets = [-STICK_RADIUS * 0.64, 0, STICK_RADIUS * 0.64];
 
       for (let i = 0; i <= steps; i += 1) {
         const t = -half + (i / steps) * STICK_LENGTH;
@@ -501,8 +741,30 @@
         respawn();
       }
 
-      if (inside(goalArea, player.x, player.y, 8) && stickSafe(player.x, player.y, angle)) {
+      if (insideRect(goalArea, player.x, player.y, 7) && stickSafe(player.x, player.y, angle)) {
         clearGame();
+      }
+    }
+
+    function drawPolygon(area, fill, stroke, lineWidth = 2) {
+      ctx.beginPath();
+      for (let i = 0; i < area.points.length; i += 1) {
+        const [x, y] = area.points[i];
+        if (i === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      }
+      ctx.closePath();
+      if (fill) {
+        ctx.fillStyle = fill;
+        ctx.fill();
+      }
+      if (stroke) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = lineWidth;
+        ctx.stroke();
       }
     }
 
@@ -512,6 +774,40 @@
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText(text, x, y);
+    }
+
+    function drawGuideLayer() {
+      const grid = 20;
+      ctx.strokeStyle = "rgba(40, 130, 220, 0.22)";
+      ctx.lineWidth = 1;
+      for (let x = 0; x <= WORLD_W; x += grid) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, WORLD_H);
+        ctx.stroke();
+      }
+      for (let y = 0; y <= WORLD_H; y += grid) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(WORLD_W, y);
+        ctx.stroke();
+      }
+
+      ctx.font = "700 8px 'Hiragino Sans', sans-serif";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "bottom";
+
+      for (const area of walkAreas) {
+        for (let i = 0; i < area.points.length; i += 1) {
+          const [x, y] = area.points[i];
+          ctx.fillStyle = "#1a4f9f";
+          ctx.beginPath();
+          ctx.arc(x, y, 2.2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = "#11478f";
+          ctx.fillText(`${area.id}:${i}`, x + 3, y - 2);
+        }
+      }
     }
 
     function draw() {
@@ -526,24 +822,21 @@
       }
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const scale = Math.min(cw / WORLD_W, ch / WORLD_H);
-      const ox = (cw - WORLD_W * scale) * 0.5;
-      const oy = (ch - WORLD_H * scale) * 0.5;
-      ctx.setTransform(scale * dpr, 0, 0, scale * dpr, ox * dpr, oy * dpr);
+      viewScale = Math.min(cw / WORLD_W, ch / WORLD_H);
+      viewOffsetX = (cw - WORLD_W * viewScale) * 0.5;
+      viewOffsetY = (ch - WORLD_H * viewScale) * 0.5;
+      ctx.setTransform(viewScale * dpr, 0, 0, viewScale * dpr, viewOffsetX * dpr, viewOffsetY * dpr);
       ctx.clearRect(0, 0, WORLD_W, WORLD_H);
 
       ctx.fillStyle = "#8f949f";
       ctx.fillRect(0, 0, WORLD_W, WORLD_H);
 
-      for (const rect of walkable) {
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+      for (const room of rooms) {
+        drawPolygon(room, "#ffffff", "#727782", 2.2);
       }
 
-      for (const rect of walkable) {
-        ctx.strokeStyle = "#727782";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
+      for (const door of doors) {
+        drawPolygon(door, "#f7f7f3", "#8a8f98", 1.2);
       }
 
       ctx.fillStyle = "rgba(61, 125, 240, 0.2)";
@@ -559,13 +852,14 @@
       ctx.strokeRect(goalArea.x, goalArea.y, goalArea.w, goalArea.h);
 
       drawRoomLabel("Balcony", 180, 62, 18);
-      drawRoomLabel("Bedroom 6.0J", 112, 240, 17);
-      drawRoomLabel("Bedroom 5.0J", 255, 180, 16);
-      drawRoomLabel("Hall / Ent", 246, 334, 14);
-      drawRoomLabel("Bath / Kitchen", 112, 448, 14);
-      drawRoomLabel("Bedroom 5.0J", 255, 475, 16);
-      drawRoomLabel("Living Dining 13.0J", 180, 658, 20);
-      drawRoomLabel("Balcony", 180, 806, 18);
+      drawRoomLabel("Bedroom 6.0J", 110, 250, 17);
+      drawRoomLabel("Bedroom 5.0J", 257, 184, 16);
+      drawRoomLabel("Hall", 228, 334, 16);
+      drawRoomLabel("Bath / Kitchen", 104, 472, 13);
+      drawRoomLabel("Corridor", 194, 478, 11);
+      drawRoomLabel("Bedroom 5.0J", 270, 490, 16);
+      drawRoomLabel("Living Dining 13.0J", 180, 664, 20);
+      drawRoomLabel("Balcony", 180, 812, 18);
 
       ctx.fillStyle = "#2f69d6";
       ctx.font = "700 12px 'Hiragino Sans', sans-serif";
@@ -597,6 +891,10 @@
       ctx.fill();
 
       ctx.globalAlpha = 1;
+
+      if (showGuide) {
+        drawGuideLayer();
+      }
     }
 
     function frame(ts) {
@@ -641,9 +939,43 @@
       knob.style.top = "50%";
     }
 
+    function screenToWorld(clientX, clientY) {
+      const rect = canvas.getBoundingClientRect();
+      const lx = clientX - rect.left;
+      const ly = clientY - rect.top;
+      const x = (lx - viewOffsetX) / viewScale;
+      const y = (ly - viewOffsetY) / viewScale;
+      if (x < 0 || y < 0 || x > WORLD_W || y > WORLD_H) {
+        return null;
+      }
+      return { x, y };
+    }
+
+    function updateCoordReadout(event) {
+      if (!showGuide) {
+        coordReadoutEl.textContent = "";
+        return;
+      }
+      const p = screenToWorld(event.clientX, event.clientY);
+      if (!p) {
+        coordReadoutEl.textContent = "";
+        return;
+      }
+      coordReadoutEl.textContent = `座標 x:${p.x.toFixed(1)} y:${p.y.toFixed(1)}`;
+    }
+
     startBtn.addEventListener("click", () => {
       resetGame();
       lastTs = performance.now();
+    });
+
+    guideBtn.addEventListener("click", () => {
+      showGuide = !showGuide;
+      guideBtn.textContent = `座標ガイド: ${showGuide ? "ON" : "OFF"}`;
+      guideBtn.setAttribute("aria-pressed", String(showGuide));
+      if (!showGuide) {
+        coordReadoutEl.textContent = "";
+      }
     });
 
     pad.addEventListener("pointerdown", (event) => {
@@ -665,6 +997,13 @@
     pad.addEventListener("pointercancel", (event) => {
       if (event.pointerId !== activePointerId) return;
       resetPad();
+    });
+
+    canvas.addEventListener("pointerdown", updateCoordReadout);
+    canvas.addEventListener("pointermove", updateCoordReadout);
+    canvas.addEventListener("pointerleave", () => {
+      if (!showGuide) return;
+      coordReadoutEl.textContent = "";
     });
 
     window.addEventListener("keydown", (event) => {
