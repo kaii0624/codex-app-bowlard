@@ -312,7 +312,9 @@
     const audio = {
       ctx: null,
       master: null,
-      unlocked: false
+      unlocked: false,
+      primed: false,
+      resumePending: false
     };
 
     function clamp(value, min, max) {
@@ -376,28 +378,62 @@
     }
 
     function unlockAudio() {
-      if (audio.unlocked) {
-        if (audio.ctx && audio.ctx.state === "suspended") {
-          audio.ctx.resume();
-        }
-        return;
-      }
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (!AudioCtx) {
         return;
       }
-      audio.ctx = new AudioCtx();
-      audio.master = audio.ctx.createGain();
-      audio.master.gain.value = 0.24;
-      audio.master.connect(audio.ctx.destination);
-      audio.unlocked = true;
-      if (audio.ctx.state === "suspended") {
-        audio.ctx.resume();
+
+      if (!audio.ctx) {
+        audio.ctx = new AudioCtx();
+        audio.master = audio.ctx.createGain();
+        audio.master.gain.value = 0.32;
+        audio.master.connect(audio.ctx.destination);
+      }
+
+      try {
+        if (typeof navigator !== "undefined" && navigator.audioSession && navigator.audioSession.type !== "playback") {
+          navigator.audioSession.type = "playback";
+        }
+      } catch (error) {
+        // no-op: audioSession is best-effort and not universally available.
+      }
+
+      if (audio.ctx.state !== "running" && !audio.resumePending) {
+        audio.resumePending = true;
+        audio.ctx.resume().catch(() => {}).finally(() => {
+          audio.resumePending = false;
+          audio.unlocked = audio.ctx && audio.ctx.state === "running";
+        });
+      } else {
+        audio.unlocked = audio.ctx.state === "running";
+      }
+
+      if (audio.ctx && audio.master && !audio.primed) {
+        try {
+          const buffer = audio.ctx.createBuffer(1, 1, audio.ctx.sampleRate);
+          const src = audio.ctx.createBufferSource();
+          src.buffer = buffer;
+          const gain = audio.ctx.createGain();
+          gain.gain.value = 0.0001;
+          src.connect(gain);
+          gain.connect(audio.master);
+          src.start();
+          src.stop(audio.ctx.currentTime + 0.01);
+          audio.primed = true;
+        } catch (error) {
+          // no-op: prime is best-effort.
+        }
       }
     }
 
     function playTone(opts = {}) {
-      if (!audio.unlocked || !audio.ctx || !audio.master) {
+      if (!audio.ctx || !audio.master) {
+        return;
+      }
+      if (!audio.unlocked || audio.ctx.state !== "running") {
+        unlockAudio();
+      }
+      if (!audio.unlocked || audio.ctx.state !== "running") {
         return;
       }
       const now = audio.ctx.currentTime;
@@ -426,7 +462,13 @@
     }
 
     function playNoiseBurst(opts = {}) {
-      if (!audio.unlocked || !audio.ctx || !audio.master) {
+      if (!audio.ctx || !audio.master) {
+        return;
+      }
+      if (!audio.unlocked || audio.ctx.state !== "running") {
+        unlockAudio();
+      }
+      if (!audio.unlocked || audio.ctx.state !== "running") {
         return;
       }
       const now = audio.ctx.currentTime;
@@ -792,6 +834,7 @@
       if (state.runningShot || state.gameOver) {
         return;
       }
+      unlockAudio();
       state.runningShot = true;
       state.launchAngle = angle;
       state.ballsToLaunch = state.ballCount;
@@ -1423,6 +1466,22 @@
       clearToast();
       seedBoard();
       updateStats();
+    }
+
+    const unlockEventTypes = ["touchstart", "pointerdown", "mousedown", "click", "keydown"];
+    function onFirstUnlockGesture() {
+      unlockAudio();
+      if (!audio.unlocked) {
+        return;
+      }
+      for (const eventName of unlockEventTypes) {
+        window.removeEventListener(eventName, onFirstUnlockGesture);
+      }
+    }
+
+    for (const eventName of unlockEventTypes) {
+      const options = eventName === "keydown" ? undefined : { passive: true };
+      window.addEventListener(eventName, onFirstUnlockGesture, options);
     }
 
     canvas.addEventListener("pointerdown", (event) => {
