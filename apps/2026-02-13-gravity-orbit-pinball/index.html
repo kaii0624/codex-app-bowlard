@@ -837,7 +837,10 @@
         const dt = Math.min((timestamp - game.lastTimestamp) / 1000, 0.034);
         game.lastTimestamp = timestamp;
 
-        updateSources(dt);
+        // Keep the stage static while idle; run celestial motion only during an active shot.
+        if (game.shot.active) {
+          updateSources(dt);
+        }
         updateShot(dt);
         updateHud();
         draw();
