@@ -2,242 +2,503 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>App Advent Hub</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>App Advent Record</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Sora:wght@200;300;400;500;600&family=IBM+Plex+Mono:wght@300;400&display=swap"
+    rel="stylesheet"
+  />
   <style>
     :root {
-      --bg: #0a1a2f;
-      --bg-soft: #10233d;
-      --card: #122b4c;
-      --ink: #f3f7ff;
-      --muted: #9db0cc;
-      --line: #2d4a73;
-      --accent: #ffcb45;
-      --accent-strong: #ff9f1c;
-      --today: #38d39f;
-      --shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
+      --bg-1: #f0f4ff;
+      --bg-2: #faf0ff;
+      --bg-3: #f0faff;
+      --bg-4: #fff5f8;
+      --bg-5: #f4f0ff;
+      --text-strong: rgba(0, 0, 0, 0.8);
+      --text-main: rgba(0, 0, 0, 0.6);
+      --text-sub: rgba(0, 0, 0, 0.4);
+      --text-date: rgba(0, 0, 0, 0.22);
+      --text-faint: rgba(0, 0, 0, 0.12);
+      --card-bg: rgba(255, 255, 255, 0.35);
+      --card-bg-active: rgba(255, 255, 255, 0.6);
+      --card-line: rgba(255, 255, 255, 0.5);
+      --card-line-active: rgba(255, 255, 255, 0.75);
+      --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
 
+    html,
     body {
       margin: 0;
-      min-height: 100vh;
-      color: var(--ink);
-      font-family: "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+      min-height: 100%;
+    }
+
+    body {
+      font-family: "Sora", "Hiragino Sans", "Yu Gothic", sans-serif;
+      color: var(--text-main);
+      background: linear-gradient(165deg, var(--bg-1) 0%, var(--bg-2) 25%, var(--bg-3) 50%, var(--bg-4) 75%, var(--bg-5) 100%);
+      overflow-x: hidden;
+    }
+
+    .bg-layer {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .aurora {
       background:
-        radial-gradient(90rem 70rem at 80% -10%, #244f83 0%, transparent 55%),
-        radial-gradient(65rem 45rem at -10% 90%, #17395f 0%, transparent 60%),
-        var(--bg);
+        radial-gradient(ellipse 90% 50% at 15% 5%, rgba(160, 200, 255, 0.3), transparent 55%),
+        radial-gradient(ellipse 70% 60% at 85% 20%, rgba(220, 170, 255, 0.2), transparent 50%),
+        radial-gradient(ellipse 80% 40% at 50% 95%, rgba(170, 230, 220, 0.18), transparent 50%),
+        radial-gradient(ellipse 50% 50% at 70% 60%, rgba(255, 190, 210, 0.12), transparent 50%);
+      z-index: 0;
     }
 
-    .wrap {
-      max-width: 980px;
+    .shimmer {
+      filter: blur(46px);
+      opacity: 0.72;
+      transform-origin: center;
+      z-index: 1;
+      animation: shimmer 18s ease-in-out infinite;
+    }
+
+    .shimmer-1 {
+      width: 600px;
+      height: 200px;
+      top: -60px;
+      left: -100px;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(180, 210, 255, 0.15) 36%,
+        rgba(220, 180, 255, 0.1) 64%,
+        transparent 100%
+      );
+    }
+
+    .shimmer-2 {
+      width: 500px;
+      height: 180px;
+      top: auto;
+      bottom: 10%;
+      left: auto;
+      right: -80px;
+      filter: blur(50px);
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(180, 240, 220, 0.12) 36%,
+        rgba(255, 190, 220, 0.08) 64%,
+        transparent 100%
+      );
+      animation-duration: 22s;
+      animation-delay: -8s;
+    }
+
+    .noise {
+      z-index: 2;
+      opacity: 0.02;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256' viewBox='0 0 256 256'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 256px 256px;
+      background-repeat: repeat;
+    }
+
+    .shell {
+      position: relative;
+      z-index: 3;
+      width: min(100%, 420px);
       margin: 0 auto;
-      padding: 28px 20px 36px;
+      padding: 44px 16px 60px;
     }
 
-    .hero {
-      background: linear-gradient(145deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.01));
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 22px;
-      padding: 24px;
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(5px);
+    .top {
+      margin-bottom: 16px;
     }
 
-    .hero h1 {
-      margin: 0;
-      font-size: clamp(1.4rem, 3.8vw, 2rem);
-      letter-spacing: 0.02em;
-    }
-
-    .hero p {
-      margin: 12px 0 0;
-      color: var(--muted);
-      line-height: 1.65;
-      font-size: 0.98rem;
-    }
-
-    .calendar {
-      margin-top: 18px;
-      background: var(--bg-soft);
-      border: 1px solid var(--line);
-      border-radius: 22px;
-      padding: 18px;
-      box-shadow: var(--shadow);
-    }
-
-    .calendar-head {
-      display: flex;
+    .pill {
+      position: relative;
+      width: fit-content;
+      padding: 8px 22px;
+      border-radius: 40px;
+      border: 1px solid rgba(255, 255, 255, 0.7);
+      background: rgba(255, 255, 255, 0.55);
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      box-shadow: 0 2px 16px rgba(0, 0, 0, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      color: rgba(0, 0, 0, 0.46);
+      display: inline-flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 12px;
+      gap: 8px;
+      text-transform: uppercase;
+      overflow: hidden;
+      isolation: isolate;
     }
 
-    .calendar-title {
+    .pill::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 40px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.4), transparent 60%);
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .pill-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(100, 170, 255, 0.6), rgba(200, 140, 255, 0.5));
+      box-shadow: 0 0 8px rgba(120, 170, 255, 0.3);
+      flex: 0 0 auto;
+    }
+
+    h1 {
+      margin: 14px 0 8px;
+      font-size: 26px;
+      line-height: 1.2;
+      letter-spacing: -0.5px;
+      font-weight: 200;
+      color: rgba(0, 0, 0, 0.65);
+    }
+
+    h1 strong {
+      font-weight: 600;
+      color: var(--text-strong);
+    }
+
+    .counter {
       margin: 0;
-      font-size: 1.12rem;
-      letter-spacing: 0.01em;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 11px;
+      font-weight: 300;
+      letter-spacing: 1px;
+      color: rgba(0, 0, 0, 0.2);
+      text-transform: uppercase;
     }
 
-    .btns {
-      display: flex;
-      gap: 8px;
-    }
-
-    button {
-      border: 1px solid var(--line);
-      color: var(--ink);
-      background: #173458;
-      border-radius: 10px;
-      padding: 7px 11px;
-      cursor: pointer;
-      font-size: 0.9rem;
-    }
-
-    button:hover { background: #1b3f6a; }
-
-    .list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .day-row {
+    .cards {
       display: grid;
-      grid-template-columns: 130px 1fr;
-      gap: 10px;
-      align-items: center;
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 10px;
-      transition: transform 0.14s ease, box-shadow 0.14s ease;
-    }
-
-    .day-row:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
-    }
-
-    .day-row.today {
-      border-color: var(--today);
-      box-shadow: 0 0 0 1px rgba(56, 211, 159, 0.38) inset;
-      background: linear-gradient(145deg, rgba(56, 211, 159, 0.18), rgba(255, 203, 69, 0.1)), var(--card);
-    }
-
-    .day-meta {
-      display: flex;
-      flex-direction: column;
       gap: 5px;
     }
 
-    .date-main {
-      font-size: 1rem;
-      font-weight: 700;
-      line-height: 1.1;
+    .card {
+      position: relative;
+      border-radius: 20px;
+      border: 1px solid var(--card-line);
+      background: var(--card-bg);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
+      overflow: hidden;
+      transition:
+        background 0.35s var(--ease-spring),
+        border-color 0.35s var(--ease-spring),
+        box-shadow 0.35s var(--ease-spring),
+        opacity 0.35s var(--ease-spring);
+      opacity: 0;
+      transform: translateY(10px);
+      animation: fadeIn 0.5s var(--ease-spring) forwards;
     }
 
-    .date-sub {
-      font-size: 0.8rem;
-      color: var(--muted);
+    .card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 10%;
+      right: 10%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.95), transparent);
+      opacity: 0.5;
+      transition: opacity 0.35s var(--ease-spring);
     }
 
-    .badge {
-      display: inline-block;
-      width: fit-content;
-      padding: 3px 7px;
-      border-radius: 999px;
-      font-size: 0.7rem;
-      font-weight: 700;
-      background: rgba(56, 211, 159, 0.18);
-      color: #8ce9c9;
-      border: 1px solid rgba(56, 211, 159, 0.5);
+    .card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 20px;
+      background: linear-gradient(160deg, rgba(255, 255, 255, 0.35) 0%, transparent 45%);
+      pointer-events: none;
     }
 
-    .day-actions {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
+    .card.active {
+      background: var(--card-bg-active);
+      border-color: var(--card-line-active);
+      box-shadow:
+        0 10px 40px rgba(0, 0, 0, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.95),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.02);
+    }
+
+    .card.active::before {
+      opacity: 1;
+    }
+
+    .card.locked {
+      opacity: 0.35;
+      cursor: default;
+    }
+
+    .card-head {
+      width: 100%;
+      border: 0;
+      background: transparent;
+      text-align: left;
+      color: inherit;
+      display: grid;
+      grid-template-columns: 72px 1fr auto;
       align-items: center;
+      gap: 14px;
+      padding: 14px 14px;
+      cursor: pointer;
+      font: inherit;
     }
 
-    .entry-link {
+    .card.locked .card-head {
+      cursor: default;
+    }
+
+    .date {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 11px;
+      font-weight: 300;
+      color: var(--text-date);
+      min-width: 72px;
+      letter-spacing: 0.5px;
+    }
+
+    .title {
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--text-main);
+      line-height: 1.35;
+    }
+
+    .card.locked .title {
+      color: var(--text-faint);
+    }
+
+    .indicator {
+      width: 12px;
+      height: 2px;
+      border-radius: 2px;
+      background: linear-gradient(90deg, rgba(100, 170, 255, 0.35), rgba(200, 140, 255, 0.25));
+      transition: width 0.35s var(--ease-spring), background 0.35s var(--ease-spring);
+    }
+
+    .card.active .indicator {
+      width: 18px;
+      background: linear-gradient(90deg, rgba(100, 170, 255, 0.6), rgba(200, 140, 255, 0.5));
+    }
+
+    .card.locked .indicator {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .expand {
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+      transition:
+        max-height 0.5s var(--ease-spring),
+        opacity 0.5s var(--ease-spring),
+        padding 0.5s var(--ease-spring);
+      padding: 0 14px 0 14px;
+    }
+
+    .card.active .expand {
+      opacity: 1;
+      padding: 0 14px 14px;
+    }
+
+    .desc {
+      margin: 0;
+      padding-left: 86px;
+      font-size: 12px;
+      line-height: 1.6;
+      color: rgba(0, 0, 0, 0.3);
+      word-break: break-word;
+    }
+
+    .actions {
+      margin-top: 9px;
+      padding-left: 86px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .action-btn {
+      position: relative;
       display: inline-flex;
       align-items: center;
-      justify-content: center;
-      min-height: 36px;
-      max-width: 100%;
-      background: linear-gradient(120deg, var(--accent), var(--accent-strong));
-      color: #212121;
+      gap: 8px;
+      padding: 9px 20px;
+      border-radius: 14px;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.3px;
       text-decoration: none;
-      border-radius: 999px;
-      font-weight: 700;
-      text-align: center;
-      padding: 8px 12px;
-      font-size: 0.86rem;
-      line-height: 1.2;
-      white-space: nowrap;
+      border: 1px solid transparent;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      transition:
+        transform 0.3s var(--ease-spring),
+        box-shadow 0.3s var(--ease-spring),
+        background 0.3s var(--ease-spring);
+      overflow: hidden;
+      isolation: isolate;
     }
 
-    .entry-link:hover { filter: brightness(1.04); }
-
-    .empty {
-      color: var(--muted);
-      font-size: 0.82rem;
+    .action-btn::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), transparent 60%);
+      pointer-events: none;
+      z-index: -1;
     }
 
-    .hint {
-      margin-top: 12px;
-      color: var(--muted);
-      font-size: 0.9rem;
-      line-height: 1.6;
+    .action-btn svg {
+      width: 14px;
+      height: 14px;
+      stroke: currentColor;
+      stroke-width: 1.5;
+      fill: none;
+      flex: 0 0 auto;
     }
 
-    @media (max-width: 760px) {
-      .calendar { padding: 14px; }
-      .calendar-head { flex-direction: column; align-items: stretch; }
-      .btns { justify-content: space-between; }
-      button { flex: 1; }
-      .day-row {
-        grid-template-columns: 1fr;
-        gap: 8px;
+    .action-btn:focus-visible {
+      outline: 2px solid rgba(110, 170, 255, 0.35);
+      outline-offset: 2px;
+    }
+
+    .app-btn {
+      background: linear-gradient(135deg, rgba(100, 170, 255, 0.15), rgba(160, 130, 255, 0.1));
+      border-color: rgba(100, 170, 255, 0.25);
+      color: rgba(60, 120, 220, 0.85);
+      box-shadow: 0 2px 10px rgba(100, 170, 255, 0.08);
+    }
+
+    .app-btn:hover {
+      transform: translateY(-1px);
+      background: linear-gradient(135deg, rgba(100, 170, 255, 0.25), rgba(160, 130, 255, 0.15));
+      box-shadow: 0 6px 24px rgba(100, 170, 255, 0.15);
+    }
+
+    .article-btn {
+      background: rgba(255, 255, 255, 0.5);
+      border-color: rgba(0, 0, 0, 0.05);
+      color: rgba(0, 0, 0, 0.4);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+    }
+
+    .article-btn:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 255, 255, 0.7);
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.05);
+    }
+
+    .action-btn[aria-disabled="true"] {
+      pointer-events: none;
+      opacity: 0.48;
+    }
+
+    .progress {
+      margin-top: 18px;
+    }
+
+    .progress-head {
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 10px;
+      font-weight: 300;
+      letter-spacing: 0.8px;
+      color: var(--text-faint);
+      text-transform: lowercase;
+    }
+
+    .progress-track {
+      height: 2px;
+      background: rgba(0, 0, 0, 0.04);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      width: 0;
+      height: 100%;
+      border-radius: 2px;
+      background: linear-gradient(
+        90deg,
+        rgba(100, 170, 255, 0.35),
+        rgba(200, 140, 255, 0.3),
+        rgba(160, 220, 200, 0.25)
+      );
+      transition: width 1s var(--ease-spring);
+    }
+
+    @keyframes fadeIn {
+      to {
+        opacity: 1;
+        transform: translateY(0);
       }
-      .entry-link {
-        font-size: 0.8rem;
-        padding: 7px 10px;
+    }
+
+    @keyframes shimmer {
+      0%,
+      100% {
+        transform: translateX(0) rotate(0deg);
+        opacity: 0.6;
+      }
+
+      50% {
+        transform: translateX(60px) rotate(3deg);
+        opacity: 1;
       }
     }
   </style>
 </head>
 <body>
-  <main class="wrap">
-    <section class="hero">
-      <h1>App Advent Hub</h1>
-      <p>
-        毎日つくるアプリを、日付ごとに並べるハブページです。<br>
-        カレンダーではなく1日1行で表示し、同じ日に複数アプリがあればボタンを並べます。
-      </p>
-    </section>
+  <div class="bg-layer aurora" aria-hidden="true"></div>
+  <div class="bg-layer shimmer shimmer-1" aria-hidden="true"></div>
+  <div class="bg-layer shimmer shimmer-2" aria-hidden="true"></div>
+  <div class="bg-layer noise" aria-hidden="true"></div>
 
-    <section class="calendar" aria-label="日別アプリ一覧">
-      <div class="calendar-head">
-        <h2 class="calendar-title" id="calendarTitle"></h2>
-        <div class="btns">
-          <button type="button" id="prevMonth">前の月</button>
-          <button type="button" id="goToday">今日</button>
-          <button type="button" id="nextMonth">次の月</button>
-        </div>
+  <main class="shell">
+    <header class="top">
+      <div class="pill">
+        <span class="pill-dot" aria-hidden="true"></span>
+        <span id="monthBadge">-</span>
       </div>
+      <h1><strong>App Advent</strong> Record</h1>
+      <p class="counter" id="counter">00 / 00 unlocked</p>
+    </header>
 
-      <div class="list" id="dayList"></div>
+    <section class="cards" id="cardList" aria-label="日別アプリ記録"></section>
 
-      <p class="hint">
-        追加方法: <code>entries</code> に <code>date</code> が同じデータを複数追加すると、同じ日の行にボタンが増えます。
-      </p>
-    </section>
+    <footer class="progress" aria-label="進捗">
+      <div class="progress-head">
+        <span>progress</span>
+        <span id="progressLabel">0%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+    </footer>
   </main>
 
   <script>
@@ -271,126 +532,204 @@
       }
     ];
 
-    const monthLabel = document.getElementById("calendarTitle");
-    const dayList = document.getElementById("dayList");
-    const prevBtn = document.getElementById("prevMonth");
-    const nextBtn = document.getElementById("nextMonth");
-    const todayBtn = document.getElementById("goToday");
+    const cardList = document.getElementById("cardList");
+    const monthBadge = document.getElementById("monthBadge");
+    const counter = document.getElementById("counter");
+    const progressLabel = document.getElementById("progressLabel");
+    const progressFill = document.getElementById("progressFill");
 
-    let viewYear = today.getFullYear();
-    let viewMonth = today.getMonth();
-
-    const weekNames = ["日", "月", "火", "水", "木", "金", "土"];
-
-    const groupedEntries = entries.reduce((map, entry) => {
-      const bucket = map.get(entry.date) ?? [];
-      bucket.push(entry);
-      map.set(entry.date, bucket);
-      return map;
-    }, new Map());
+    const monthNames = [
+      "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"
+    ];
 
     function pad2(value) {
       return String(value).padStart(2, "0");
     }
 
-    function dateKey(year, monthIndex, day) {
-      return `${year}-${pad2(monthIndex + 1)}-${pad2(day)}`;
+    function dateKey(year, month, day) {
+      return `${year}-${pad2(month + 1)}-${pad2(day)}`;
     }
 
-    function renderList(year, monthIndex) {
-      dayList.innerHTML = "";
-      monthLabel.textContent = `${year}年 ${monthIndex + 1}月`;
+    function appIcon() {
+      return `
+        <svg viewBox="0 0 16 16" aria-hidden="true">
+          <rect x="2" y="2" width="12" height="12" rx="3"></rect>
+          <path d="M8 4.8v5.2"></path>
+          <path d="M5.8 8.4L8 10.7l2.2-2.3"></path>
+        </svg>
+      `;
+    }
 
-      const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+    function articleIcon() {
+      return `
+        <svg viewBox="0 0 16 16" aria-hidden="true">
+          <rect x="2" y="2" width="12" height="12" rx="3"></rect>
+          <path d="M5 6h6"></path>
+          <path d="M5 9h6"></path>
+        </svg>
+      `;
+    }
 
-      for (let day = 1; day <= daysInMonth; day += 1) {
-        const key = dateKey(year, monthIndex, day);
-        const dayEntries = groupedEntries.get(key) ?? [];
-        const weekDay = new Date(year, monthIndex, day).getDay();
+    function closeCard(card) {
+      const expand = card.querySelector(".expand");
+      if (!expand) {
+        return;
+      }
+      card.classList.remove("active");
+      expand.style.maxHeight = "0px";
+    }
 
-        const row = document.createElement("article");
-        row.className = "day-row";
+    function openCard(card) {
+      const expand = card.querySelector(".expand");
+      if (!expand) {
+        return;
+      }
+      card.classList.add("active");
+      expand.style.maxHeight = `${expand.scrollHeight}px`;
+    }
 
-        const isToday =
-          year === today.getFullYear() &&
-          monthIndex === today.getMonth() &&
-          day === today.getDate();
+    function buildCard(key, dayEntries, index) {
+      const card = document.createElement("article");
+      card.className = "card";
+      card.style.animationDelay = `${index * 50}ms`;
 
-        if (isToday) {
-          row.classList.add("today");
-        }
+      const unlocked = dayEntries.length > 0;
+      if (!unlocked) {
+        card.classList.add("locked");
+      }
 
-        const meta = document.createElement("div");
-        meta.className = "day-meta";
+      const head = document.createElement("button");
+      head.type = "button";
+      head.className = "card-head";
 
-        const main = document.createElement("div");
-        main.className = "date-main";
-        main.textContent = `${pad2(monthIndex + 1)}/${pad2(day)}`;
-        meta.appendChild(main);
+      const date = document.createElement("span");
+      date.className = "date";
+      date.textContent = key;
 
-        const sub = document.createElement("div");
-        sub.className = "date-sub";
-        sub.textContent = `${key} (${weekNames[weekDay]})`;
-        meta.appendChild(sub);
+      const title = document.createElement("span");
+      title.className = "title";
+      if (unlocked && dayEntries.length === 1) {
+        title.textContent = dayEntries[0].title;
+      } else if (unlocked) {
+        title.textContent = `${dayEntries.length} apps available`;
+      } else {
+        title.textContent = "locked";
+      }
 
-        if (isToday) {
-          const badge = document.createElement("span");
-          badge.className = "badge";
-          badge.textContent = "TODAY";
-          meta.appendChild(badge);
-        }
+      const indicator = document.createElement("span");
+      indicator.className = "indicator";
 
-        row.appendChild(meta);
+      head.append(date, title, indicator);
+      card.appendChild(head);
+
+      if (unlocked) {
+        const expand = document.createElement("div");
+        expand.className = "expand";
+
+        const desc = document.createElement("p");
+        desc.className = "desc";
+        const labels = dayEntries.map((entry) => entry.title);
+        desc.textContent = labels.join(" / ");
+        expand.appendChild(desc);
 
         const actions = document.createElement("div");
-        actions.className = "day-actions";
+        actions.className = "actions";
 
-        if (dayEntries.length > 0) {
-          for (const entry of dayEntries) {
-            const link = document.createElement("a");
-            link.className = "entry-link";
-            link.href = entry.href;
-            link.textContent = entry.title;
-            link.setAttribute("aria-label", `${key} ${entry.title} を開く`);
-            actions.appendChild(link);
-          }
+        dayEntries.forEach((entry, entryIndex) => {
+          const appBtn = document.createElement("a");
+          appBtn.className = "action-btn app-btn";
+          appBtn.href = entry.href;
+          appBtn.innerHTML = `${appIcon()}<span>${entryIndex === 0 ? "App" : `App ${entryIndex + 1}`}</span>`;
+          appBtn.addEventListener("click", (event) => {
+            event.stopPropagation();
+          });
+          actions.appendChild(appBtn);
+        });
+
+        const articleBtn = document.createElement(dayEntries[0].articleHref ? "a" : "button");
+        articleBtn.className = "action-btn article-btn";
+        articleBtn.innerHTML = `${articleIcon()}<span>記事</span>`;
+
+        if (dayEntries[0].articleHref) {
+          articleBtn.href = dayEntries[0].articleHref;
+          articleBtn.addEventListener("click", (event) => {
+            event.stopPropagation();
+          });
         } else {
-          const empty = document.createElement("span");
-          empty.className = "empty";
-          empty.textContent = "未公開";
-          actions.appendChild(empty);
+          articleBtn.type = "button";
+          articleBtn.setAttribute("aria-disabled", "true");
         }
 
-        row.appendChild(actions);
-        dayList.appendChild(row);
+        actions.appendChild(articleBtn);
+        expand.appendChild(actions);
+        card.appendChild(expand);
+
+        head.addEventListener("click", () => {
+          const active = card.classList.contains("active");
+          const opened = cardList.querySelectorAll(".card.active");
+          opened.forEach((openedCard) => {
+            if (openedCard !== card) {
+              closeCard(openedCard);
+            }
+          });
+
+          if (active) {
+            closeCard(card);
+          } else {
+            openCard(card);
+          }
+        });
+      } else {
+        head.disabled = true;
+      }
+
+      return card;
+    }
+
+    function renderMonth(year, month) {
+      cardList.innerHTML = "";
+
+      const grouped = entries.reduce((map, entry) => {
+        const bucket = map.get(entry.date) ?? [];
+        bucket.push(entry);
+        map.set(entry.date, bucket);
+        return map;
+      }, new Map());
+
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      let unlocked = 0;
+      let firstOpenCard = null;
+
+      for (let day = 1; day <= daysInMonth; day += 1) {
+        const key = dateKey(year, month, day);
+        const dayEntries = grouped.get(key) ?? [];
+        if (dayEntries.length > 0) {
+          unlocked += 1;
+        }
+
+        const card = buildCard(key, dayEntries, day - 1);
+        cardList.appendChild(card);
+
+        if (!firstOpenCard && dayEntries.length > 0 && day <= today.getDate()) {
+          firstOpenCard = card;
+        }
+      }
+
+      monthBadge.textContent = `${monthNames[month]} ${year}`;
+      counter.textContent = `${pad2(unlocked)} / ${pad2(daysInMonth)} unlocked`;
+
+      const progress = Math.round((unlocked / daysInMonth) * 100);
+      progressLabel.textContent = `${progress}%`;
+      progressFill.style.width = `${progress}%`;
+
+      if (firstOpenCard) {
+        requestAnimationFrame(() => {
+          openCard(firstOpenCard);
+        });
       }
     }
 
-    prevBtn.addEventListener("click", () => {
-      viewMonth -= 1;
-      if (viewMonth < 0) {
-        viewMonth = 11;
-        viewYear -= 1;
-      }
-      renderList(viewYear, viewMonth);
-    });
-
-    nextBtn.addEventListener("click", () => {
-      viewMonth += 1;
-      if (viewMonth > 11) {
-        viewMonth = 0;
-        viewYear += 1;
-      }
-      renderList(viewYear, viewMonth);
-    });
-
-    todayBtn.addEventListener("click", () => {
-      viewYear = today.getFullYear();
-      viewMonth = today.getMonth();
-      renderList(viewYear, viewMonth);
-    });
-
-    renderList(viewYear, viewMonth);
+    renderMonth(today.getFullYear(), today.getMonth());
   </script>
 </body>
 </html>
