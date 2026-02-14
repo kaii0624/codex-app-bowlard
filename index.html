@@ -334,6 +334,11 @@
     .actions {
       margin-top: 9px;
       padding-left: 86px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .entry-actions {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
@@ -507,23 +512,14 @@
     const entries = [
       {
         date: "2026-02-12",
+        title: "Bowlard",
+        href: "./apps/bowlard/",
+        articleHref: "./articles/2026-02-12-bowlard/"
+      },
+      {
+        date: "2026-02-12",
         title: "Brick Blast",
         href: "./apps/2026-02-12-brick-blast/"
-      },
-      {
-        date: "2026-02-12",
-        title: "ねんねトリオ 90日スケジューラー",
-        href: "./apps/2026-02-12-baby-care-3line-scheduler/"
-      },
-      {
-        date: "2026-02-12",
-        title: "Bowlard",
-        href: "./apps/bowlard/"
-      },
-      {
-        date: "2026-02-12",
-        title: "動物タワーバトル",
-        href: "./apps/2026-02-12-animal-tower-battle/"
       },
       {
         date: "2026-02-13",
@@ -635,32 +631,37 @@
         const actions = document.createElement("div");
         actions.className = "actions";
 
-        dayEntries.forEach((entry, entryIndex) => {
+        dayEntries.forEach((entry) => {
+          const entryActions = document.createElement("div");
+          entryActions.className = "entry-actions";
+
           const appBtn = document.createElement("a");
           appBtn.className = "action-btn app-btn";
           appBtn.href = entry.href;
-          appBtn.innerHTML = `${appIcon()}<span>${entryIndex === 0 ? "App" : `App ${entryIndex + 1}`}</span>`;
+          const appLabel = dayEntries.length === 1 ? "App" : entry.title;
+          appBtn.innerHTML = `${appIcon()}<span>${appLabel}</span>`;
           appBtn.addEventListener("click", (event) => {
             event.stopPropagation();
           });
-          actions.appendChild(appBtn);
+
+          const articleBtn = document.createElement(entry.articleHref ? "a" : "button");
+          articleBtn.className = "action-btn article-btn";
+          articleBtn.innerHTML = `${articleIcon()}<span>記事</span>`;
+
+          if (entry.articleHref) {
+            articleBtn.href = entry.articleHref;
+            articleBtn.addEventListener("click", (event) => {
+              event.stopPropagation();
+            });
+          } else {
+            articleBtn.type = "button";
+            articleBtn.setAttribute("aria-disabled", "true");
+          }
+
+          entryActions.append(appBtn, articleBtn);
+          actions.appendChild(entryActions);
         });
 
-        const articleBtn = document.createElement(dayEntries[0].articleHref ? "a" : "button");
-        articleBtn.className = "action-btn article-btn";
-        articleBtn.innerHTML = `${articleIcon()}<span>記事</span>`;
-
-        if (dayEntries[0].articleHref) {
-          articleBtn.href = dayEntries[0].articleHref;
-          articleBtn.addEventListener("click", (event) => {
-            event.stopPropagation();
-          });
-        } else {
-          articleBtn.type = "button";
-          articleBtn.setAttribute("aria-disabled", "true");
-        }
-
-        actions.appendChild(articleBtn);
         expand.appendChild(actions);
         card.appendChild(expand);
 
