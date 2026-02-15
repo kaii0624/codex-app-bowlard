@@ -177,14 +177,12 @@
       color: var(--text-strong);
     }
 
-    .counter {
-      margin: 0;
-      font-family: "IBM Plex Mono", monospace;
-      font-size: 11px;
-      font-weight: 300;
-      letter-spacing: 1px;
-      color: rgba(0, 0, 0, 0.2);
-      text-transform: uppercase;
+    .subtitle {
+      margin: 8px 0 0;
+      font-size: 12px;
+      line-height: 1.65;
+      color: rgba(0, 0, 0, 0.34);
+      letter-spacing: 0.01em;
     }
 
     .cards {
@@ -421,42 +419,6 @@
       opacity: 0.48;
     }
 
-    .progress {
-      margin-top: 18px;
-    }
-
-    .progress-head {
-      margin-bottom: 8px;
-      display: flex;
-      justify-content: space-between;
-      font-family: "IBM Plex Mono", monospace;
-      font-size: 10px;
-      font-weight: 300;
-      letter-spacing: 0.8px;
-      color: var(--text-faint);
-      text-transform: lowercase;
-    }
-
-    .progress-track {
-      height: 2px;
-      background: rgba(0, 0, 0, 0.04);
-      border-radius: 2px;
-      overflow: hidden;
-    }
-
-    .progress-fill {
-      width: 0;
-      height: 100%;
-      border-radius: 2px;
-      background: linear-gradient(
-        90deg,
-        rgba(100, 170, 255, 0.35),
-        rgba(200, 140, 255, 0.3),
-        rgba(160, 220, 200, 0.25)
-      );
-      transition: width 1s var(--ease-spring);
-    }
-
     @keyframes fadeIn {
       to {
         opacity: 1;
@@ -491,20 +453,10 @@
         <span id="monthBadge">-</span>
       </div>
       <h1><strong>App Advent</strong> Record</h1>
-      <p class="counter" id="counter">00 / 00 unlocked</p>
+      <p class="subtitle">エディターなしで音声入力だけで作るアプリ開発記録</p>
     </header>
 
     <section class="cards" id="cardList" aria-label="日別アプリ記録"></section>
-
-    <footer class="progress" aria-label="進捗">
-      <div class="progress-head">
-        <span>progress</span>
-        <span id="progressLabel">0%</span>
-      </div>
-      <div class="progress-track">
-        <div class="progress-fill" id="progressFill"></div>
-      </div>
-    </footer>
   </main>
 
   <script>
@@ -531,9 +483,6 @@
 
     const cardList = document.getElementById("cardList");
     const monthBadge = document.getElementById("monthBadge");
-    const counter = document.getElementById("counter");
-    const progressLabel = document.getElementById("progressLabel");
-    const progressFill = document.getElementById("progressFill");
 
     const monthNames = [
       "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"
@@ -677,8 +626,6 @@
         .filter((entry) => entry.date.startsWith(monthPrefix))
         .sort((a, b) => a.date.localeCompare(b.date) || a._index - b._index);
 
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
-      const unlocked = visibleEntries.length;
       let firstOpenCard = null;
       const currentMonthView = year === today.getFullYear() && month === today.getMonth();
 
@@ -693,11 +640,6 @@
       });
 
       monthBadge.textContent = `${monthNames[month]} ${year}`;
-      counter.textContent = `${pad2(unlocked)} / ${pad2(daysInMonth)} unlocked`;
-
-      const progress = daysInMonth > 0 ? Math.round((unlocked / daysInMonth) * 100) : 0;
-      progressLabel.textContent = `${progress}%`;
-      progressFill.style.width = `${progress}%`;
 
       if (!firstOpenCard && cardList.firstElementChild) {
         firstOpenCard = cardList.firstElementChild;
