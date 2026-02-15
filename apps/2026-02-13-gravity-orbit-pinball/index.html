@@ -377,41 +377,6 @@
         }, delay);
       }
 
-      function resolveCircleCollision(target, obstacle, rebound = 0.92) {
-        const dx = target.x - obstacle.x;
-        const dy = target.y - obstacle.y;
-        const minDist = target.r + obstacle.r;
-        const distSq = dx * dx + dy * dy;
-
-        if (distSq >= minDist * minDist) {
-          return false;
-        }
-
-        const dist = Math.sqrt(distSq) || 0.0001;
-        const nx = dx / dist;
-        const ny = dy / dist;
-        const overlap = minDist - dist;
-
-        target.x += nx * overlap;
-        target.y += ny * overlap;
-
-        const rvx = target.vx - (obstacle.vx || 0);
-        const rvy = target.vy - (obstacle.vy || 0);
-        const approach = rvx * nx + rvy * ny;
-
-        if (approach < 0) {
-          target.vx -= (1 + rebound) * approach * nx;
-          target.vy -= (1 + rebound) * approach * ny;
-
-          if (obstacle.vx !== undefined) {
-            obstacle.vx += approach * nx * 0.035;
-            obstacle.vy += approach * ny * 0.035;
-          }
-        }
-
-        return true;
-      }
-
       function updateShot(dt) {
         const p = game.shot;
         if (!p.active) {
@@ -455,24 +420,14 @@
         p.x += p.vx * step;
         p.y += p.vy * step;
 
-        // Wrap around edges to mimic an endless space without solid walls.
-        if (p.x < -p.r) {
-          p.x = game.width + p.r;
-        } else if (p.x > game.width + p.r) {
-          p.x = -p.r;
-        }
-
-        if (p.y < -p.r) {
-          p.y = game.height + p.r;
-        } else if (p.y > game.height + p.r) {
-          p.y = -p.r;
-        }
-
-        let hitCore = false;
+        let hitPlanet = false;
         for (const s of game.sources) {
-          const didHit = resolveCircleCollision(p, s, 0.98);
-          if (didHit && s.mass > 1700) {
-            hitCore = true;
+          const dx = s.x - p.x;
+          const dy = s.y - p.y;
+          const hitDist = p.r + s.r * 0.96;
+          if (dx * dx + dy * dy < hitDist * hitDist) {
+            hitPlanet = true;
+            break;
           }
         }
 
@@ -490,10 +445,24 @@
           return;
         }
 
-        if (hitCore && speed > 170) {
+        if (hitPlanet) {
           p.active = false;
-          setState("BURNED", "bad");
+          setState("CAPTURED", "bad");
           scheduleReset(680, "PULL & RELEASE");
+          return;
+        }
+
+        const margin = p.r * 2;
+        const outOfBounds =
+          p.x < -margin ||
+          p.x > game.width + margin ||
+          p.y < -margin ||
+          p.y > game.height + margin;
+
+        if (outOfBounds) {
+          p.active = false;
+          setState("LOST", "bad");
+          scheduleReset(620, "PULL & RELEASE");
           return;
         }
 
