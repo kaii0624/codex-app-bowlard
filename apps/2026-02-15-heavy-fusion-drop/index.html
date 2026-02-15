@@ -1,0 +1,1027 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Heavy Fusion Drop</title>
+  <style>
+    :root {
+      --bg: #06090f;
+      --panel: rgba(12, 18, 28, 0.9);
+      --line: rgba(125, 152, 188, 0.32);
+      --text: #edf2ff;
+      --muted: #9ba9c2;
+      --accent: #f6b455;
+      --accent2: #54c6ff;
+      --warn: #ff6a5f;
+      --good: #66df9f;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      background:
+        radial-gradient(110vw 64vh at 50% -20%, rgba(111, 168, 255, 0.24), transparent 60%),
+        radial-gradient(90vw 52vh at 80% 100%, rgba(236, 127, 73, 0.17), transparent 68%),
+        linear-gradient(180deg, #080d16 0%, #070a12 58%, #06090f 100%);
+    }
+
+    .app {
+      width: min(100vw, 430px);
+      height: 100dvh;
+      padding: calc(env(safe-area-inset-top) + 8px) 8px calc(env(safe-area-inset-bottom) + 8px);
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      gap: 8px;
+      overflow: hidden;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 14px;
+      box-shadow: 0 12px 22px rgba(0, 0, 0, 0.34);
+      overflow: hidden;
+    }
+
+    .hud {
+      padding: 8px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .cell {
+      min-height: 48px;
+      border-radius: 10px;
+      border: 1px solid rgba(145, 164, 193, 0.2);
+      background: rgba(255, 255, 255, 0.03);
+      display: grid;
+      place-content: center;
+      text-align: center;
+      gap: 2px;
+    }
+
+    .k {
+      font-size: 0.56rem;
+      letter-spacing: 0.08em;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .v {
+      font-size: 0.96rem;
+      line-height: 1;
+      font-weight: 800;
+    }
+
+    .controls {
+      padding: 8px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .btn {
+      min-height: 42px;
+      border: 0;
+      border-radius: 11px;
+      color: #142033;
+      font-weight: 800;
+      font-size: 0.8rem;
+      letter-spacing: 0.05em;
+      background: linear-gradient(132deg, #ffd880, #f5a34f);
+      cursor: pointer;
+    }
+
+    .btn.secondary {
+      color: #e5f0ff;
+      background: linear-gradient(132deg, #3867b5, #2d88c4);
+    }
+
+    .btn:active {
+      transform: scale(0.985);
+    }
+
+    .stage {
+      position: relative;
+      border-radius: 16px;
+      border: 1px solid rgba(145, 164, 193, 0.3);
+      overflow: hidden;
+      background:
+        radial-gradient(70% 45% at 20% 10%, rgba(99, 134, 181, 0.26), transparent 70%),
+        radial-gradient(58% 34% at 85% 82%, rgba(200, 119, 66, 0.22), transparent 72%),
+        #050912;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      touch-action: none;
+      cursor: crosshair;
+    }
+
+    .next {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(143, 172, 210, 0.42);
+      background: rgba(3, 8, 16, 0.6);
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      font-size: 0.66rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      pointer-events: none;
+    }
+
+    .next b {
+      font-size: 0.76rem;
+      letter-spacing: 0;
+      color: #ffffff;
+    }
+
+    .status {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(143, 172, 210, 0.32);
+      background: rgba(3, 8, 16, 0.6);
+      font-size: 0.64rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: #dce8ff;
+      pointer-events: none;
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      display: grid;
+      place-items: center;
+      padding: 12px;
+      background: rgba(3, 5, 10, 0.78);
+      backdrop-filter: blur(3px);
+      -webkit-backdrop-filter: blur(3px);
+    }
+
+    .overlay[hidden] {
+      display: none;
+    }
+
+    .sheet {
+      width: min(100%, 360px);
+      border-radius: 14px;
+      border: 1px solid rgba(143, 172, 210, 0.4);
+      background: rgba(10, 16, 26, 0.95);
+      padding: 12px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .sheet h2 {
+      font-size: 0.74rem;
+      letter-spacing: 0.09em;
+      color: #cfddf5;
+    }
+
+    .list {
+      list-style: none;
+      display: grid;
+      gap: 6px;
+      padding: 0;
+      margin: 0;
+      font-size: 0.72rem;
+      line-height: 1.4;
+      font-weight: 700;
+    }
+
+    .list li {
+      border: 1px solid rgba(143, 172, 210, 0.22);
+      border-radius: 9px;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 7px 8px;
+    }
+
+    @media (max-width: 396px) {
+      .hud {
+        gap: 5px;
+      }
+
+      .cell {
+        min-height: 44px;
+      }
+
+      .v {
+        font-size: 0.89rem;
+      }
+
+      .btn {
+        min-height: 40px;
+        font-size: 0.76rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="hud panel" aria-label="status">
+      <div class="cell"><span class="k">SCORE</span><span class="v" id="score">0</span></div>
+      <div class="cell"><span class="k">BEST</span><span class="v" id="best">0</span></div>
+      <div class="cell"><span class="k">CHAIN</span><span class="v" id="chain">0</span></div>
+      <div class="cell"><span class="k">BURST</span><span class="v" id="burst">0%</span></div>
+    </section>
+
+    <section class="controls panel" aria-label="controls">
+      <button type="button" class="btn secondary" id="reactionsBtn">REACTIONS</button>
+      <button type="button" class="btn" id="resetBtn">RESET</button>
+    </section>
+
+    <section class="stage panel">
+      <canvas id="game" aria-label="Heavy Fusion Drop"></canvas>
+      <div class="next">NEXT <b id="nextPiece">n</b></div>
+      <div class="status" id="phase">s-PROCESS</div>
+    </section>
+  </main>
+
+  <section class="overlay" id="reactionsOverlay" hidden aria-label="reaction list">
+    <div class="sheet">
+      <h2>REACTION / PROCESS</h2>
+      <ul class="list">
+        <li>s過程: 中性子捕獲 → 不安定化 → 時間でβ崩壊(進化)</li>
+        <li>r過程: 中性子ラッシュ(10秒) → 大量不安定化 → 連鎖進化</li>
+        <li>γ過程: 高温中のγヒットで捕獲ゲージ-1</li>
+      </ul>
+      <button type="button" class="btn secondary" id="closeReactionsBtn">CLOSE</button>
+    </div>
+  </section>
+
+  <script>
+    (() => {
+      const canvas = document.getElementById("game");
+      const ctx = canvas.getContext("2d");
+      const scoreEl = document.getElementById("score");
+      const bestEl = document.getElementById("best");
+      const chainEl = document.getElementById("chain");
+      const burstEl = document.getElementById("burst");
+      const nextPieceEl = document.getElementById("nextPiece");
+      const phaseEl = document.getElementById("phase");
+      const reactionsBtn = document.getElementById("reactionsBtn");
+      const resetBtn = document.getElementById("resetBtn");
+      const reactionsOverlay = document.getElementById("reactionsOverlay");
+      const closeReactionsBtn = document.getElementById("closeReactionsBtn");
+
+      const ELEMENTS = [
+        { id: "Fe", next: 1, radius: 16, captureNeed: 2, lifeSec: 60, score: 120, color: "#8897ad", glow: "#b9c5d8" },
+        { id: "Co", next: 2, radius: 18, captureNeed: 2, lifeSec: 60, score: 160, color: "#6f86aa", glow: "#a2c1ef" },
+        { id: "Ni", next: 3, radius: 20, captureNeed: 3, lifeSec: 60, score: 220, color: "#5f98b0", glow: "#86d4f1" },
+        { id: "Cu", next: 4, radius: 22, captureNeed: 3, lifeSec: 60, score: 300, color: "#af7b54", glow: "#f3b983" },
+        { id: "Zn", next: 5, radius: 24, captureNeed: 4, lifeSec: 60, score: 380, color: "#8f9a74", glow: "#d9e1a8" },
+        { id: "Ga", next: 6, radius: 26, captureNeed: 4, lifeSec: 60, score: 470, color: "#7d7f9f", glow: "#c3bee9" },
+        { id: "Ge", next: 7, radius: 28, captureNeed: 5, lifeSec: 60, score: 560, color: "#61789f", glow: "#a5c7f6" },
+        { id: "As", next: 8, radius: 31, captureNeed: 5, lifeSec: 60, score: 680, color: "#739f8d", glow: "#a9edce" },
+        { id: "Se", next: 9, radius: 34, captureNeed: 6, lifeSec: 60, score: 820, color: "#b58a5e", glow: "#f4c591" },
+        { id: "Br", next: null, radius: 37, captureNeed: 6, lifeSec: 60, score: 0, color: "#ba6464", glow: "#ff9d9d" }
+      ];
+
+      const CONSTANTS = {
+        gravity: 1180,
+        wallBounce: 0.26,
+        floorBounce: 0.2,
+        floorDrag: 0.985,
+        pairCooldown: 0.45,
+        capturePoints: 6,
+        captureEnergy: 5,
+        unstableBonusCut: 0.95,
+        burstDuration: 10,
+        burstInterval: 54,
+        burstMultiplier: 2,
+        burstRainInterval: 0.24,
+        gammaDuration: 8,
+        gammaInterval: 43,
+        topLine: 74,
+        topDangerLimit: 1.2,
+        dropCooldown: 0.42,
+        dropCooldownBurst: 0.17
+      };
+
+      const state = {
+        width: 0,
+        height: 0,
+        dpr: 1,
+        time: 0,
+        last: performance.now(),
+        launcherX: 0,
+        balls: [],
+        idSeed: 0,
+        pairCache: new Map(),
+        score: 0,
+        best: Number(localStorage.getItem("heavy-fusion-drop-best") || 0),
+        chain: 0,
+        chainTimer: 0,
+        burstEnergy: 0,
+        burstActive: false,
+        burstLeft: 0,
+        burstRainClock: 0,
+        nextBurstAt: CONSTANTS.burstInterval,
+        gammaActive: false,
+        gammaLeft: 0,
+        nextGammaAt: CONSTANTS.gammaInterval,
+        queue: [],
+        dropLockUntil: 0,
+        danger: 0,
+        gameOver: false
+      };
+
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function scaleRadius(base) {
+        const scale = clamp(state.width / 390, 0.85, 1.25);
+        return base * scale;
+      }
+
+      function nextPiece() {
+        const roll = Math.random();
+        if (state.gammaActive && roll < 0.2) {
+          return { kind: "gamma" };
+        }
+        if (state.burstActive) {
+          if (roll < 0.88) return { kind: "neutron" };
+          return { kind: "element", elementIndex: 0 };
+        }
+        if (roll < 0.7) return { kind: "neutron" };
+        return { kind: "element", elementIndex: 0 };
+      }
+
+      function pieceLabel(piece) {
+        if (piece.kind === "neutron") return "n";
+        if (piece.kind === "gamma") return "γ";
+        return ELEMENTS[piece.elementIndex].id;
+      }
+
+      function createBallFromPiece(piece, x, y) {
+        const base = {
+          id: ++state.idSeed,
+          x,
+          y,
+          vx: 0,
+          vy: 0
+        };
+
+        if (piece.kind === "neutron") {
+          return {
+            ...base,
+            kind: "neutron",
+            r: scaleRadius(8),
+            color: "#84d8ff",
+            glow: "#ddf6ff"
+          };
+        }
+
+        if (piece.kind === "gamma") {
+          return {
+            ...base,
+            kind: "gamma",
+            r: scaleRadius(9),
+            color: "#ffd27f",
+            glow: "#fff0c7",
+            ttl: 14
+          };
+        }
+
+        const spec = ELEMENTS[piece.elementIndex];
+        return {
+          ...base,
+          kind: "element",
+          elementIndex: piece.elementIndex,
+          r: scaleRadius(spec.radius),
+          capture: 0,
+          captureNeed: spec.captureNeed,
+          unstable: false,
+          decayLeft: spec.lifeSec,
+          decayMax: spec.lifeSec
+        };
+      }
+
+      function resize() {
+        const rect = canvas.getBoundingClientRect();
+        const prevW = state.width || rect.width;
+        const prevH = state.height || rect.height;
+
+        state.width = rect.width;
+        state.height = rect.height;
+        state.dpr = window.devicePixelRatio || 1;
+
+        canvas.width = Math.round(state.width * state.dpr);
+        canvas.height = Math.round(state.height * state.dpr);
+        ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+
+        if (state.balls.length && prevW > 0 && prevH > 0) {
+          const sx = state.width / prevW;
+          const sy = state.height / prevH;
+          for (const ball of state.balls) {
+            ball.x *= sx;
+            ball.y *= sy;
+            if (ball.kind === "element") {
+              ball.r = scaleRadius(ELEMENTS[ball.elementIndex].radius);
+            } else if (ball.kind === "neutron") {
+              ball.r = scaleRadius(8);
+            } else {
+              ball.r = scaleRadius(9);
+            }
+          }
+        }
+
+        const margin = scaleRadius(14);
+        state.launcherX = clamp(state.launcherX || state.width * 0.5, margin, state.width - margin);
+      }
+
+      function seedBoard() {
+        const gap = state.width / 4;
+        for (let i = 0; i < 3; i += 1) {
+          const x = gap * (i + 1) + (Math.random() - 0.5) * 10;
+          const y = state.height - scaleRadius(42) - i * scaleRadius(3);
+          const seed = createBallFromPiece({ kind: "element", elementIndex: 0 }, x, y);
+          seed.vx = (Math.random() - 0.5) * 80;
+          state.balls.push(seed);
+        }
+      }
+
+      function resetGame() {
+        state.time = 0;
+        state.last = performance.now();
+        state.launcherX = state.width * 0.5;
+        state.balls = [];
+        state.idSeed = 0;
+        state.pairCache = new Map();
+        state.score = 0;
+        state.chain = 0;
+        state.chainTimer = 0;
+        state.burstEnergy = 0;
+        state.burstActive = false;
+        state.burstLeft = 0;
+        state.burstRainClock = 0;
+        state.nextBurstAt = CONSTANTS.burstInterval;
+        state.gammaActive = false;
+        state.gammaLeft = 0;
+        state.nextGammaAt = CONSTANTS.gammaInterval;
+        state.queue = [nextPiece(), nextPiece()];
+        state.dropLockUntil = 0;
+        state.danger = 0;
+        state.gameOver = false;
+        seedBoard();
+        updateHud();
+      }
+
+      function updateHud() {
+        if (state.score > state.best) {
+          state.best = state.score;
+          localStorage.setItem("heavy-fusion-drop-best", String(state.best));
+        }
+
+        document.body.dataset.ballCount = String(state.balls.length);
+        document.body.dataset.gameOver = state.gameOver ? "1" : "0";
+
+        scoreEl.textContent = String(state.score);
+        bestEl.textContent = String(state.best);
+        chainEl.textContent = String(state.chain);
+
+        if (state.burstActive) {
+          burstEl.textContent = `${state.burstLeft.toFixed(1)}s`;
+          phaseEl.textContent = `r-PROCESS x${CONSTANTS.burstMultiplier}`;
+          phaseEl.style.color = "#ffd88e";
+        } else {
+          burstEl.textContent = `${Math.round(state.burstEnergy)}%`;
+          if (state.gammaActive) {
+            phaseEl.textContent = `γ HOT ${state.gammaLeft.toFixed(1)}s`;
+            phaseEl.style.color = "#ffd287";
+          } else {
+            phaseEl.textContent = "s-PROCESS";
+            phaseEl.style.color = "#dce8ff";
+          }
+        }
+
+        nextPieceEl.textContent = pieceLabel(state.queue[0]);
+      }
+
+      function startBurst() {
+        state.burstActive = true;
+        state.burstLeft = CONSTANTS.burstDuration;
+        state.burstRainClock = 0;
+        state.burstEnergy = 0;
+        state.nextBurstAt = state.time + CONSTANTS.burstInterval;
+      }
+
+      function spawnNeutronRain() {
+        const ball = createBallFromPiece(
+          { kind: "neutron" },
+          clamp(Math.random() * state.width, scaleRadius(10), state.width - scaleRadius(10)),
+          scaleRadius(16)
+        );
+        ball.vx = (Math.random() - 0.5) * 70;
+        ball.vy = 80 + Math.random() * 160;
+        state.balls.push(ball);
+      }
+
+      function captureByNeutron(element) {
+        if (element.unstable) {
+          element.decayLeft = Math.max(3, element.decayLeft - CONSTANTS.unstableBonusCut);
+        } else {
+          element.capture = Math.min(element.captureNeed, element.capture + 1);
+          if (element.capture >= element.captureNeed) {
+            element.unstable = true;
+            element.decayLeft = element.decayMax;
+          }
+        }
+
+        const captureScore = state.burstActive ? Math.round(CONSTANTS.capturePoints * 1.5) : CONSTANTS.capturePoints;
+        state.score += captureScore;
+        state.burstEnergy = clamp(state.burstEnergy + CONSTANTS.captureEnergy, 0, 100);
+      }
+
+      function hitByGamma(element) {
+        element.capture = Math.max(0, element.capture - 1);
+        if (element.unstable && element.capture < element.captureNeed) {
+          element.unstable = false;
+          element.decayLeft = element.decayMax;
+        }
+      }
+
+      function evolveElement(element) {
+        const current = ELEMENTS[element.elementIndex];
+        if (current.next === null) {
+          element.unstable = false;
+          element.capture = element.captureNeed;
+          element.decayLeft = element.decayMax;
+          return;
+        }
+
+        const nextIndex = current.next;
+        const next = ELEMENTS[nextIndex];
+
+        element.elementIndex = nextIndex;
+        element.r = scaleRadius(next.radius);
+        element.capture = 0;
+        element.captureNeed = next.captureNeed;
+        element.unstable = false;
+        element.decayLeft = next.lifeSec;
+        element.decayMax = next.lifeSec;
+        element.vy -= 110;
+
+        const mult = state.burstActive ? CONSTANTS.burstMultiplier : 1;
+        state.score += next.score * mult;
+        state.chain += 1;
+        state.chainTimer = 3.2;
+        state.burstEnergy = clamp(state.burstEnergy + 14, 0, 100);
+      }
+
+      function handleReaction(a, b) {
+        let element = null;
+        let neutron = null;
+        let gamma = null;
+
+        if (a.kind === "element" && b.kind === "neutron") {
+          element = a;
+          neutron = b;
+        } else if (a.kind === "neutron" && b.kind === "element") {
+          element = b;
+          neutron = a;
+        }
+
+        if (!element) {
+          if (a.kind === "element" && b.kind === "gamma") {
+            element = a;
+            gamma = b;
+          } else if (a.kind === "gamma" && b.kind === "element") {
+            element = b;
+            gamma = a;
+          }
+        }
+
+        if (!element) return;
+
+        const key = a.id < b.id ? `${a.id}|${b.id}` : `${b.id}|${a.id}`;
+        const seenAt = state.pairCache.get(key) || -999;
+        if (state.time - seenAt < CONSTANTS.pairCooldown) return;
+        state.pairCache.set(key, state.time);
+
+        if (neutron) {
+          captureByNeutron(element);
+          neutron.vx += (Math.random() - 0.5) * 40;
+          neutron.vy -= 16;
+          return;
+        }
+
+        if (gamma) {
+          hitByGamma(element);
+          gamma.dead = true;
+        }
+      }
+
+      function updateWorld(dt) {
+        if (state.chainTimer > 0) {
+          state.chainTimer -= dt;
+          if (state.chainTimer <= 0) {
+            state.chain = 0;
+          }
+        }
+
+        if (!state.burstActive && (state.burstEnergy >= 100 || state.time >= state.nextBurstAt)) {
+          startBurst();
+        }
+
+        if (state.burstActive) {
+          state.burstLeft -= dt;
+          state.burstRainClock += dt;
+          while (state.burstRainClock >= CONSTANTS.burstRainInterval) {
+            state.burstRainClock -= CONSTANTS.burstRainInterval;
+            spawnNeutronRain();
+          }
+          if (state.burstLeft <= 0) {
+            state.burstActive = false;
+            state.burstLeft = 0;
+          }
+        }
+
+        if (!state.gammaActive && state.time >= state.nextGammaAt) {
+          state.gammaActive = true;
+          state.gammaLeft = CONSTANTS.gammaDuration;
+        }
+        if (state.gammaActive) {
+          state.gammaLeft -= dt;
+          if (state.gammaLeft <= 0) {
+            state.gammaActive = false;
+            state.gammaLeft = 0;
+            state.nextGammaAt = state.time + CONSTANTS.gammaInterval;
+          }
+        }
+
+        const steps = 2;
+        const step = dt / steps;
+
+        for (let s = 0; s < steps; s += 1) {
+          for (const ball of state.balls) {
+            const gScale = ball.kind === "neutron" ? 0.88 : 1;
+            ball.vy += CONSTANTS.gravity * gScale * step;
+            ball.x += ball.vx * step;
+            ball.y += ball.vy * step;
+            ball.vx *= 0.998;
+            ball.vy *= 0.998;
+
+            if (ball.x - ball.r < 0) {
+              ball.x = ball.r;
+              ball.vx = Math.abs(ball.vx) * CONSTANTS.wallBounce;
+            }
+            if (ball.x + ball.r > state.width) {
+              ball.x = state.width - ball.r;
+              ball.vx = -Math.abs(ball.vx) * CONSTANTS.wallBounce;
+            }
+            if (ball.y - ball.r < 0) {
+              ball.y = ball.r;
+              ball.vy = Math.abs(ball.vy) * 0.15;
+            }
+            if (ball.y + ball.r > state.height) {
+              ball.y = state.height - ball.r;
+              if (ball.vy > 0) {
+                ball.vy = -ball.vy * CONSTANTS.floorBounce;
+              }
+              ball.vx *= CONSTANTS.floorDrag;
+              if (Math.abs(ball.vy) < 8) {
+                ball.vy = 0;
+              }
+            }
+          }
+
+          for (let i = 0; i < state.balls.length; i += 1) {
+            const a = state.balls[i];
+            for (let j = i + 1; j < state.balls.length; j += 1) {
+              const b = state.balls[j];
+              const dx = b.x - a.x;
+              const dy = b.y - a.y;
+              const dist = Math.hypot(dx, dy) || 0.0001;
+              const minDist = a.r + b.r;
+              if (dist >= minDist) continue;
+
+              const nx = dx / dist;
+              const ny = dy / dist;
+              const overlap = minDist - dist;
+              const ma = a.r * a.r;
+              const mb = b.r * b.r;
+              const total = ma + mb;
+
+              a.x -= nx * overlap * (mb / total);
+              a.y -= ny * overlap * (mb / total);
+              b.x += nx * overlap * (ma / total);
+              b.y += ny * overlap * (ma / total);
+
+              const rel = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
+              if (rel < 0) {
+                const impulse = -(1 + 0.18) * rel / (1 / ma + 1 / mb);
+                const ix = impulse * nx;
+                const iy = impulse * ny;
+                a.vx -= ix / ma;
+                a.vy -= iy / ma;
+                b.vx += ix / mb;
+                b.vy += iy / mb;
+              }
+
+              handleReaction(a, b);
+            }
+          }
+        }
+
+        let topContact = false;
+
+        for (const ball of state.balls) {
+          if (ball.kind === "gamma") {
+            ball.ttl -= dt;
+            if (ball.ttl <= 0) {
+              ball.dead = true;
+            }
+          }
+
+          if (ball.kind === "element") {
+            if (ball.unstable) {
+              ball.decayLeft -= dt;
+              if (ball.decayLeft <= 0) {
+                evolveElement(ball);
+              }
+            }
+
+            if (ball.y - ball.r < CONSTANTS.topLine) {
+              topContact = true;
+            }
+          }
+        }
+
+        if (topContact) {
+          state.danger += dt;
+        } else {
+          state.danger = Math.max(0, state.danger - dt * 1.4);
+        }
+
+        if (state.danger >= CONSTANTS.topDangerLimit) {
+          state.gameOver = true;
+        }
+
+        state.balls = state.balls.filter((ball) => !ball.dead);
+
+        if (state.pairCache.size > 1200) {
+          for (const [key, at] of state.pairCache) {
+            if (state.time - at > 3) {
+              state.pairCache.delete(key);
+            }
+          }
+        }
+      }
+
+      function drawGaugeDots(ball) {
+        const total = ball.captureNeed;
+        if (total <= 0 || total > 8) return;
+
+        const y = ball.y + ball.r * 0.36;
+        const spacing = clamp(ball.r * 0.36, 4, 9);
+        const startX = ball.x - ((total - 1) * spacing) / 2;
+
+        for (let i = 0; i < total; i += 1) {
+          ctx.beginPath();
+          ctx.arc(startX + i * spacing, y, clamp(ball.r * 0.1, 2, 4), 0, Math.PI * 2);
+          ctx.fillStyle = i < ball.capture ? "rgba(255, 245, 215, 0.95)" : "rgba(255, 255, 255, 0.2)";
+          ctx.fill();
+        }
+      }
+
+      function drawBall(ball) {
+        if (ball.kind === "element") {
+          const spec = ELEMENTS[ball.elementIndex];
+
+          const grad = ctx.createRadialGradient(
+            ball.x - ball.r * 0.3,
+            ball.y - ball.r * 0.35,
+            ball.r * 0.15,
+            ball.x,
+            ball.y,
+            ball.r * 1.15
+          );
+          grad.addColorStop(0, spec.glow);
+          grad.addColorStop(1, spec.color);
+
+          ctx.beginPath();
+          ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+          ctx.fillStyle = grad;
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+          ctx.strokeStyle = "rgba(12, 20, 34, 0.6)";
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
+
+          ctx.fillStyle = "#eff5ff";
+          ctx.font = `${Math.max(10, ball.r * 0.64)}px sans-serif`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(spec.id, ball.x, ball.y - ball.r * 0.06);
+
+          drawGaugeDots(ball);
+
+          if (ball.unstable) {
+            const ratio = clamp(ball.decayLeft / ball.decayMax, 0, 1);
+
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.r + 3, 0, Math.PI * 2);
+            ctx.strokeStyle = "rgba(255, 188, 113, 0.28)";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.r + 3, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * ratio);
+            ctx.strokeStyle = ratio < 0.28 ? "#ff7a63" : "#ffc072";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.fillStyle = "rgba(255, 237, 212, 0.95)";
+            ctx.font = `${Math.max(8, ball.r * 0.33)}px sans-serif`;
+            ctx.fillText(Math.ceil(ball.decayLeft), ball.x, ball.y - ball.r * 0.72);
+          }
+
+          return;
+        }
+
+        if (ball.kind === "neutron") {
+          ctx.beginPath();
+          ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+          ctx.fillStyle = ball.color;
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(ball.x - ball.r * 0.25, ball.y - ball.r * 0.28, ball.r * 0.45, 0, Math.PI * 2);
+          ctx.fillStyle = ball.glow;
+          ctx.fill();
+          return;
+        }
+
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+        ctx.fillStyle = ball.color;
+        ctx.fill();
+        ctx.fillStyle = "#3e2b0f";
+        ctx.font = `${Math.max(9, ball.r * 1.2)}px sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("γ", ball.x, ball.y + 0.6);
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, state.width, state.height);
+
+        const fieldGrad = ctx.createLinearGradient(0, 0, 0, state.height);
+        fieldGrad.addColorStop(0, "rgba(78, 113, 160, 0.13)");
+        fieldGrad.addColorStop(0.6, "rgba(26, 44, 70, 0.08)");
+        fieldGrad.addColorStop(1, "rgba(7, 10, 16, 0.22)");
+        ctx.fillStyle = fieldGrad;
+        ctx.fillRect(0, 0, state.width, state.height);
+
+        ctx.beginPath();
+        ctx.moveTo(0, CONSTANTS.topLine);
+        ctx.lineTo(state.width, CONSTANTS.topLine);
+        ctx.strokeStyle = "rgba(255, 122, 105, 0.26)";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(state.launcherX, scaleRadius(15), scaleRadius(10), 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(132, 216, 255, 0.85)";
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(state.launcherX, scaleRadius(26));
+        ctx.lineTo(state.launcherX, scaleRadius(58));
+        ctx.strokeStyle = "rgba(132, 216, 255, 0.35)";
+        ctx.lineWidth = 1.6;
+        ctx.stroke();
+
+        for (const ball of state.balls) {
+          drawBall(ball);
+        }
+
+        if (state.gameOver) {
+          ctx.fillStyle = "rgba(3, 5, 9, 0.62)";
+          ctx.fillRect(0, 0, state.width, state.height);
+
+          ctx.fillStyle = "#f2f6ff";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.font = "700 23px sans-serif";
+          ctx.fillText("GAME OVER", state.width * 0.5, state.height * 0.46);
+
+          ctx.font = "700 13px sans-serif";
+          ctx.fillStyle = "#d6e2ff";
+          ctx.fillText("RESET", state.width * 0.5, state.height * 0.53);
+        }
+      }
+
+      function tryDrop() {
+        if (state.gameOver || !state.queue.length) return;
+        if (state.time < state.dropLockUntil) return;
+
+        const piece = state.queue.shift();
+        const probe = createBallFromPiece(piece, 0, 0);
+        const x = clamp(state.launcherX, probe.r + 2, state.width - probe.r - 2);
+        const y = probe.r + scaleRadius(14);
+
+        const ball = createBallFromPiece(piece, x, y);
+        ball.vy = 12;
+        state.balls.push(ball);
+
+        state.queue.push(nextPiece());
+        state.dropLockUntil = state.time + (state.burstActive ? CONSTANTS.dropCooldownBurst : CONSTANTS.dropCooldown);
+      }
+
+      function setLauncher(clientX) {
+        const rect = canvas.getBoundingClientRect();
+        const x = clientX - rect.left;
+        state.launcherX = clamp(x, scaleRadius(12), state.width - scaleRadius(12));
+      }
+
+      function frame(now) {
+        const dt = clamp((now - state.last) / 1000, 0, 0.033);
+        state.last = now;
+        state.time += dt;
+
+        if (!state.gameOver) {
+          updateWorld(dt);
+        }
+
+        updateHud();
+        draw();
+        requestAnimationFrame(frame);
+      }
+
+      canvas.addEventListener("pointermove", (event) => {
+        setLauncher(event.clientX);
+      });
+
+      canvas.addEventListener("pointerdown", (event) => {
+        setLauncher(event.clientX);
+        tryDrop();
+      });
+
+      canvas.addEventListener("click", () => {
+        tryDrop();
+      });
+
+      reactionsBtn.addEventListener("click", () => {
+        reactionsOverlay.hidden = false;
+      });
+
+      closeReactionsBtn.addEventListener("click", () => {
+        reactionsOverlay.hidden = true;
+      });
+
+      reactionsOverlay.addEventListener("click", (event) => {
+        if (event.target === reactionsOverlay) {
+          reactionsOverlay.hidden = true;
+        }
+      });
+
+      resetBtn.addEventListener("click", () => {
+        resetGame();
+      });
+
+      window.addEventListener("resize", () => {
+        resize();
+      });
+
+      resize();
+      resetGame();
+      requestAnimationFrame(frame);
+    })();
+  </script>
+</body>
+</html>
