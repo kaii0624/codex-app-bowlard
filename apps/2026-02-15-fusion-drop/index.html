@@ -143,15 +143,37 @@
       position: absolute;
       top: 8px;
       left: 8px;
-      padding: 4px 9px;
+      padding: 4px 10px;
       border-radius: 999px;
       border: 1px solid rgba(141, 171, 236, 0.34);
       background: rgba(0, 0, 0, 0.36);
-      font-size: 0.66rem;
-      font-weight: 700;
-      letter-spacing: 0.06em;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
       color: var(--ink);
       pointer-events: none;
+    }
+
+    .next-k {
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+    }
+
+    .next-orb {
+      --next-fill: #8fc8ff;
+      --next-glow: #5eaaf2;
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      font-size: 0.56rem;
+      font-weight: 800;
+      letter-spacing: 0;
+      color: #0f1a2e;
+      background: radial-gradient(circle at 34% 30%, #ffffff, var(--next-fill) 34%, var(--next-glow) 100%);
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25), 0 2px 7px rgba(0, 0, 0, 0.26);
     }
 
     .controls {
@@ -290,7 +312,10 @@
 
     <section class="stage panel">
       <canvas id="field" aria-label="Fusion Drop"></canvas>
-      <div class="next" id="next">NEXT H</div>
+      <div class="next" id="next">
+        <span class="next-k">NEXT</span>
+        <span class="next-orb" id="nextOrb"><span id="nextAtom">H</span></span>
+      </div>
     </section>
 
     <section class="overlay" id="rulesOverlay" hidden aria-label="反応一覧">
@@ -309,7 +334,8 @@
       const scoreEl = document.getElementById("score");
       const chainEl = document.getElementById("chain");
       const feEl = document.getElementById("fe");
-      const nextEl = document.getElementById("next");
+      const nextAtomEl = document.getElementById("nextAtom");
+      const nextOrbEl = document.getElementById("nextOrb");
       const rulesBtn = document.getElementById("rulesBtn");
       const resetBtn = document.getElementById("resetBtn");
       const rulesOverlay = document.getElementById("rulesOverlay");
@@ -372,6 +398,7 @@
         nextDropAt: 0,
         topDanger: 0,
         over: false,
+        cleared: false,
         sequence: 0,
         flash: 0,
         lastTime: performance.now()
@@ -425,7 +452,7 @@
           rulesList.appendChild(li);
         }
         const terminal = document.createElement("li");
-        terminal.textContent = "Fe is terminal (no further fusion).";
+        terminal.textContent = "Fe + Fe -> Supernova Clear";
         rulesList.appendChild(terminal);
       }
 
@@ -509,7 +536,11 @@
         scoreEl.textContent = String(game.score);
         chainEl.textContent = String(game.combo);
         feEl.textContent = String(ironOnBoard);
-        nextEl.textContent = `NEXT ${ELEMENTS[game.nextLevel].label}`;
+        const nextSpec = ELEMENTS[game.nextLevel];
+        nextAtomEl.textContent = nextSpec.label;
+        nextOrbEl.style.setProperty("--next-fill", nextSpec.fill);
+        nextOrbEl.style.setProperty("--next-glow", nextSpec.glow);
+        document.body.dataset.state = game.cleared ? "clear" : game.over ? "over" : "play";
       }
 
       function resizeCanvas() {
@@ -571,7 +602,7 @@
         const level = game.nextLevel;
         const r = game.radii[level];
         const spawnX = clamp(game.pointerX, r + 2, game.width - r - 2);
-        const spawnY = Math.max(r + 4, TOP_LINE - 20);
+        const spawnY = Math.min(game.height - r - 2, TOP_LINE + r + 6);
 
         game.atoms.push(createAtom(level, spawnX, spawnY, 0, SPAWN_DROP_SPEED));
         game.nextLevel = pullNextLevel();
@@ -624,9 +655,22 @@
 
       }
 
+      function triggerClear() {
+        if (game.cleared) return;
+        game.cleared = true;
+        game.over = true;
+        game.flash = 1;
+        game.combo = 0;
+        game.comboTimer = 0;
+        game.score += 5000;
+        game.atoms = [];
+        setState("SUPERNOVA CLEAR", "good");
+      }
+
       function mergePairs() {
         const mergeMap = new Map();
         const atoms = game.atoms;
+        let supernova = false;
 
         for (let pass = 0; pass < SOLVER_PASSES; pass += 1) {
           for (let i = 0; i < atoms.length; i += 1) {
@@ -638,6 +682,11 @@
               const dist = Math.hypot(dx, dy) || 0.0001;
               const minDist = a.r + b.r;
               const nearTouch = dist <= minDist * MERGE_TOUCH_RATIO;
+
+              if (nearTouch && a.level === MAX_LEVEL && b.level === MAX_LEVEL) {
+                supernova = true;
+                break;
+              }
 
               if (
                 nearTouch &&
@@ -654,7 +703,14 @@
                 resolveContact(a, b, dx, dy, dist, minDist);
               }
             }
+            if (supernova) break;
           }
+          if (supernova) break;
+        }
+
+        if (supernova) {
+          triggerClear();
+          return;
         }
 
         if (!mergeMap.size) return;
@@ -756,25 +812,11 @@
           }
         }
 
-        let crowded = false;
-        for (const atom of game.atoms) {
-          const nearTop = atom.y - atom.r < TOP_LINE;
-          const settledNearTop = atom.age > 0.55 && Math.abs(atom.vy) < 55;
-          if (nearTop && settledNearTop) {
-            crowded = true;
-            break;
-          }
-        }
-
-        if (crowded) {
-          game.topDanger += dt;
-        } else {
-          game.topDanger = Math.max(0, game.topDanger - dt * 1.6);
-        }
-
-        if (game.topDanger > 1.35) {
+        const crossedTopLine = game.atoms.some((atom) => atom.y - atom.r <= TOP_LINE);
+        if (crossedTopLine) {
+          game.cleared = false;
           game.over = true;
-          setState("COLLAPSE", "warn");
+          setState("GAME OVER", "warn");
         }
 
         game.comboTimer = Math.max(0, game.comboTimer - dt);
@@ -929,6 +971,19 @@
           ctx.fillStyle = `rgba(255, 244, 232, ${game.flash * 0.45})`;
           ctx.fillRect(0, 0, game.width, game.height);
         }
+
+        if (game.cleared || game.over) {
+          ctx.fillStyle = game.cleared ? "rgba(255, 186, 124, 0.22)" : "rgba(8, 11, 20, 0.48)";
+          ctx.fillRect(0, 0, game.width, game.height);
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillStyle = "#f8fbff";
+          ctx.font = "700 28px system-ui, sans-serif";
+          ctx.fillText(game.cleared ? "CLEAR" : "GAME OVER", game.width * 0.5, game.height * 0.46);
+          ctx.fillStyle = "rgba(235, 244, 255, 0.9)";
+          ctx.font = "700 12px system-ui, sans-serif";
+          ctx.fillText("RESET", game.width * 0.5, game.height * 0.53);
+        }
       }
 
       function resetGame() {
@@ -940,6 +995,7 @@
         game.pairRemaining = 0;
         game.topDanger = 0;
         game.over = false;
+        game.cleared = false;
         game.flash = 0;
         game.nextDropAt = 0;
         game.nextLevel = pullNextLevel();
@@ -972,6 +1028,22 @@
         },
         bounds() {
           return { width: game.width, height: game.height };
+        },
+        state() {
+          return { over: game.over, cleared: game.cleared, next: game.nextLevel };
+        },
+        injectTopViolation() {
+          const test = createAtom(0, game.width * 0.5, TOP_LINE - game.radii[0] * 0.5, 0, 0);
+          game.atoms.push(test);
+        },
+        injectFePair() {
+          const r = game.radii[MAX_LEVEL];
+          const y = Math.min(game.height - r - 4, TOP_LINE + r + 20);
+          const x = game.width * 0.5;
+          game.atoms.push(
+            createAtom(MAX_LEVEL, x - r * 0.98, y, 0, 0),
+            createAtom(MAX_LEVEL, x + r * 0.98, y, 0, 0)
+          );
         }
       };
 
