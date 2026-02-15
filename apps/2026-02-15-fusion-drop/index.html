@@ -393,6 +393,8 @@
         nebulas: [],
         atoms: [],
         pointerX: 160,
+        aiming: false,
+        activePointerId: null,
         nextLevel: 0,
         score: 0,
         combo: 0,
@@ -612,6 +614,42 @@
         game.nextLevel = pullNextLevel();
         game.nextDropAt = now + BASE_COOLDOWN;
         updateHud();
+      }
+
+      function startAiming(event) {
+        if (game.over || !rulesOverlay.hidden) return;
+        game.pointerX = mapPointerX(event.clientX);
+        game.aiming = true;
+        game.activePointerId = event.pointerId;
+        if (canvas.setPointerCapture) {
+          try {
+            canvas.setPointerCapture(event.pointerId);
+          } catch (error) {
+            void error;
+          }
+        }
+      }
+
+      function moveAiming(event) {
+        if (!game.aiming) return;
+        if (game.activePointerId !== null && event.pointerId !== game.activePointerId) return;
+        game.pointerX = mapPointerX(event.clientX);
+      }
+
+      function releaseAiming(event) {
+        if (!game.aiming) return;
+        if (game.activePointerId !== null && event.pointerId !== game.activePointerId) return;
+        game.pointerX = mapPointerX(event.clientX);
+        game.aiming = false;
+        game.activePointerId = null;
+        if (canvas.releasePointerCapture) {
+          try {
+            canvas.releasePointerCapture(event.pointerId);
+          } catch (error) {
+            void error;
+          }
+        }
+        tryDrop();
       }
 
       function resolveContact(a, b, dx, dy, dist, minDist) {
@@ -912,12 +950,42 @@
         ctx.restore();
 
         ctx.save();
-        ctx.strokeStyle = "rgba(228, 240, 255, 0.65)";
-        ctx.lineWidth = 1.3;
+        ctx.strokeStyle = game.aiming ? "rgba(250, 252, 255, 0.95)" : "rgba(228, 240, 255, 0.65)";
+        ctx.lineWidth = game.aiming ? 1.8 : 1.3;
         ctx.beginPath();
         ctx.moveTo(game.pointerX, 6);
         ctx.lineTo(game.pointerX, TOP_LINE - 8);
         ctx.stroke();
+        ctx.restore();
+
+        const previewSpec = ELEMENTS[game.nextLevel];
+        const previewRadius = game.radii[game.nextLevel];
+        const previewY = Math.min(game.height - previewRadius - 2, TOP_LINE + previewRadius + 6);
+        const previewGrad = ctx.createRadialGradient(
+          game.pointerX - previewRadius * 0.35,
+          previewY - previewRadius * 0.45,
+          previewRadius * 0.2,
+          game.pointerX,
+          previewY,
+          previewRadius
+        );
+        previewGrad.addColorStop(0, "#ffffff");
+        previewGrad.addColorStop(0.15, previewSpec.fill);
+        previewGrad.addColorStop(1, previewSpec.glow);
+        ctx.save();
+        ctx.globalAlpha = game.aiming ? 0.98 : 0.84;
+        ctx.fillStyle = previewGrad;
+        ctx.beginPath();
+        ctx.arc(game.pointerX, previewY, previewRadius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.36)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.fillStyle = "#0d1526";
+        ctx.font = `${Math.max(11, previewRadius * 0.66)}px system-ui, sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(previewSpec.label, game.pointerX, previewY + 0.5);
         ctx.restore();
 
         for (const atom of game.atoms) {
@@ -1000,6 +1068,8 @@
         game.topDanger = 0;
         game.over = false;
         game.cleared = false;
+        game.aiming = false;
+        game.activePointerId = null;
         game.flash = 0;
         game.nextDropAt = 0;
         game.nextLevel = pullNextLevel();
@@ -1034,7 +1104,7 @@
           return { width: game.width, height: game.height };
         },
         state() {
-          return { over: game.over, cleared: game.cleared, next: game.nextLevel };
+          return { over: game.over, cleared: game.cleared, next: game.nextLevel, aiming: game.aiming };
         },
         injectTopViolation() {
           const test = createAtom(0, game.width * 0.5, TOP_LINE - game.radii[0] * 0.5, 0, 0);
@@ -1051,13 +1121,13 @@
         }
       };
 
-      canvas.addEventListener("pointermove", (event) => {
-        game.pointerX = mapPointerX(event.clientX);
-      });
-
-      canvas.addEventListener("pointerdown", (event) => {
-        game.pointerX = mapPointerX(event.clientX);
-        tryDrop();
+      canvas.addEventListener("pointerdown", startAiming);
+      canvas.addEventListener("pointermove", moveAiming);
+      canvas.addEventListener("pointerup", releaseAiming);
+      canvas.addEventListener("pointercancel", (event) => {
+        if (game.activePointerId !== null && event.pointerId !== game.activePointerId) return;
+        game.aiming = false;
+        game.activePointerId = null;
       });
 
       window.addEventListener("keydown", (event) => {
