@@ -319,7 +319,7 @@
 
     .card.active .expand {
       opacity: 1;
-      padding: 0 14px 14px;
+      padding: 0 14px 20px;
     }
 
     .desc {
@@ -332,8 +332,9 @@
     }
 
     .actions {
-      margin-top: 9px;
+      margin-top: 10px;
       padding-left: 86px;
+      padding-bottom: 2px;
       display: grid;
       gap: 8px;
     }
@@ -697,31 +698,36 @@
         return map;
       }, new Map());
 
+      const monthPrefix = `${year}-${pad2(month + 1)}-`;
+      const visibleDays = Array.from(grouped.entries())
+        .filter(([date]) => date.startsWith(monthPrefix))
+        .sort(([a], [b]) => a.localeCompare(b));
+
       const daysInMonth = new Date(year, month + 1, 0).getDate();
-      let unlocked = 0;
+      const unlocked = visibleDays.length;
       let firstOpenCard = null;
+      const currentMonthView = year === today.getFullYear() && month === today.getMonth();
 
-      for (let day = 1; day <= daysInMonth; day += 1) {
-        const key = dateKey(year, month, day);
-        const dayEntries = grouped.get(key) ?? [];
-        if (dayEntries.length > 0) {
-          unlocked += 1;
-        }
-
-        const card = buildCard(key, dayEntries, day - 1);
+      visibleDays.forEach(([key, dayEntries], index) => {
+        const card = buildCard(key, dayEntries, index);
         cardList.appendChild(card);
 
-        if (!firstOpenCard && dayEntries.length > 0 && day <= today.getDate()) {
+        const day = Number(key.slice(-2));
+        if (!firstOpenCard && (!currentMonthView || day <= today.getDate())) {
           firstOpenCard = card;
         }
-      }
+      });
 
       monthBadge.textContent = `${monthNames[month]} ${year}`;
       counter.textContent = `${pad2(unlocked)} / ${pad2(daysInMonth)} unlocked`;
 
-      const progress = Math.round((unlocked / daysInMonth) * 100);
+      const progress = daysInMonth > 0 ? Math.round((unlocked / daysInMonth) * 100) : 0;
       progressLabel.textContent = `${progress}%`;
       progressFill.style.width = `${progress}%`;
+
+      if (!firstOpenCard && cardList.firstElementChild) {
+        firstOpenCard = cardList.firstElementChild;
+      }
 
       if (firstOpenCard) {
         requestAnimationFrame(() => {
