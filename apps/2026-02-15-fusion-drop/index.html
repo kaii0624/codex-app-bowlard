@@ -338,8 +338,23 @@
       const SIZE_STEP_LEVELS = 2;
       const SIZE_GROUP_COUNT = Math.floor(MAX_LEVEL / SIZE_STEP_LEVELS);
       const TWO_STEP_GROWTH = Math.pow(Math.pow(LEGACY_GROWTH, MAX_LEVEL) * FE_SIZE_MULTIPLIER, 1 / SIZE_GROUP_COUNT);
-      const FALL_TARGET_SPEED = 760;
-      const FLOW_PULL = 8;
+      const GRAVITY = 1880;
+      const MAX_FALL_SPEED = 560;
+      const SPAWN_DROP_SPEED = 120;
+      const AIR_DAMPING = 0.994;
+      const SIDE_BOUNCE = 0.05;
+      const CEIL_BOUNCE = 0.03;
+      const FLOOR_BOUNCE = 0.04;
+      const FLOOR_DRAG = 0.9;
+      const COLLISION_RESTITUTION = 0.05;
+      const COLLISION_DAMPING = 0.82;
+      const CONTACT_FRICTION = 0.22;
+      const SUB_STEPS = 3;
+      const SOLVER_PASSES = 3;
+      const RESTING_SPEED = 26;
+      const RESTING_AGE = 0.4;
+      const ANCHORED_WEIGHT = 6;
+      const BOUNDARY_EPS = 0.02;
 
       const game = {
         width: 0,
@@ -452,6 +467,45 @@
         };
       }
 
+      function clampAtomInside(atom) {
+        const minX = atom.r;
+        const maxX = game.width - atom.r;
+        const minY = atom.r;
+        const maxY = game.height - atom.r;
+
+        if (atom.x < minX) {
+          atom.x = minX;
+          if (atom.vx < 0) atom.vx = -atom.vx * SIDE_BOUNCE;
+        } else if (atom.x > maxX) {
+          atom.x = maxX;
+          if (atom.vx > 0) atom.vx = -atom.vx * SIDE_BOUNCE;
+        }
+
+        if (atom.y < minY) {
+          atom.y = minY;
+          if (atom.vy < 0) atom.vy = -atom.vy * CEIL_BOUNCE;
+        } else if (atom.y > maxY) {
+          atom.y = maxY;
+          if (atom.vy > 0) atom.vy = -atom.vy * FLOOR_BOUNCE;
+          atom.vx *= FLOOR_DRAG;
+          if (Math.abs(atom.vy) < RESTING_SPEED) {
+            atom.vy = 0;
+          }
+        }
+      }
+
+      function isAnchored(atom) {
+        return atom.age > RESTING_AGE && Math.abs(atom.vy) < RESTING_SPEED;
+      }
+
+      function effectiveMass(atom) {
+        let mass = atom.r * atom.r;
+        if (isAnchored(atom)) {
+          mass *= ANCHORED_WEIGHT;
+        }
+        return mass;
+      }
+
       function countIronOnBoard() {
         let iron = 0;
         for (const atom of game.atoms) {
@@ -511,6 +565,7 @@
             atom.x *= sx;
             atom.y *= sy;
             atom.r = game.radii[atom.level];
+            clampAtomInside(atom);
           }
         }
 
@@ -528,70 +583,105 @@
         const spawnX = clamp(game.pointerX, r + 2, game.width - r - 2);
         const spawnY = Math.max(r + 4, TOP_LINE - 20);
 
-        game.atoms.push(createAtom(level, spawnX, spawnY, 0, FALL_TARGET_SPEED));
+        game.atoms.push(createAtom(level, spawnX, spawnY, 0, SPAWN_DROP_SPEED));
         game.nextLevel = pullNextLevel();
         game.nextDropAt = now + BASE_COOLDOWN;
         updateHud();
       }
 
+      function resolveContact(a, b, dx, dy, dist, minDist) {
+        const nx = dx / dist;
+        const ny = dy / dist;
+        const overlap = minDist - dist + BOUNDARY_EPS;
+        const invMassA = 1 / effectiveMass(a);
+        const invMassB = 1 / effectiveMass(b);
+        const invMassTotal = invMassA + invMassB;
+
+        if (invMassTotal <= 0) return;
+
+        const correction = overlap / invMassTotal;
+        a.x -= nx * correction * invMassA;
+        a.y -= ny * correction * invMassA;
+        b.x += nx * correction * invMassB;
+        b.y += ny * correction * invMassB;
+
+        clampAtomInside(a);
+        clampAtomInside(b);
+
+        const rvx = b.vx - a.vx;
+        const rvy = b.vy - a.vy;
+        const along = rvx * nx + rvy * ny;
+        if (along < 0) {
+          const impulse = (-(1 + COLLISION_RESTITUTION) * along / invMassTotal) * COLLISION_DAMPING;
+          const ix = impulse * nx;
+          const iy = impulse * ny;
+          a.vx -= ix * invMassA;
+          a.vy -= iy * invMassA;
+          b.vx += ix * invMassB;
+          b.vy += iy * invMassB;
+        }
+
+        const tx = -ny;
+        const ty = nx;
+        const tangentSpeed = (b.vx - a.vx) * tx + (b.vy - a.vy) * ty;
+        const frictionImpulse = (-tangentSpeed * CONTACT_FRICTION) / invMassTotal;
+        const fx = frictionImpulse * tx;
+        const fy = frictionImpulse * ty;
+        a.vx -= fx * invMassA;
+        a.vy -= fy * invMassA;
+        b.vx += fx * invMassB;
+        b.vy += fy * invMassB;
+
+        if (isAnchored(a)) {
+          a.vx *= 0.96;
+          if (Math.abs(a.vy) < RESTING_SPEED) a.vy = 0;
+        }
+        if (isAnchored(b)) {
+          b.vx *= 0.96;
+          if (Math.abs(b.vy) < RESTING_SPEED) b.vy = 0;
+        }
+      }
+
       function mergePairs() {
-        const merges = [];
+        const mergeMap = new Map();
         const atoms = game.atoms;
 
-        for (let i = 0; i < atoms.length; i += 1) {
-          const a = atoms[i];
-          for (let j = i + 1; j < atoms.length; j += 1) {
-            const b = atoms[j];
-            const dx = b.x - a.x;
-            const dy = b.y - a.y;
-            const dist = Math.hypot(dx, dy) || 0.0001;
-            const minDist = a.r + b.r;
-            const nearTouch = dist <= minDist * MERGE_TOUCH_RATIO;
+        for (let pass = 0; pass < SOLVER_PASSES; pass += 1) {
+          for (let i = 0; i < atoms.length; i += 1) {
+            const a = atoms[i];
+            for (let j = i + 1; j < atoms.length; j += 1) {
+              const b = atoms[j];
+              const dx = b.x - a.x;
+              const dy = b.y - a.y;
+              const dist = Math.hypot(dx, dy) || 0.0001;
+              const minDist = a.r + b.r;
+              const nearTouch = dist <= minDist * MERGE_TOUCH_RATIO;
 
-            if (!nearTouch) continue;
+              if (
+                nearTouch &&
+                a.level === b.level &&
+                a.level < MAX_LEVEL &&
+                a.age > MIN_FUSION_AGE &&
+                b.age > MIN_FUSION_AGE
+              ) {
+                const key = a.id < b.id ? `${a.id}:${b.id}` : `${b.id}:${a.id}`;
+                if (!mergeMap.has(key)) mergeMap.set(key, [a, b]);
+              }
 
-            if (
-              a.level === b.level &&
-              a.level < MAX_LEVEL &&
-              a.age > MIN_FUSION_AGE &&
-              b.age > MIN_FUSION_AGE
-            ) {
-              merges.push([a, b]);
-              continue;
-            }
-
-            if (dist < minDist) {
-              const nx = dx / dist;
-              const ny = dy / dist;
-              const overlap = minDist - dist;
-
-              const push = overlap * 0.5 + 0.02;
-              a.x -= nx * push;
-              a.y -= ny * push;
-              b.x += nx * push;
-              b.y += ny * push;
-
-              const rvx = b.vx - a.vx;
-              const rvy = b.vy - a.vy;
-              const along = rvx * nx + rvy * ny;
-              if (along < 0) {
-                const impulse = -1.08 * along * 0.5;
-                a.vx -= impulse * nx;
-                a.vy -= impulse * ny;
-                b.vx += impulse * nx;
-                b.vy += impulse * ny;
+              if (dist < minDist) {
+                resolveContact(a, b, dx, dy, dist, minDist);
               }
             }
           }
         }
 
-        if (!merges.length) return;
+        if (!mergeMap.size) return;
 
         const consumed = new Set();
         const spawned = [];
         let mergedCount = 0;
 
-        for (const [a, b] of merges) {
+        for (const [a, b] of mergeMap.values()) {
           if (consumed.has(a.id) || consumed.has(b.id)) continue;
           consumed.add(a.id);
           consumed.add(b.id);
@@ -602,9 +692,10 @@
             newLevel,
             (a.x + b.x) * 0.5,
             (a.y + b.y) * 0.5,
-            (a.vx + b.vx) * 0.35,
-            (a.vy + b.vy) * 0.35 - 28
+            (a.vx + b.vx) * 0.26,
+            (a.vy + b.vy) * 0.24 - 14
           );
+          clampAtomInside(atom);
           spawned.push(atom);
           const chainBoost = 1 + Math.min(8, game.combo) * 0.1;
           game.score += Math.round((newLevel + 1) * (newLevel + 2) * 8 * chainBoost);
@@ -624,67 +715,71 @@
       }
 
       function stepPhysics(dt) {
-        const decayedIds = new Set();
-        const decaySpawn = [];
+        const stepDt = dt / SUB_STEPS;
+        let decayCount = 0;
 
-        for (const atom of game.atoms) {
-          atom.age += dt;
+        for (let step = 0; step < SUB_STEPS; step += 1) {
+          const decayedIds = new Set();
+          const decaySpawn = [];
 
-          if (atom.lifeMax > 0) {
-            atom.lifeLeft -= dt;
-            if (atom.lifeLeft <= 0) {
-              decayedIds.add(atom.id);
-              if (atom.level > 0) {
-                const nextAtom = createAtom(
-                  atom.level - 1,
-                  atom.x,
-                  atom.y,
-                  atom.vx * 0.22 + (Math.random() - 0.5) * 30,
-                  Math.min(-22, atom.vy * 0.2 - 12)
-                );
-                nextAtom.age = 0.04;
-                decaySpawn.push(nextAtom);
+          for (const atom of game.atoms) {
+            atom.age += stepDt;
+
+            if (atom.lifeMax > 0) {
+              atom.lifeLeft -= stepDt;
+              if (atom.lifeLeft <= 0) {
+                decayedIds.add(atom.id);
+                if (atom.level > 0) {
+                  const nextAtom = createAtom(
+                    atom.level - 1,
+                    atom.x,
+                    atom.y,
+                    atom.vx * 0.2 + (Math.random() - 0.5) * 22,
+                    Math.min(-20, atom.vy * 0.2 - 10)
+                  );
+                  nextAtom.age = 0.04;
+                  decaySpawn.push(nextAtom);
+                }
+                continue;
               }
-              continue;
             }
+
+            atom.vy = Math.min(MAX_FALL_SPEED, atom.vy + GRAVITY * stepDt);
+            atom.x += atom.vx * stepDt;
+            atom.y += atom.vy * stepDt;
+            atom.vx *= AIR_DAMPING;
+
+            if (isAnchored(atom)) {
+              atom.vx *= 0.97;
+              if (Math.abs(atom.vy) < RESTING_SPEED) {
+                atom.vy = 0;
+              }
+            }
+
+            clampAtomInside(atom);
           }
 
-          atom.vy += (FALL_TARGET_SPEED - atom.vy) * FLOW_PULL * dt;
-          atom.x += atom.vx * dt;
-          atom.y += atom.vy * dt;
-
-          if (atom.x - atom.r < 0) {
-            atom.x = atom.r;
-            atom.vx = Math.abs(atom.vx) * 0.32;
-          } else if (atom.x + atom.r > game.width) {
-            atom.x = game.width - atom.r;
-            atom.vx = -Math.abs(atom.vx) * 0.32;
+          if (decayedIds.size) {
+            decayCount += decayedIds.size;
+            game.atoms = game.atoms.filter((atom) => !decayedIds.has(atom.id));
+            game.atoms.push(...decaySpawn);
           }
 
-          if (atom.y + atom.r > game.height) {
-            atom.y = game.height - atom.r;
-            if (atom.vy > 0) {
-              atom.vy *= -0.12;
-            }
-            atom.vx *= 0.965;
-            if (Math.abs(atom.vy) < 16) {
-              atom.vy = 0;
-            }
+          mergePairs();
+
+          for (const atom of game.atoms) {
+            clampAtomInside(atom);
           }
         }
 
-        if (decayedIds.size) {
-          game.atoms = game.atoms.filter((atom) => !decayedIds.has(atom.id));
-          game.atoms.push(...decaySpawn);
+        if (decayCount > 0) {
           game.combo = 0;
           game.comboTimer = 0;
-          game.score = Math.max(0, game.score - decayedIds.size * 18);
+          game.score = Math.max(0, game.score - decayCount * 18);
           if (!game.over) {
             setState("DECAY", "warn", 560);
           }
         }
-
-        mergePairs();
 
         let crowded = false;
         for (const atom of game.atoms) {
@@ -887,6 +982,23 @@
         updateHud();
         requestAnimationFrame(tick);
       }
+
+      window.__fusionDropDebug = {
+        snapshot() {
+          return game.atoms.map((atom) => ({
+            id: atom.id,
+            level: atom.level,
+            x: atom.x,
+            y: atom.y,
+            r: atom.r,
+            vx: atom.vx,
+            vy: atom.vy
+          }));
+        },
+        bounds() {
+          return { width: game.width, height: game.height };
+        }
+      };
 
       canvas.addEventListener("pointermove", (event) => {
         game.pointerX = mapPointerX(event.clientX);
