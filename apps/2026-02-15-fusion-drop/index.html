@@ -1,0 +1,655 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Fusion Drop</title>
+  <style>
+    :root {
+      --bg: #04070f;
+      --panel: rgba(11, 17, 34, 0.9);
+      --line: rgba(141, 171, 236, 0.24);
+      --ink: #e9f1ff;
+      --muted: #90a7d3;
+      --good: #8be7bd;
+      --warn: #ffb284;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    html,
+    body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      color: var(--ink);
+      font-family: "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+      background:
+        radial-gradient(120vw 68vh at 50% -18%, rgba(56, 88, 168, 0.42), transparent 58%),
+        radial-gradient(92vw 64vh at 100% 100%, rgba(57, 24, 86, 0.44), transparent 60%),
+        var(--bg);
+    }
+
+    .app {
+      width: min(100vw, 430px);
+      height: 100dvh;
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+      grid-template-rows: auto 1fr auto;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--panel);
+      box-shadow: 0 10px 26px rgba(0, 0, 0, 0.35);
+      overflow: hidden;
+    }
+
+    .hud {
+      padding: 8px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .cell {
+      min-height: 46px;
+      border: 1px solid rgba(141, 171, 236, 0.18);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.03);
+      display: grid;
+      place-content: center;
+      gap: 2px;
+      text-align: center;
+    }
+
+    .k {
+      font-size: 0.58rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+    }
+
+    .v {
+      font-size: 1rem;
+      font-weight: 800;
+      line-height: 1.02;
+    }
+
+    .stage {
+      position: relative;
+      border-radius: 16px;
+      border: 1px solid rgba(141, 171, 236, 0.3);
+      overflow: hidden;
+      background: #050a16;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      touch-action: none;
+      cursor: crosshair;
+    }
+
+    .next {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(141, 171, 236, 0.34);
+      background: rgba(0, 0, 0, 0.36);
+      font-size: 0.66rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: var(--ink);
+      pointer-events: none;
+    }
+
+    .bottom {
+      padding: 8px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .state {
+      margin: 0;
+      min-height: 42px;
+      border-radius: 10px;
+      border: 1px solid rgba(141, 171, 236, 0.22);
+      background: rgba(255, 255, 255, 0.03);
+      display: grid;
+      align-content: center;
+      justify-items: start;
+      padding: 0 12px;
+      font-size: 0.8rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+    }
+
+    .state.good {
+      color: var(--good);
+    }
+
+    .state.warn {
+      color: var(--warn);
+    }
+
+    .btn {
+      min-width: 92px;
+      min-height: 42px;
+      border: 0;
+      border-radius: 10px;
+      font-size: 0.82rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      color: #1f1307;
+      background: linear-gradient(130deg, #ffd768, #ff9d63);
+      cursor: pointer;
+    }
+
+    .btn:active {
+      transform: scale(0.99);
+    }
+
+    @media (max-width: 392px) {
+      .hud {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .cell {
+        min-height: 40px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="panel hud" aria-label="HUD">
+      <div class="cell"><span class="k">SCORE</span><span class="v" id="score">0</span></div>
+      <div class="cell"><span class="k">STAGE</span><span class="v" id="stage">1</span></div>
+      <div class="cell"><span class="k">FE</span><span class="v" id="fe">0/3</span></div>
+      <div class="cell"><span class="k">G</span><span class="v" id="gravity">1.00</span></div>
+    </section>
+
+    <section class="stage panel">
+      <canvas id="field" aria-label="Fusion Drop"></canvas>
+      <div class="next" id="next">NEXT H</div>
+    </section>
+
+    <section class="panel bottom">
+      <p class="state" id="state">TAP TO DROP</p>
+      <button type="button" class="btn" id="resetBtn">RESET</button>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      const canvas = document.getElementById("field");
+      const ctx = canvas.getContext("2d");
+      const scoreEl = document.getElementById("score");
+      const stageEl = document.getElementById("stage");
+      const feEl = document.getElementById("fe");
+      const gravityEl = document.getElementById("gravity");
+      const nextEl = document.getElementById("next");
+      const stateEl = document.getElementById("state");
+      const resetBtn = document.getElementById("resetBtn");
+
+      const ELEMENTS = [
+        { label: "H", fill: "#8fc8ff", glow: "#5eaaf2" },
+        { label: "He", fill: "#b2d3ff", glow: "#7ba7f0" },
+        { label: "C", fill: "#8cf0df", glow: "#46ccb8" },
+        { label: "O", fill: "#7df0b4", glow: "#3fbe89" },
+        { label: "Ne", fill: "#ffe08c", glow: "#efb659" },
+        { label: "Mg", fill: "#ffd091", glow: "#e89b56" },
+        { label: "Si", fill: "#ffba8f", glow: "#df8055" },
+        { label: "S", fill: "#ffa48c", glow: "#d45c52" },
+        { label: "Ar", fill: "#d5a7ff", glow: "#9867d5" },
+        { label: "Ca", fill: "#c3b2ff", glow: "#7f74de" },
+        { label: "Fe", fill: "#ff9c74", glow: "#e25b43" }
+      ];
+
+      const MAX_LEVEL = ELEMENTS.length - 1;
+      const TOP_LINE = 74;
+      const BASE_GRAVITY = 780;
+      const FE_TARGET = 3;
+      const BASE_COOLDOWN = 300;
+
+      const game = {
+        width: 0,
+        height: 0,
+        dpr: 1,
+        radii: [],
+        atoms: [],
+        pointerX: 160,
+        nextLevel: 0,
+        score: 0,
+        stage: 1,
+        multiplier: 1,
+        feCharge: 0,
+        nextDropAt: 0,
+        topDanger: 0,
+        over: false,
+        sequence: 0,
+        flash: 0,
+        stateTimeout: null,
+        lastTime: performance.now()
+      };
+
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function randomNextLevel() {
+        const roll = Math.random();
+        if (roll < 0.68) return 0;
+        if (roll < 0.92) return 1;
+        return 2;
+      }
+
+      function pointerMargin() {
+        return (game.radii[0] || 12) + 4;
+      }
+
+      function mapPointerX(clientX) {
+        const rect = canvas.getBoundingClientRect();
+        return clamp(clientX - rect.left, pointerMargin(), game.width - pointerMargin());
+      }
+
+      function setState(text, tone = "", hold = 0) {
+        stateEl.textContent = text;
+        stateEl.className = "state";
+        if (tone) {
+          stateEl.classList.add(tone);
+        }
+        if (game.stateTimeout) {
+          clearTimeout(game.stateTimeout);
+          game.stateTimeout = null;
+        }
+        if (hold > 0) {
+          game.stateTimeout = setTimeout(() => {
+            if (!game.over) {
+              setState("TAP TO DROP");
+            }
+          }, hold);
+        }
+      }
+
+      function createAtom(level, x, y, vx = 0, vy = 0) {
+        return {
+          id: ++game.sequence,
+          level,
+          x,
+          y,
+          vx,
+          vy,
+          r: game.radii[level],
+          age: 0
+        };
+      }
+
+      function countIronOnBoard() {
+        let iron = 0;
+        for (const atom of game.atoms) {
+          if (atom.level === MAX_LEVEL) iron += 1;
+        }
+        return iron;
+      }
+
+      function updateHud() {
+        const ironOnBoard = countIronOnBoard();
+        scoreEl.textContent = String(game.score);
+        stageEl.textContent = String(game.stage);
+        feEl.textContent = `${game.feCharge}/${FE_TARGET}`;
+        gravityEl.textContent = (1 + ironOnBoard * 0.16).toFixed(2);
+        nextEl.textContent = `NEXT ${ELEMENTS[game.nextLevel].label}`;
+      }
+
+      function resizeCanvas() {
+        const rect = canvas.getBoundingClientRect();
+        const prevWidth = game.width || rect.width;
+        const prevHeight = game.height || rect.height;
+        game.width = rect.width;
+        game.height = rect.height;
+        game.dpr = window.devicePixelRatio || 1;
+
+        canvas.width = Math.round(game.width * game.dpr);
+        canvas.height = Math.round(game.height * game.dpr);
+        ctx.setTransform(game.dpr, 0, 0, game.dpr, 0, 0);
+
+        const base = Math.max(11, Math.min(game.width, game.height) * 0.035);
+        game.radii = ELEMENTS.map((_, idx) => base + idx * 2.6);
+
+        if (game.atoms.length && prevWidth > 0 && prevHeight > 0) {
+          const sx = game.width / prevWidth;
+          const sy = game.height / prevHeight;
+          for (const atom of game.atoms) {
+            atom.x *= sx;
+            atom.y *= sy;
+            atom.r = game.radii[atom.level];
+          }
+        }
+
+        game.pointerX = clamp(game.pointerX, pointerMargin(), game.width - pointerMargin());
+      }
+
+      function triggerSupernova() {
+        const survivors = [];
+        for (const atom of game.atoms) {
+          if (atom.level === MAX_LEVEL) {
+            continue;
+          }
+          const surviveChance = atom.level >= 6 ? 0.8 : 0.36;
+          if (Math.random() < surviveChance) {
+            atom.vx += (Math.random() - 0.5) * 160;
+            atom.vy -= Math.random() * 210;
+            survivors.push(atom);
+          } else {
+            game.score += Math.round((atom.level + 1) * 5 * game.multiplier);
+          }
+        }
+        game.atoms = survivors;
+        game.stage += 1;
+        game.multiplier = Math.min(4, game.multiplier + 0.45);
+        game.feCharge = 0;
+        game.flash = 0.7;
+        game.score += Math.round(360 * game.stage * game.multiplier);
+        setState("SUPERNOVA", "good", 900);
+      }
+
+      function tryDrop() {
+        if (game.over) return;
+        const now = performance.now();
+        if (now < game.nextDropAt) return;
+
+        const ironOnBoard = countIronOnBoard();
+        const level = game.nextLevel;
+        const r = game.radii[level];
+        const spawnX = clamp(game.pointerX, r + 2, game.width - r - 2);
+        const spawnY = Math.max(r + 4, TOP_LINE - 20);
+
+        game.atoms.push(createAtom(level, spawnX, spawnY, 0, 22 + ironOnBoard * 24));
+        game.nextLevel = randomNextLevel();
+        game.nextDropAt = now + Math.max(130, BASE_COOLDOWN - ironOnBoard * 24);
+
+        if (!game.over) {
+          setState("FALL");
+        }
+        updateHud();
+      }
+
+      function mergePairs() {
+        const merges = [];
+        const atoms = game.atoms;
+
+        for (let i = 0; i < atoms.length; i += 1) {
+          const a = atoms[i];
+          for (let j = i + 1; j < atoms.length; j += 1) {
+            const b = atoms[j];
+            const dx = b.x - a.x;
+            const dy = b.y - a.y;
+            const dist = Math.hypot(dx, dy) || 0.0001;
+            const minDist = a.r + b.r;
+
+            if (dist >= minDist) continue;
+
+            const nx = dx / dist;
+            const ny = dy / dist;
+            const overlap = minDist - dist;
+
+            const push = overlap * 0.5 + 0.02;
+            a.x -= nx * push;
+            a.y -= ny * push;
+            b.x += nx * push;
+            b.y += ny * push;
+
+            const rvx = b.vx - a.vx;
+            const rvy = b.vy - a.vy;
+            const along = rvx * nx + rvy * ny;
+            if (along < 0) {
+              const impulse = -1.08 * along * 0.5;
+              a.vx -= impulse * nx;
+              a.vy -= impulse * ny;
+              b.vx += impulse * nx;
+              b.vy += impulse * ny;
+            }
+
+            if (
+              a.level === b.level &&
+              a.level < MAX_LEVEL &&
+              a.age > 0.08 &&
+              b.age > 0.08 &&
+              overlap > minDist * 0.22 &&
+              Math.abs(along) < 120
+            ) {
+              merges.push([a, b]);
+            }
+          }
+        }
+
+        if (!merges.length) return;
+
+        const consumed = new Set();
+        const spawned = [];
+
+        for (const [a, b] of merges) {
+          if (consumed.has(a.id) || consumed.has(b.id)) continue;
+          consumed.add(a.id);
+          consumed.add(b.id);
+
+          const newLevel = a.level + 1;
+          const atom = createAtom(
+            newLevel,
+            (a.x + b.x) * 0.5,
+            (a.y + b.y) * 0.5,
+            (a.vx + b.vx) * 0.35,
+            (a.vy + b.vy) * 0.35 - 28
+          );
+          spawned.push(atom);
+          game.score += Math.round((newLevel + 1) * (newLevel + 2) * 9 * game.multiplier);
+
+          if (newLevel === MAX_LEVEL) {
+            game.feCharge += 1;
+            setState(`FE ${game.feCharge}/${FE_TARGET}`, "warn", 600);
+            if (game.feCharge >= FE_TARGET) {
+              triggerSupernova();
+            }
+          }
+        }
+
+        if (consumed.size) {
+          game.atoms = game.atoms.filter((atom) => !consumed.has(atom.id));
+          game.atoms.push(...spawned);
+        }
+      }
+
+      function stepPhysics(dt) {
+        const ironOnBoard = countIronOnBoard();
+        const gravity = BASE_GRAVITY * (1 + ironOnBoard * 0.16 + (game.stage - 1) * 0.06);
+
+        for (const atom of game.atoms) {
+          atom.age += dt;
+          atom.vy += gravity * dt;
+          atom.x += atom.vx * dt;
+          atom.y += atom.vy * dt;
+
+          if (atom.x - atom.r < 0) {
+            atom.x = atom.r;
+            atom.vx = Math.abs(atom.vx) * 0.32;
+          } else if (atom.x + atom.r > game.width) {
+            atom.x = game.width - atom.r;
+            atom.vx = -Math.abs(atom.vx) * 0.32;
+          }
+
+          if (atom.y + atom.r > game.height) {
+            atom.y = game.height - atom.r;
+            if (atom.vy > 0) {
+              atom.vy *= -0.2;
+            }
+            atom.vx *= 0.985;
+            if (Math.abs(atom.vy) < 16) {
+              atom.vy = 0;
+            }
+          }
+        }
+
+        mergePairs();
+
+        let crowded = false;
+        for (const atom of game.atoms) {
+          if (atom.y - atom.r < TOP_LINE) {
+            crowded = true;
+            break;
+          }
+        }
+
+        if (crowded) {
+          game.topDanger += dt;
+        } else {
+          game.topDanger = Math.max(0, game.topDanger - dt * 1.6);
+        }
+
+        if (game.topDanger > 1.1) {
+          game.over = true;
+          setState("COLLAPSE", "warn");
+        }
+
+        game.flash = Math.max(0, game.flash - dt * 1.8);
+      }
+
+      function drawScene() {
+        const hue = (214 + game.stage * 16) % 360;
+        const grad = ctx.createLinearGradient(0, 0, 0, game.height);
+        grad.addColorStop(0, `hsl(${hue} 58% 12%)`);
+        grad.addColorStop(1, `hsl(${(hue + 42) % 360} 52% 7%)`);
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, game.width, game.height);
+
+        ctx.save();
+        ctx.globalAlpha = 0.35;
+        ctx.strokeStyle = "rgba(173, 199, 255, 0.5)";
+        ctx.lineWidth = 1;
+        ctx.setLineDash([5, 6]);
+        ctx.beginPath();
+        ctx.moveTo(0, TOP_LINE);
+        ctx.lineTo(game.width, TOP_LINE);
+        ctx.stroke();
+        ctx.restore();
+
+        ctx.save();
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
+        ctx.lineWidth = 1.3;
+        ctx.beginPath();
+        ctx.moveTo(game.pointerX, 6);
+        ctx.lineTo(game.pointerX, TOP_LINE - 8);
+        ctx.stroke();
+        ctx.restore();
+
+        for (const atom of game.atoms) {
+          const spec = ELEMENTS[atom.level];
+          const ring = ctx.createRadialGradient(
+            atom.x - atom.r * 0.35,
+            atom.y - atom.r * 0.5,
+            atom.r * 0.18,
+            atom.x,
+            atom.y,
+            atom.r
+          );
+          ring.addColorStop(0, "#ffffff");
+          ring.addColorStop(0.15, spec.fill);
+          ring.addColorStop(1, spec.glow);
+
+          ctx.fillStyle = ring;
+          ctx.beginPath();
+          ctx.arc(atom.x, atom.y, atom.r, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = "rgba(255, 255, 255, 0.28)";
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          ctx.fillStyle = atom.level >= 7 ? "#1d1020" : "#0b1120";
+          ctx.font = `${Math.max(11, atom.r * 0.66)}px system-ui, sans-serif`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(spec.label, atom.x, atom.y + 0.5);
+        }
+
+        if (game.flash > 0) {
+          ctx.fillStyle = `rgba(255, 244, 232, ${game.flash * 0.45})`;
+          ctx.fillRect(0, 0, game.width, game.height);
+        }
+      }
+
+      function resetGame() {
+        game.atoms = [];
+        game.score = 0;
+        game.stage = 1;
+        game.multiplier = 1;
+        game.feCharge = 0;
+        game.topDanger = 0;
+        game.over = false;
+        game.flash = 0;
+        game.nextDropAt = 0;
+        game.nextLevel = randomNextLevel();
+        setState("TAP TO DROP");
+        updateHud();
+      }
+
+      function tick(now) {
+        const dt = Math.min(0.033, (now - game.lastTime) / 1000 || 0.016);
+        game.lastTime = now;
+        if (!game.over) {
+          stepPhysics(dt);
+        }
+        drawScene();
+        updateHud();
+        requestAnimationFrame(tick);
+      }
+
+      canvas.addEventListener("pointermove", (event) => {
+        game.pointerX = mapPointerX(event.clientX);
+      });
+
+      canvas.addEventListener("pointerdown", (event) => {
+        game.pointerX = mapPointerX(event.clientX);
+        tryDrop();
+      });
+
+      window.addEventListener("keydown", (event) => {
+        if (event.key === "ArrowLeft") {
+          game.pointerX = clamp(game.pointerX - 18, pointerMargin(), game.width - pointerMargin());
+        } else if (event.key === "ArrowRight") {
+          game.pointerX = clamp(game.pointerX + 18, pointerMargin(), game.width - pointerMargin());
+        } else if (event.key === " " || event.key === "Enter") {
+          event.preventDefault();
+          tryDrop();
+        }
+      });
+
+      resetBtn.addEventListener("click", resetGame);
+      window.addEventListener("resize", resizeCanvas);
+
+      resizeCanvas();
+      resetGame();
+      requestAnimationFrame(tick);
+    })();
+  </script>
+</body>
+</html>
