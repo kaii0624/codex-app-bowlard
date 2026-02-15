@@ -6,11 +6,11 @@
   <title>Fusion Drop</title>
   <style>
     :root {
-      --bg: #04070f;
-      --panel: rgba(11, 17, 34, 0.9);
-      --line: rgba(141, 171, 236, 0.24);
-      --ink: #e9f1ff;
-      --muted: #90a7d3;
+      --bg: #03060f;
+      --panel: rgba(10, 16, 34, 0.88);
+      --line: rgba(143, 179, 255, 0.24);
+      --ink: #eaf2ff;
+      --muted: #9ab3e4;
       --good: #8be7bd;
       --warn: #ffb284;
     }
@@ -35,8 +35,10 @@
       color: var(--ink);
       font-family: "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
       background:
-        radial-gradient(120vw 68vh at 50% -18%, rgba(56, 88, 168, 0.42), transparent 58%),
-        radial-gradient(92vw 64vh at 100% 100%, rgba(57, 24, 86, 0.44), transparent 60%),
+        radial-gradient(120vw 72vh at 50% -22%, rgba(68, 106, 206, 0.48), transparent 57%),
+        radial-gradient(95vw 70vh at 10% 108%, rgba(29, 84, 128, 0.34), transparent 62%),
+        radial-gradient(84vw 62vh at 100% 96%, rgba(87, 31, 136, 0.38), transparent 62%),
+        conic-gradient(from 220deg at 78% 20%, rgba(137, 108, 255, 0.08), rgba(82, 190, 255, 0.1), rgba(255, 170, 113, 0.08), rgba(137, 108, 255, 0.08)),
         var(--bg);
     }
 
@@ -93,7 +95,37 @@
       border-radius: 16px;
       border: 1px solid rgba(141, 171, 236, 0.3);
       overflow: hidden;
-      background: #050a16;
+      background:
+        radial-gradient(95% 70% at 16% 12%, rgba(52, 119, 210, 0.18), transparent 70%),
+        radial-gradient(85% 65% at 85% 90%, rgba(152, 74, 210, 0.18), transparent 75%),
+        #050a16;
+      isolation: isolate;
+    }
+
+    .stage::before,
+    .stage::after {
+      content: "";
+      position: absolute;
+      inset: -15%;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .stage::before {
+      background:
+        radial-gradient(42% 28% at 20% 35%, rgba(92, 140, 255, 0.18), transparent 70%),
+        radial-gradient(32% 24% at 72% 64%, rgba(244, 130, 255, 0.13), transparent 70%);
+      filter: blur(22px);
+      animation: nebulaFloat 18s ease-in-out infinite;
+    }
+
+    .stage::after {
+      background:
+        repeating-linear-gradient(120deg, rgba(155, 196, 255, 0.03) 0 2px, transparent 2px 14px),
+        repeating-linear-gradient(20deg, rgba(155, 196, 255, 0.022) 0 1px, transparent 1px 11px);
+      mix-blend-mode: screen;
+      opacity: 0.35;
+      animation: latticeDrift 24s linear infinite;
     }
 
     canvas {
@@ -102,6 +134,8 @@
       display: block;
       touch-action: none;
       cursor: crosshair;
+      position: relative;
+      z-index: 1;
     }
 
     .next {
@@ -168,6 +202,29 @@
       transform: scale(0.99);
     }
 
+    @keyframes nebulaFloat {
+      0%,
+      100% {
+        transform: translate3d(0, 0, 0) scale(1);
+        opacity: 1;
+      }
+
+      50% {
+        transform: translate3d(-2%, -1%, 0) scale(1.04);
+        opacity: 0.85;
+      }
+    }
+
+    @keyframes latticeDrift {
+      0% {
+        transform: translate3d(0, 0, 0);
+      }
+
+      100% {
+        transform: translate3d(-4%, -2%, 0);
+      }
+    }
+
     @media (max-width: 392px) {
       .hud {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -232,12 +289,16 @@
       const BASE_COOLDOWN = 220;
       const MERGE_TOUCH_RATIO = 1.08;
       const MIN_FUSION_AGE = 0;
+      const BASE_RADIUS_MIN = 20.5;
+      const RADIUS_GROWTH = 1.115;
 
       const game = {
         width: 0,
         height: 0,
         dpr: 1,
         radii: [],
+        stars: [],
+        nebulas: [],
         atoms: [],
         pointerX: 160,
         nextLevel: 0,
@@ -348,8 +409,26 @@
         canvas.height = Math.round(game.height * game.dpr);
         ctx.setTransform(game.dpr, 0, 0, game.dpr, 0, 0);
 
-        const base = Math.max(11, Math.min(game.width, game.height) * 0.033);
-        game.radii = ELEMENTS.map((_, idx) => base * Math.pow(1.16, idx));
+        const base = Math.max(BASE_RADIUS_MIN, Math.min(game.width, game.height) * 0.052);
+        game.radii = ELEMENTS.map((_, idx) => base * Math.pow(RADIUS_GROWTH, idx));
+
+        const starCount = Math.round(clamp((game.width * game.height) / 1200, 90, 170));
+        game.stars = Array.from({ length: starCount }, () => ({
+          x: Math.random(),
+          y: Math.random(),
+          size: 0.6 + Math.random() * 1.8,
+          hue: 185 + Math.random() * 75,
+          alpha: 0.28 + Math.random() * 0.55,
+          phase: Math.random() * Math.PI * 2,
+          speed: 0.45 + Math.random() * 1.25
+        }));
+
+        game.nebulas = [
+          { x: 0.18, y: 0.22, r: 0.46, hue: 208, alpha: 0.22 },
+          { x: 0.84, y: 0.2, r: 0.42, hue: 272, alpha: 0.2 },
+          { x: 0.72, y: 0.78, r: 0.52, hue: 162, alpha: 0.17 },
+          { x: 0.28, y: 0.88, r: 0.38, hue: 22, alpha: 0.14 }
+        ];
 
         if (game.atoms.length && prevWidth > 0 && prevHeight > 0) {
           const sx = game.width / prevWidth;
@@ -570,16 +649,77 @@
       }
 
       function drawScene() {
-        const hue = (214 + game.stage * 16) % 360;
+        const t = performance.now() * 0.001;
+        const hue = (212 + game.stage * 14) % 360;
         const grad = ctx.createLinearGradient(0, 0, 0, game.height);
-        grad.addColorStop(0, `hsl(${hue} 58% 12%)`);
-        grad.addColorStop(1, `hsl(${(hue + 42) % 360} 52% 7%)`);
+        grad.addColorStop(0, `hsl(${hue} 62% 11%)`);
+        grad.addColorStop(0.5, `hsl(${(hue + 24) % 360} 58% 8%)`);
+        grad.addColorStop(1, `hsl(${(hue + 58) % 360} 50% 6%)`);
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, game.width, game.height);
 
         ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        for (const cloud of game.nebulas) {
+          const cx = game.width * cloud.x + Math.sin(t * 0.19 + cloud.hue) * 12;
+          const cy = game.height * cloud.y + Math.cos(t * 0.17 + cloud.hue) * 9;
+          const radius = Math.max(game.width, game.height) * cloud.r;
+          const nebula = ctx.createRadialGradient(cx, cy, radius * 0.08, cx, cy, radius);
+          nebula.addColorStop(0, `hsla(${(cloud.hue + game.stage * 7) % 360} 95% 72% / ${cloud.alpha})`);
+          nebula.addColorStop(0.45, `hsla(${(cloud.hue + 26) % 360} 85% 58% / ${cloud.alpha * 0.42})`);
+          nebula.addColorStop(1, "rgba(0, 0, 0, 0)");
+          ctx.fillStyle = nebula;
+          ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
+        }
+        ctx.restore();
+
+        for (const star of game.stars) {
+          const x = star.x * game.width;
+          const y = star.y * game.height;
+          const twinkle = 0.45 + 0.55 * Math.sin(t * star.speed + star.phase);
+          const alpha = star.alpha * twinkle;
+          ctx.fillStyle = `hsla(${star.hue} 100% 90% / ${alpha})`;
+          ctx.beginPath();
+          ctx.arc(x, y, star.size, 0, Math.PI * 2);
+          ctx.fill();
+          if (star.size > 1.6 && twinkle > 0.85) {
+            ctx.strokeStyle = `hsla(${star.hue} 100% 88% / ${alpha * 0.55})`;
+            ctx.lineWidth = 0.8;
+            ctx.beginPath();
+            ctx.moveTo(x - 3, y);
+            ctx.lineTo(x + 3, y);
+            ctx.moveTo(x, y - 3);
+            ctx.lineTo(x, y + 3);
+            ctx.stroke();
+          }
+        }
+
+        const orbitCx = game.width * 0.5;
+        const orbitCy = TOP_LINE * 0.52;
+        ctx.save();
+        ctx.globalAlpha = 0.26;
+        ctx.strokeStyle = "rgba(175, 215, 255, 0.9)";
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 3; i += 1) {
+          ctx.save();
+          ctx.translate(orbitCx, orbitCy);
+          ctx.rotate(t * 0.24 + i * (Math.PI / 3));
+          const rx = 38 + i * 8;
+          const ry = 13 + i * 5;
+          ctx.beginPath();
+          ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.fillStyle = "rgba(220, 242, 255, 0.9)";
+          ctx.beginPath();
+          ctx.arc(rx * Math.cos(t * 1.35 + i), ry * Math.sin(t * 1.35 + i), 1.9, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+        ctx.restore();
+
+        ctx.save();
         ctx.globalAlpha = 0.35;
-        ctx.strokeStyle = "rgba(173, 199, 255, 0.5)";
+        ctx.strokeStyle = "rgba(178, 209, 255, 0.6)";
         ctx.lineWidth = 1;
         ctx.setLineDash([5, 6]);
         ctx.beginPath();
@@ -589,7 +729,7 @@
         ctx.restore();
 
         ctx.save();
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
+        ctx.strokeStyle = "rgba(228, 240, 255, 0.65)";
         ctx.lineWidth = 1.3;
         ctx.beginPath();
         ctx.moveTo(game.pointerX, 6);
