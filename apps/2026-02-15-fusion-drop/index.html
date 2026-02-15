@@ -229,7 +229,9 @@
       const TOP_LINE = 74;
       const BASE_GRAVITY = 780;
       const FE_TARGET = 3;
-      const BASE_COOLDOWN = 300;
+      const BASE_COOLDOWN = 220;
+      const MERGE_TOUCH_RATIO = 1.08;
+      const MIN_FUSION_AGE = 0;
 
       const game = {
         width: 0,
@@ -242,6 +244,10 @@
         score: 0,
         stage: 1,
         multiplier: 1,
+        combo: 0,
+        comboTimer: 0,
+        pairLevel: 0,
+        pairRemaining: 0,
         feCharge: 0,
         nextDropAt: 0,
         topDanger: 0,
@@ -258,9 +264,18 @@
 
       function randomNextLevel() {
         const roll = Math.random();
-        if (roll < 0.68) return 0;
-        if (roll < 0.92) return 1;
+        if (roll < 0.78) return 0;
+        if (roll < 0.97) return 1;
         return 2;
+      }
+
+      function pullNextLevel() {
+        if (game.pairRemaining <= 0) {
+          game.pairLevel = randomNextLevel();
+          game.pairRemaining = 2;
+        }
+        game.pairRemaining -= 1;
+        return game.pairLevel;
       }
 
       function pointerMargin() {
@@ -333,8 +348,8 @@
         canvas.height = Math.round(game.height * game.dpr);
         ctx.setTransform(game.dpr, 0, 0, game.dpr, 0, 0);
 
-        const base = Math.max(11, Math.min(game.width, game.height) * 0.035);
-        game.radii = ELEMENTS.map((_, idx) => base + idx * 2.6);
+        const base = Math.max(11, Math.min(game.width, game.height) * 0.033);
+        game.radii = ELEMENTS.map((_, idx) => base * Math.pow(1.16, idx));
 
         if (game.atoms.length && prevWidth > 0 && prevHeight > 0) {
           const sx = game.width / prevWidth;
@@ -385,12 +400,8 @@
         const spawnY = Math.max(r + 4, TOP_LINE - 20);
 
         game.atoms.push(createAtom(level, spawnX, spawnY, 0, 22 + ironOnBoard * 24));
-        game.nextLevel = randomNextLevel();
-        game.nextDropAt = now + Math.max(130, BASE_COOLDOWN - ironOnBoard * 24);
-
-        if (!game.over) {
-          setState("FALL");
-        }
+        game.nextLevel = pullNextLevel();
+        game.nextDropAt = now + Math.max(90, BASE_COOLDOWN - ironOnBoard * 20);
         updateHud();
       }
 
@@ -406,37 +417,47 @@
             const dy = b.y - a.y;
             const dist = Math.hypot(dx, dy) || 0.0001;
             const minDist = a.r + b.r;
+            const nearTouch = dist <= minDist * MERGE_TOUCH_RATIO;
 
-            if (dist >= minDist) continue;
+            if (!nearTouch) continue;
 
-            const nx = dx / dist;
-            const ny = dy / dist;
-            const overlap = minDist - dist;
+            if (a.level === b.level && a.level < MAX_LEVEL) {
+              const avgVx = (a.vx + b.vx) * 0.5;
+              const avgVy = (a.vy + b.vy) * 0.5;
+              a.vx = a.vx * 0.35 + avgVx * 0.65;
+              b.vx = b.vx * 0.35 + avgVx * 0.65;
+              a.vy = a.vy * 0.35 + avgVy * 0.65;
+              b.vy = b.vy * 0.35 + avgVy * 0.65;
+            }
 
-            const push = overlap * 0.5 + 0.02;
-            a.x -= nx * push;
-            a.y -= ny * push;
-            b.x += nx * push;
-            b.y += ny * push;
+            if (dist < minDist) {
+              const nx = dx / dist;
+              const ny = dy / dist;
+              const overlap = minDist - dist;
 
-            const rvx = b.vx - a.vx;
-            const rvy = b.vy - a.vy;
-            const along = rvx * nx + rvy * ny;
-            if (along < 0) {
-              const impulse = -1.08 * along * 0.5;
-              a.vx -= impulse * nx;
-              a.vy -= impulse * ny;
-              b.vx += impulse * nx;
-              b.vy += impulse * ny;
+              const push = overlap * 0.5 + 0.02;
+              a.x -= nx * push;
+              a.y -= ny * push;
+              b.x += nx * push;
+              b.y += ny * push;
+
+              const rvx = b.vx - a.vx;
+              const rvy = b.vy - a.vy;
+              const along = rvx * nx + rvy * ny;
+              if (along < 0) {
+                const impulse = -1.08 * along * 0.5;
+                a.vx -= impulse * nx;
+                a.vy -= impulse * ny;
+                b.vx += impulse * nx;
+                b.vy += impulse * ny;
+              }
             }
 
             if (
               a.level === b.level &&
               a.level < MAX_LEVEL &&
-              a.age > 0.08 &&
-              b.age > 0.08 &&
-              overlap > minDist * 0.22 &&
-              Math.abs(along) < 120
+              a.age > MIN_FUSION_AGE &&
+              b.age > MIN_FUSION_AGE
             ) {
               merges.push([a, b]);
             }
@@ -447,11 +468,13 @@
 
         const consumed = new Set();
         const spawned = [];
+        let mergedCount = 0;
 
         for (const [a, b] of merges) {
           if (consumed.has(a.id) || consumed.has(b.id)) continue;
           consumed.add(a.id);
           consumed.add(b.id);
+          mergedCount += 1;
 
           const newLevel = a.level + 1;
           const atom = createAtom(
@@ -462,7 +485,8 @@
             (a.vy + b.vy) * 0.35 - 28
           );
           spawned.push(atom);
-          game.score += Math.round((newLevel + 1) * (newLevel + 2) * 9 * game.multiplier);
+          const chainBoost = 1 + game.combo * 0.12;
+          game.score += Math.round((newLevel + 1) * (newLevel + 2) * 9 * game.multiplier * chainBoost);
 
           if (newLevel === MAX_LEVEL) {
             game.feCharge += 1;
@@ -476,6 +500,12 @@
         if (consumed.size) {
           game.atoms = game.atoms.filter((atom) => !consumed.has(atom.id));
           game.atoms.push(...spawned);
+
+          game.combo = game.comboTimer > 0 ? game.combo + mergedCount : mergedCount;
+          game.comboTimer = 0.85;
+          if (!game.over) {
+            setState(`FUSION x${game.combo}`, "good", 480);
+          }
         }
       }
 
@@ -500,9 +530,9 @@
           if (atom.y + atom.r > game.height) {
             atom.y = game.height - atom.r;
             if (atom.vy > 0) {
-              atom.vy *= -0.2;
+              atom.vy *= -0.12;
             }
-            atom.vx *= 0.985;
+            atom.vx *= 0.965;
             if (Math.abs(atom.vy) < 16) {
               atom.vy = 0;
             }
@@ -513,7 +543,9 @@
 
         let crowded = false;
         for (const atom of game.atoms) {
-          if (atom.y - atom.r < TOP_LINE) {
+          const nearTop = atom.y - atom.r < TOP_LINE;
+          const settledNearTop = atom.age > 0.55 && Math.abs(atom.vy) < 55;
+          if (nearTop && settledNearTop) {
             crowded = true;
             break;
           }
@@ -525,11 +557,15 @@
           game.topDanger = Math.max(0, game.topDanger - dt * 1.6);
         }
 
-        if (game.topDanger > 1.1) {
+        if (game.topDanger > 1.35) {
           game.over = true;
           setState("COLLAPSE", "warn");
         }
 
+        game.comboTimer = Math.max(0, game.comboTimer - dt);
+        if (game.comboTimer === 0) {
+          game.combo = 0;
+        }
         game.flash = Math.max(0, game.flash - dt * 1.8);
       }
 
@@ -602,12 +638,16 @@
         game.score = 0;
         game.stage = 1;
         game.multiplier = 1;
+        game.combo = 0;
+        game.comboTimer = 0;
+        game.pairLevel = 0;
+        game.pairRemaining = 0;
         game.feCharge = 0;
         game.topDanger = 0;
         game.over = false;
         game.flash = 0;
         game.nextDropAt = 0;
-        game.nextLevel = randomNextLevel();
+        game.nextLevel = pullNextLevel();
         setState("TAP TO DROP");
         updateHud();
       }
