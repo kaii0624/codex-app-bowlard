@@ -32,7 +32,7 @@
       height: 100dvh;
       padding: 10px;
       display: grid;
-      grid-template-rows: auto auto 1fr;
+ main
       gap: 8px;
     }
     .panel {
@@ -83,11 +83,12 @@
     }
     .controls {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+ main
       gap: 8px;
       padding: 8px;
       align-items: center;
     }
+ main
     .btn {
       min-height: 42px; border: 0; border-radius: 10px;
       font-weight: 800; letter-spacing: 0.05em; font-size: 0.78rem;
@@ -128,16 +129,13 @@
       <div class="burst-bar"><div class="burst-fill" id="burstFill"></div></div>
     </section>
 
-    <section class="panel controls">
-      <button class="btn secondary" id="infoBtn">反応/設計</button>
-      <button class="btn secondary" id="resetBtn">RESET</button>
-    </section>
-
+ main
     <section class="panel stage-wrap">
       <div class="next" id="nextLabel">NEXT: n</div>
       <div class="danger-line"></div>
       <canvas id="game"></canvas>
     </section>
+ main
   </main>
 
   <div class="modal" id="infoModal" hidden>
@@ -176,7 +174,7 @@ GammaEvent中にγ命中: captureを1減少</pre>
     element.capture += 1
     score += 10 * modeMultiplier
     burstGauge += 8
-    particle.reacted = true // 反応後も盤面に残る
+ main
     if element.capture >= element.threshold and !element.unstable:
       element.unstable = true
       element.timer = element.lifetime
@@ -241,6 +239,7 @@ rProcessController(dt):
     const timeEl = document.getElementById("time");
     const nextLabel = document.getElementById("nextLabel");
     const burstFill = document.getElementById("burstFill");
+ main
     const dataRows = document.getElementById("dataRows");
 
     let w = 0, h = 0;
@@ -254,7 +253,7 @@ rProcessController(dt):
     let burstRemain = 0;
     let gammaEvent = 0;
     let ended = false;
-    let aimX = 0;
+ main
     let lastT = performance.now();
 
     function fillDataRows() {
@@ -277,22 +276,7 @@ rProcessController(dt):
 
     function makeElement(id, x, y) {
       const d = ELEMENTS[INDEX_BY_ID[id]];
-      return { kind: "element", id, x, y, vx: 0, vy: 0, r: d.radius, mass: d.radius * 2.4, capture: 0, unstable: false, timer: 0 };
-    }
-
-    function makeParticleBall(type, x, y, reactive = true) {
-      const r = type === "gamma" ? 7 : 9;
-      return {
-        kind: "particleBall",
-        type,
-        x,
-        y,
-        vx: (Math.random() - 0.5) * 60,
-        vy: 0,
-        r,
-        mass: r * 0.9,
-        reacted: !reactive
-      };
+ main
     }
 
     function spawnSeed() {
@@ -311,15 +295,12 @@ rProcessController(dt):
 
     function spawnActive() {
       if (active || ended) return;
-      active = {
-        kind: "particle",
-        type: nextPiece,
-        x: Math.min(w - 15, Math.max(15, aimX || w * 0.5)),
+ main
         y: 24,
         vx: 0,
         vy: 0,
         r: nextPiece === "gamma" ? 7 : 9,
-        dropped: false
+ main
       };
       nextPiece = chooseNext();
     }
@@ -339,22 +320,7 @@ rProcessController(dt):
       const overlap = minD - d;
       const nx = dx / d;
       const ny = dy / d;
-      const invA = 1 / (a.mass || 1);
-      const invB = 1 / (b.mass || 1);
-      const sum = invA + invB;
-      const moveA = invA / sum;
-      const moveB = invB / sum;
-
-      a.x -= nx * overlap * moveA;
-      a.y -= ny * overlap * moveA;
-      b.x += nx * overlap * moveB;
-      b.y += ny * overlap * moveB;
-
-      const bounce = 0.28;
-      a.vx -= nx * overlap * bounce * moveA;
-      a.vy -= ny * overlap * bounce * moveA;
-      b.vx += nx * overlap * bounce * moveB;
-      b.vy += ny * overlap * bounce * moveB;
+ main
     }
 
     function hitParticleElement(p, e) {
@@ -407,30 +373,7 @@ rProcessController(dt):
       gammaEvent = Math.max(0, gammaEvent - dt);
 
       if (active) {
-        if (!active.dropped) {
-          active.y = 24;
-          active.vy = 0;
-          active.x = Math.min(w - active.r, Math.max(active.r, active.x));
-        } else {
-          active.vy += 1300 * dt;
-          active.y += active.vy * dt;
-
-          if (active.y + active.r > h) {
-            active.y = h - active.r;
-            balls.push(makeParticleBall(active.type, active.x, active.y, true));
-            active = null;
-          } else {
-            for (const b of balls) {
-              if (dist(active, b) <= active.r + b.r) {
-                if (b.kind === "element") {
-                  hitParticleElement(active, b);
-                  balls.push(makeParticleBall(active.type, active.x, active.y, false));
-                } else {
-                  balls.push(makeParticleBall(active.type, active.x, active.y, true));
-                }
-                active = null;
-                break;
-              }
+ main
             }
           }
         }
@@ -445,17 +388,7 @@ rProcessController(dt):
         if (b.x - b.r < 0) { b.x = b.r; b.vx *= -0.35; }
         if (b.x + b.r > w) { b.x = w - b.r; b.vx *= -0.35; }
         if (b.y + b.r > h) { b.y = h - b.r; b.vy *= -0.35; }
-
-        if (b.kind === "particleBall" && !b.reacted) {
-          for (const e of balls) {
-            if (e.kind !== "element") continue;
-            if (dist(b, e) <= b.r + e.r) {
-              hitParticleElement({ type: b.type }, e);
-              b.reacted = true;
-              break;
-            }
-          }
-        }
+ main
       }
 
       for (let i = 0; i < balls.length; i++) {
@@ -483,39 +416,7 @@ rProcessController(dt):
     }
 
     function drawBall(b) {
-      if (b.kind === "element") {
-        const d = ELEMENTS[INDEX_BY_ID[b.id]];
-        ctx.beginPath();
-        ctx.fillStyle = d.color;
-        ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = "#0f1320";
-        ctx.font = "bold 12px sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText(b.id, b.x, b.y + 4);
-
-        const dots = "●".repeat(Math.min(b.capture, d.threshold)) + "○".repeat(Math.max(0, d.threshold - b.capture));
-        ctx.font = "10px sans-serif";
-        ctx.fillStyle = "#e8efff";
-        ctx.fillText(dots, b.x, b.y + b.r + 12);
-
-        if (b.unstable) {
-          const ratio = Math.max(0, b.timer / d.lifetime);
-          ctx.beginPath();
-          ctx.strokeStyle = "#ffbc73";
-          ctx.lineWidth = 3;
-          ctx.arc(b.x, b.y, b.r + 6, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * ratio);
-          ctx.stroke();
-        }
-        return;
-      }
-
-      const gamma = b.type === "gamma";
-      ctx.beginPath();
-      ctx.fillStyle = gamma ? "#ff8db0" : (b.reacted ? "#6f7f97" : "#b7dfff");
-      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-      ctx.fill();
+ main
     }
 
     function render() {
@@ -568,25 +469,7 @@ rProcessController(dt):
       spawnActive();
     }
 
-    function updateAimFromPointer(ev) {
-      const rect = canvas.getBoundingClientRect();
-      const x = ev.clientX - rect.left;
-      aimX = Math.min(w - 15, Math.max(15, x));
-      if (active && active.y < 48) {
-        active.x = aimX;
-      }
-    }
-
-    canvas.addEventListener("pointermove", (ev) => {
-      if (ended) return;
-      updateAimFromPointer(ev);
-    });
-
-    canvas.addEventListener("pointerdown", (ev) => {
-      if (!active || ended) return;
-      updateAimFromPointer(ev);
-      active.x = aimX;
-      active.dropped = true;
+ main
       active.vy = 50;
     });
 
@@ -595,15 +478,7 @@ rProcessController(dt):
     document.getElementById("closeInfo").addEventListener("click", () => { modal.hidden = true; });
     document.getElementById("resetBtn").addEventListener("click", resetGame);
 
-    window.addEventListener("resize", () => {
-      resize();
-      aimX = w * 0.5;
-      spawnSeed();
-    });
-
-    fillDataRows();
-    resize();
-    aimX = w * 0.5;
+ main
     resetGame();
     bestEl.textContent = String(best);
     requestAnimationFrame(loop);
