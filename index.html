@@ -319,7 +319,7 @@
 
     .card.active .expand {
       opacity: 1;
-      padding: 0 14px 20px;
+      padding: 0 14px 28px;
     }
 
     .desc {
@@ -332,9 +332,9 @@
     }
 
     .actions {
-      margin-top: 10px;
+      margin-top: 12px;
       padding-left: 86px;
-      padding-bottom: 2px;
+      padding-bottom: 8px;
       display: grid;
       gap: 8px;
     }
@@ -585,15 +585,10 @@
       expand.style.maxHeight = `${expand.scrollHeight}px`;
     }
 
-    function buildCard(key, dayEntries, index) {
+    function buildCard(entry, index) {
       const card = document.createElement("article");
       card.className = "card";
       card.style.animationDelay = `${index * 50}ms`;
-
-      const unlocked = dayEntries.length > 0;
-      if (!unlocked) {
-        card.classList.add("locked");
-      }
 
       const head = document.createElement("button");
       head.type = "button";
@@ -601,17 +596,11 @@
 
       const date = document.createElement("span");
       date.className = "date";
-      date.textContent = key;
+      date.textContent = entry.date;
 
       const title = document.createElement("span");
       title.className = "title";
-      if (unlocked && dayEntries.length === 1) {
-        title.textContent = dayEntries[0].title;
-      } else if (unlocked) {
-        title.textContent = `${dayEntries.length} apps available`;
-      } else {
-        title.textContent = "locked";
-      }
+      title.textContent = entry.title;
 
       const indicator = document.createElement("span");
       indicator.className = "indicator";
@@ -619,71 +608,62 @@
       head.append(date, title, indicator);
       card.appendChild(head);
 
-      if (unlocked) {
-        const expand = document.createElement("div");
-        expand.className = "expand";
+      const expand = document.createElement("div");
+      expand.className = "expand";
 
-        const desc = document.createElement("p");
-        desc.className = "desc";
-        const labels = dayEntries.map((entry) => entry.title);
-        desc.textContent = labels.join(" / ");
-        expand.appendChild(desc);
+      const desc = document.createElement("p");
+      desc.className = "desc";
+      desc.textContent = entry.title;
+      expand.appendChild(desc);
 
-        const actions = document.createElement("div");
-        actions.className = "actions";
+      const actions = document.createElement("div");
+      actions.className = "actions";
 
-        dayEntries.forEach((entry) => {
-          const entryActions = document.createElement("div");
-          entryActions.className = "entry-actions";
+      const entryActions = document.createElement("div");
+      entryActions.className = "entry-actions";
 
-          const appBtn = document.createElement("a");
-          appBtn.className = "action-btn app-btn";
-          appBtn.href = entry.href;
-          const appLabel = dayEntries.length === 1 ? "App" : entry.title;
-          appBtn.innerHTML = `${appIcon()}<span>${appLabel}</span>`;
-          appBtn.addEventListener("click", (event) => {
-            event.stopPropagation();
-          });
+      const appBtn = document.createElement("a");
+      appBtn.className = "action-btn app-btn";
+      appBtn.href = entry.href;
+      appBtn.innerHTML = `${appIcon()}<span>App</span>`;
+      appBtn.addEventListener("click", (event) => {
+        event.stopPropagation();
+      });
 
-          const articleBtn = document.createElement(entry.articleHref ? "a" : "button");
-          articleBtn.className = "action-btn article-btn";
-          articleBtn.innerHTML = `${articleIcon()}<span>記事</span>`;
+      const articleBtn = document.createElement(entry.articleHref ? "a" : "button");
+      articleBtn.className = "action-btn article-btn";
+      articleBtn.innerHTML = `${articleIcon()}<span>記事</span>`;
 
-          if (entry.articleHref) {
-            articleBtn.href = entry.articleHref;
-            articleBtn.addEventListener("click", (event) => {
-              event.stopPropagation();
-            });
-          } else {
-            articleBtn.type = "button";
-            articleBtn.setAttribute("aria-disabled", "true");
-          }
-
-          entryActions.append(appBtn, articleBtn);
-          actions.appendChild(entryActions);
-        });
-
-        expand.appendChild(actions);
-        card.appendChild(expand);
-
-        head.addEventListener("click", () => {
-          const active = card.classList.contains("active");
-          const opened = cardList.querySelectorAll(".card.active");
-          opened.forEach((openedCard) => {
-            if (openedCard !== card) {
-              closeCard(openedCard);
-            }
-          });
-
-          if (active) {
-            closeCard(card);
-          } else {
-            openCard(card);
-          }
+      if (entry.articleHref) {
+        articleBtn.href = entry.articleHref;
+        articleBtn.addEventListener("click", (event) => {
+          event.stopPropagation();
         });
       } else {
-        head.disabled = true;
+        articleBtn.type = "button";
+        articleBtn.setAttribute("aria-disabled", "true");
       }
+
+      entryActions.append(appBtn, articleBtn);
+      actions.appendChild(entryActions);
+      expand.appendChild(actions);
+      card.appendChild(expand);
+
+      head.addEventListener("click", () => {
+        const active = card.classList.contains("active");
+        const opened = cardList.querySelectorAll(".card.active");
+        opened.forEach((openedCard) => {
+          if (openedCard !== card) {
+            closeCard(openedCard);
+          }
+        });
+
+        if (active) {
+          closeCard(card);
+        } else {
+          openCard(card);
+        }
+      });
 
       return card;
     }
@@ -691,28 +671,22 @@
     function renderMonth(year, month) {
       cardList.innerHTML = "";
 
-      const grouped = entries.reduce((map, entry) => {
-        const bucket = map.get(entry.date) ?? [];
-        bucket.push(entry);
-        map.set(entry.date, bucket);
-        return map;
-      }, new Map());
-
       const monthPrefix = `${year}-${pad2(month + 1)}-`;
-      const visibleDays = Array.from(grouped.entries())
-        .filter(([date]) => date.startsWith(monthPrefix))
-        .sort(([a], [b]) => a.localeCompare(b));
+      const visibleEntries = entries
+        .map((entry, index) => ({ ...entry, _index: index }))
+        .filter((entry) => entry.date.startsWith(monthPrefix))
+        .sort((a, b) => a.date.localeCompare(b.date) || a._index - b._index);
 
       const daysInMonth = new Date(year, month + 1, 0).getDate();
-      const unlocked = visibleDays.length;
+      const unlocked = visibleEntries.length;
       let firstOpenCard = null;
       const currentMonthView = year === today.getFullYear() && month === today.getMonth();
 
-      visibleDays.forEach(([key, dayEntries], index) => {
-        const card = buildCard(key, dayEntries, index);
+      visibleEntries.forEach((entry, index) => {
+        const card = buildCard(entry, index);
         cardList.appendChild(card);
 
-        const day = Number(key.slice(-2));
+        const day = Number(entry.date.slice(-2));
         if (!firstOpenCard && (!currentMonthView || day <= today.getDate())) {
           firstOpenCard = card;
         }
