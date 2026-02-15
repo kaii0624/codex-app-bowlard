@@ -1,0 +1,612 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Heavy Fall Phase2</title>
+  <style>
+    :root {
+      --bg: #040814;
+      --panel: rgba(12, 18, 38, 0.92);
+      --line: rgba(149, 177, 238, 0.28);
+      --ink: #ecf3ff;
+      --muted: #99aed8;
+      --hot: #ffb86a;
+      --good: #7be4bb;
+      --warn: #ff7f7f;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+    html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); }
+    body {
+      display: flex;
+      justify-content: center;
+      color: var(--ink);
+      font-family: "Hiragino Sans", "Yu Gothic", sans-serif;
+      background:
+        radial-gradient(95vw 70vh at 80% -20%, rgba(112, 91, 255, 0.25), transparent 65%),
+        radial-gradient(90vw 68vh at -12% 110%, rgba(0, 163, 196, 0.2), transparent 64%),
+        var(--bg);
+    }
+    .app {
+      width: min(100vw, 430px);
+      height: 100dvh;
+      padding: 10px;
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      gap: 8px;
+    }
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--panel);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    }
+    .hud {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0,1fr));
+      gap: 6px;
+      padding: 8px;
+    }
+    .cell {
+      border: 1px solid rgba(149, 177, 238, 0.2);
+      border-radius: 10px;
+      min-height: 44px;
+      display: grid;
+      place-content: center;
+      text-align: center;
+      background: rgba(255,255,255,0.02);
+    }
+    .k { font-size: 0.56rem; color: var(--muted); font-weight: 700; letter-spacing: 0.08em; }
+    .v { font-size: 0.95rem; font-weight: 800; }
+    .burst-bar {
+      margin: 0 8px 8px;
+      height: 8px;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid rgba(149, 177, 238, 0.22);
+      background: rgba(255,255,255,0.05);
+    }
+    .burst-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #74d8ff, #ab8fff, #ffd46d); }
+    .stage-wrap { position: relative; overflow: hidden; }
+    canvas { width: 100%; height: 100%; display: block; touch-action: none; }
+    .next {
+      position: absolute; top: 8px; left: 8px; z-index: 2;
+      padding: 4px 10px; border-radius: 999px;
+      border: 1px solid rgba(149, 177, 238, 0.36);
+      background: rgba(0,0,0,0.34);
+      font-size: 0.66rem; font-weight: 700;
+    }
+    .danger-line {
+      position: absolute; left: 0; right: 0; top: 20%;
+      border-top: 1px dashed rgba(255, 126, 126, 0.5);
+      pointer-events: none;
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      padding: 8px;
+      align-items: center;
+    }
+    .btn {
+      min-height: 42px; border: 0; border-radius: 10px;
+      font-weight: 800; letter-spacing: 0.05em; font-size: 0.78rem;
+      color: #251307;
+      background: linear-gradient(130deg, #ffd66f, #ff9c67);
+      padding: 0 12px;
+    }
+    .btn.secondary { color: #deebff; background: linear-gradient(130deg, #476bc6, #6f56c9); }
+    .modal {
+      position: fixed; inset: 0; z-index: 20; display: grid; place-items: center;
+      background: rgba(4, 8, 16, 0.74); padding: 14px;
+    }
+    .modal[hidden] { display: none; }
+    .sheet {
+      width: min(100%, 390px); max-height: 88dvh; overflow: auto;
+      border-radius: 14px; border: 1px solid rgba(149,177,238,0.36);
+      background: rgba(9, 15, 32, 0.97); padding: 12px;
+      display: grid; gap: 10px;
+    }
+    h2 { margin: 0; font-size: 0.82rem; letter-spacing: 0.06em; }
+    p, li, td, th, pre { font-size: 0.72rem; line-height: 1.5; color: #dbe8ff; }
+    ul { margin: 0; padding-left: 16px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid rgba(149,177,238,0.24); padding: 4px; text-align: left; }
+    pre { white-space: pre-wrap; margin: 0; border: 1px solid rgba(149,177,238,0.24); border-radius: 8px; padding: 8px; background: rgba(255,255,255,0.03); }
+    .inline { color: var(--hot); font-weight: 800; }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="panel">
+      <div class="hud">
+        <div class="cell"><span class="k">SCORE</span><span class="v" id="score">0</span></div>
+        <div class="cell"><span class="k">BEST</span><span class="v" id="best">0</span></div>
+        <div class="cell"><span class="k">MODE</span><span class="v" id="mode">s過程</span></div>
+        <div class="cell"><span class="k">TIME</span><span class="v" id="time">120</span></div>
+      </div>
+      <div class="burst-bar"><div class="burst-fill" id="burstFill"></div></div>
+    </section>
+
+    <section class="panel controls">
+      <button class="btn secondary" id="infoBtn">反応/設計</button>
+      <button class="btn secondary" id="resetBtn">RESET</button>
+    </section>
+
+    <section class="panel stage-wrap">
+      <div class="next" id="nextLabel">NEXT: n</div>
+      <div class="danger-line"></div>
+      <canvas id="game"></canvas>
+    </section>
+  </main>
+
+  <div class="modal" id="infoModal" hidden>
+    <div class="sheet">
+      <h2>反応/プロセス一覧</h2>
+      <ul>
+        <li><span class="inline">s過程</span>: 中性子捕獲→不安定化→時間経過でβ崩壊し次元素へ進化。</li>
+        <li><span class="inline">r過程</span>: バースト10秒。中性子出現率上昇で複数ボール同時不安定化→後から連鎖進化。</li>
+        <li><span class="inline">γ過程</span>: 高温イベント中のγが命中すると捕獲カウント-1（盤面整理/妨害）。</li>
+      </ul>
+
+      <h2>最小設計（コンポーネント）</h2>
+      <ul>
+        <li>GameState: スコア、タイマー、モード、バーストゲージ、nextピース。</li>
+        <li>ElementBall: id, radius, capture, threshold, unstableTimer, x/y/vx/vy。</li>
+        <li>Particle: neutron / gamma の落下体。</li>
+        <li>UI: HUD、next表示、捕獲ゲージ、タイマーリング、反応/設計モーダル。</li>
+      </ul>
+
+      <h2>状態遷移図（簡易）</h2>
+      <pre>Stable --(n捕獲 >= 閾値)--> Unstable(timer開始)
+Unstable --(timer=0)--> Evolved(next element)
+Evolved --(次のn捕獲)--> Unstable ...
+BurstGauge=100 --(発動)--> r過程(10s) --(終了)--> s過程
+GammaEvent中にγ命中: captureを1減少</pre>
+
+      <h2>データ定義（抜粋）</h2>
+      <table>
+        <thead><tr><th>ID</th><th>next</th><th>size</th><th>閾値</th><th>寿命秒</th><th>進化点</th></tr></thead>
+        <tbody id="dataRows"></tbody>
+      </table>
+
+      <h2>主要ロジック擬似コード</h2>
+      <pre>onCollision(particle, element):
+  if particle.type == neutron:
+    element.capture += 1
+    score += 10 * modeMultiplier
+    burstGauge += 8
+    particle.reacted = true // 反応後も盤面に残る
+    if element.capture >= element.threshold and !element.unstable:
+      element.unstable = true
+      element.timer = element.lifetime
+  if particle.type == gamma and gammaEvent:
+    element.capture = max(0, element.capture - 1)
+
+update(dt):
+  updatePhysics(dt)
+  for each element where unstable:
+    element.timer -= dt
+    if element.timer <= 0:
+      evolve(element)
+
+function evolve(element):
+  if element.next exists:
+    element.id = element.next
+    element.capture = 0
+    element.unstable = false
+    radius/threshold/lifetime update
+    score += evolveScore * modeMultiplier
+
+rProcessController(dt):
+  if burstActive:
+    burstRemaining -= dt
+    forceNextPieceMostlyNeutron()
+    if burstRemaining <= 0: burstActive = false
+  else if burstGauge >= 100:
+    burstActive = true
+    burstRemaining = 10
+    burstGauge = 0</pre>
+
+      <h2>受け入れ条件</h2>
+      <ul>
+        <li>捕獲→不安定化→規定秒でβ崩壊進化（UIリングと元素変化が一致）。</li>
+        <li>r過程中に中性子ラッシュで複数不安定化、終了後に連鎖進化が起こる。</li>
+        <li>反応/プロセス一覧の説明が実装挙動と矛盾しない。</li>
+      </ul>
+      <button class="btn secondary" id="closeInfo">閉じる</button>
+    </div>
+  </div>
+
+  <script>
+    const ELEMENTS = [
+      { id: "Fe", next: "Co", radius: 18, threshold: 3, lifetime: 18, score: 80, color: "#8fa6bf" },
+      { id: "Co", next: "Ni", radius: 20, threshold: 3, lifetime: 18, score: 120, color: "#6ea3d6" },
+      { id: "Ni", next: "Cu", radius: 22, threshold: 4, lifetime: 20, score: 170, color: "#84bed0" },
+      { id: "Cu", next: "Zn", radius: 24, threshold: 4, lifetime: 22, score: 230, color: "#d79f6f" },
+      { id: "Zn", next: "Ga", radius: 26, threshold: 4, lifetime: 24, score: 300, color: "#9ecddf" },
+      { id: "Ga", next: "Ge", radius: 28, threshold: 5, lifetime: 26, score: 380, color: "#8ab6dc" },
+      { id: "Ge", next: "As", radius: 30, threshold: 5, lifetime: 28, score: 470, color: "#9aa5dd" },
+      { id: "As", next: "Se", radius: 32, threshold: 5, lifetime: 30, score: 570, color: "#9cc5a5" },
+      { id: "Se", next: "Br", radius: 34, threshold: 6, lifetime: 32, score: 680, color: "#b9a0d6" },
+      { id: "Br", next: null, radius: 36, threshold: 7, lifetime: 36, score: 820, color: "#cb8aa0" }
+    ];
+    const INDEX_BY_ID = Object.fromEntries(ELEMENTS.map((d, i) => [d.id, i]));
+
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+    const scoreEl = document.getElementById("score");
+    const bestEl = document.getElementById("best");
+    const modeEl = document.getElementById("mode");
+    const timeEl = document.getElementById("time");
+    const nextLabel = document.getElementById("nextLabel");
+    const burstFill = document.getElementById("burstFill");
+    const dataRows = document.getElementById("dataRows");
+
+    let w = 0, h = 0;
+    let balls = [];
+    let active = null;
+    let nextPiece = "neutron";
+    let score = 0;
+    let best = Number(localStorage.getItem("heavy-fall-best") || 0);
+    let gameTime = 120;
+    let burstGauge = 0;
+    let burstRemain = 0;
+    let gammaEvent = 0;
+    let ended = false;
+    let aimX = 0;
+    let lastT = performance.now();
+
+    function fillDataRows() {
+      dataRows.innerHTML = "";
+      for (const e of ELEMENTS) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${e.id}</td><td>${e.next || "-"}</td><td>${e.radius}</td><td>${e.threshold}</td><td>${e.lifetime}</td><td>${e.score}</td>`;
+        dataRows.appendChild(tr);
+      }
+    }
+
+    function resize() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      w = rect.width;
+      h = rect.height;
+      canvas.width = Math.floor(w * devicePixelRatio);
+      canvas.height = Math.floor(h * devicePixelRatio);
+      ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    }
+
+    function makeElement(id, x, y) {
+      const d = ELEMENTS[INDEX_BY_ID[id]];
+      return { kind: "element", id, x, y, vx: 0, vy: 0, r: d.radius, mass: d.radius * 2.4, capture: 0, unstable: false, timer: 0 };
+    }
+
+    function makeParticleBall(type, x, y, reactive = true) {
+      const r = type === "gamma" ? 7 : 9;
+      return {
+        kind: "particleBall",
+        type,
+        x,
+        y,
+        vx: (Math.random() - 0.5) * 60,
+        vy: 0,
+        r,
+        mass: r * 0.9,
+        reacted: !reactive
+      };
+    }
+
+    function spawnSeed() {
+      balls = [
+        makeElement("Fe", w * 0.27, h - 52),
+        makeElement("Fe", w * 0.5, h - 52),
+        makeElement("Fe", w * 0.73, h - 52)
+      ];
+    }
+
+    function chooseNext() {
+      if (gammaEvent > 0 && Math.random() < 0.28) return "gamma";
+      if (burstRemain > 0) return Math.random() < 0.9 ? "neutron" : "gamma";
+      return "neutron";
+    }
+
+    function spawnActive() {
+      if (active || ended) return;
+      active = {
+        kind: "particle",
+        type: nextPiece,
+        x: Math.min(w - 15, Math.max(15, aimX || w * 0.5)),
+        y: 24,
+        vx: 0,
+        vy: 0,
+        r: nextPiece === "gamma" ? 7 : 9,
+        dropped: false
+      };
+      nextPiece = chooseNext();
+    }
+
+    function dist(a, b) {
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      return Math.hypot(dx, dy);
+    }
+
+    function collideResolve(a, b) {
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const d = Math.hypot(dx, dy) || 0.001;
+      const minD = a.r + b.r;
+      if (d >= minD) return;
+      const overlap = minD - d;
+      const nx = dx / d;
+      const ny = dy / d;
+      const invA = 1 / (a.mass || 1);
+      const invB = 1 / (b.mass || 1);
+      const sum = invA + invB;
+      const moveA = invA / sum;
+      const moveB = invB / sum;
+
+      a.x -= nx * overlap * moveA;
+      a.y -= ny * overlap * moveA;
+      b.x += nx * overlap * moveB;
+      b.y += ny * overlap * moveB;
+
+      const bounce = 0.28;
+      a.vx -= nx * overlap * bounce * moveA;
+      a.vy -= ny * overlap * bounce * moveA;
+      b.vx += nx * overlap * bounce * moveB;
+      b.vy += ny * overlap * bounce * moveB;
+    }
+
+    function hitParticleElement(p, e) {
+      const d = ELEMENTS[INDEX_BY_ID[e.id]];
+      if (p.type === "neutron") {
+        e.capture += 1;
+        score += Math.round(10 * (burstRemain > 0 ? 1.4 : 1));
+        burstGauge = Math.min(100, burstGauge + 8);
+        if (e.capture >= d.threshold && !e.unstable) {
+          e.unstable = true;
+          e.timer = d.lifetime;
+        }
+      } else if (p.type === "gamma" && gammaEvent > 0) {
+        e.capture = Math.max(0, e.capture - 1);
+      }
+    }
+
+    function evolve(e) {
+      const d = ELEMENTS[INDEX_BY_ID[e.id]];
+      if (!d.next) {
+        e.unstable = false;
+        e.capture = d.threshold;
+        return;
+      }
+      const nd = ELEMENTS[INDEX_BY_ID[d.next]];
+      e.id = nd.id;
+      e.r = nd.radius;
+      e.capture = 0;
+      e.unstable = false;
+      e.timer = 0;
+      score += Math.round(nd.score * (burstRemain > 0 ? 1.5 : 1));
+    }
+
+    function update(dt) {
+      if (ended) return;
+      gameTime -= dt;
+      if (gameTime <= 0) {
+        ended = true;
+      }
+
+      if (burstRemain > 0) {
+        burstRemain -= dt;
+      } else if (burstGauge >= 100) {
+        burstRemain = 10;
+        burstGauge = 0;
+      }
+      if (Math.floor(gameTime) % 35 === 0 && Math.floor(gameTime) > 0) {
+        gammaEvent = Math.max(gammaEvent, 5);
+      }
+      gammaEvent = Math.max(0, gammaEvent - dt);
+
+      if (active) {
+        if (!active.dropped) {
+          active.y = 24;
+          active.vy = 0;
+          active.x = Math.min(w - active.r, Math.max(active.r, active.x));
+        } else {
+          active.vy += 1300 * dt;
+          active.y += active.vy * dt;
+
+          if (active.y + active.r > h) {
+            active.y = h - active.r;
+            balls.push(makeParticleBall(active.type, active.x, active.y, true));
+            active = null;
+          } else {
+            for (const b of balls) {
+              if (dist(active, b) <= active.r + b.r) {
+                if (b.kind === "element") {
+                  hitParticleElement(active, b);
+                  balls.push(makeParticleBall(active.type, active.x, active.y, false));
+                } else {
+                  balls.push(makeParticleBall(active.type, active.x, active.y, true));
+                }
+                active = null;
+                break;
+              }
+            }
+          }
+        }
+      }
+
+      for (const b of balls) {
+        b.vy += 560 * dt;
+        b.vx *= 0.985;
+        b.vy *= 0.985;
+        b.x += b.vx * dt;
+        b.y += b.vy * dt;
+        if (b.x - b.r < 0) { b.x = b.r; b.vx *= -0.35; }
+        if (b.x + b.r > w) { b.x = w - b.r; b.vx *= -0.35; }
+        if (b.y + b.r > h) { b.y = h - b.r; b.vy *= -0.35; }
+
+        if (b.kind === "particleBall" && !b.reacted) {
+          for (const e of balls) {
+            if (e.kind !== "element") continue;
+            if (dist(b, e) <= b.r + e.r) {
+              hitParticleElement({ type: b.type }, e);
+              b.reacted = true;
+              break;
+            }
+          }
+        }
+      }
+
+      for (let i = 0; i < balls.length; i++) {
+        for (let j = i + 1; j < balls.length; j++) {
+          collideResolve(balls[i], balls[j]);
+        }
+      }
+
+      for (const b of balls) {
+        if (b.unstable) {
+          b.timer -= dt;
+          if (b.timer <= 0) evolve(b);
+        }
+      }
+
+      if (balls.some((b) => b.y - b.r < h * 0.2)) {
+        ended = true;
+      }
+
+      if (!active && !ended) spawnActive();
+      if (score > best) {
+        best = score;
+        localStorage.setItem("heavy-fall-best", String(best));
+      }
+    }
+
+    function drawBall(b) {
+      if (b.kind === "element") {
+        const d = ELEMENTS[INDEX_BY_ID[b.id]];
+        ctx.beginPath();
+        ctx.fillStyle = d.color;
+        ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "#0f1320";
+        ctx.font = "bold 12px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(b.id, b.x, b.y + 4);
+
+        const dots = "●".repeat(Math.min(b.capture, d.threshold)) + "○".repeat(Math.max(0, d.threshold - b.capture));
+        ctx.font = "10px sans-serif";
+        ctx.fillStyle = "#e8efff";
+        ctx.fillText(dots, b.x, b.y + b.r + 12);
+
+        if (b.unstable) {
+          const ratio = Math.max(0, b.timer / d.lifetime);
+          ctx.beginPath();
+          ctx.strokeStyle = "#ffbc73";
+          ctx.lineWidth = 3;
+          ctx.arc(b.x, b.y, b.r + 6, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * ratio);
+          ctx.stroke();
+        }
+        return;
+      }
+
+      const gamma = b.type === "gamma";
+      ctx.beginPath();
+      ctx.fillStyle = gamma ? "#ff8db0" : (b.reacted ? "#6f7f97" : "#b7dfff");
+      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, w, h);
+      for (const b of balls) drawBall(b);
+      if (active) {
+        ctx.beginPath();
+        ctx.fillStyle = active.type === "gamma" ? "#ff8db0" : "#b7dfff";
+        ctx.arc(active.x, active.y, active.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      if (ended) {
+        ctx.fillStyle = "rgba(4,8,16,0.72)";
+        ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = "#e7efff";
+        ctx.textAlign = "center";
+        ctx.font = "bold 22px sans-serif";
+        ctx.fillText("GAME OVER", w / 2, h / 2 - 10);
+        ctx.font = "14px sans-serif";
+        ctx.fillText("RESET で再開", w / 2, h / 2 + 18);
+      }
+
+      scoreEl.textContent = String(score);
+      bestEl.textContent = String(best);
+      modeEl.textContent = burstRemain > 0 ? "r過程" : "s過程";
+      timeEl.textContent = String(Math.max(0, Math.floor(gameTime)));
+      nextLabel.textContent = `NEXT: ${nextPiece === "gamma" ? "γ" : "n"}${gammaEvent > 0 ? " (γ高温)" : ""}`;
+      burstFill.style.width = `${burstRemain > 0 ? (burstRemain / 10) * 100 : burstGauge}%`;
+      burstFill.style.opacity = burstRemain > 0 ? "1" : "0.7";
+    }
+
+    function loop(t) {
+      const dt = Math.min(0.033, (t - lastT) / 1000);
+      lastT = t;
+      update(dt);
+      render();
+      requestAnimationFrame(loop);
+    }
+
+    function resetGame() {
+      score = 0;
+      gameTime = 120;
+      burstGauge = 0;
+      burstRemain = 0;
+      gammaEvent = 0;
+      ended = false;
+      active = null;
+      nextPiece = "neutron";
+      spawnSeed();
+      spawnActive();
+    }
+
+    function updateAimFromPointer(ev) {
+      const rect = canvas.getBoundingClientRect();
+      const x = ev.clientX - rect.left;
+      aimX = Math.min(w - 15, Math.max(15, x));
+      if (active && active.y < 48) {
+        active.x = aimX;
+      }
+    }
+
+    canvas.addEventListener("pointermove", (ev) => {
+      if (ended) return;
+      updateAimFromPointer(ev);
+    });
+
+    canvas.addEventListener("pointerdown", (ev) => {
+      if (!active || ended) return;
+      updateAimFromPointer(ev);
+      active.x = aimX;
+      active.dropped = true;
+      active.vy = 50;
+    });
+
+    const modal = document.getElementById("infoModal");
+    document.getElementById("infoBtn").addEventListener("click", () => { modal.hidden = false; });
+    document.getElementById("closeInfo").addEventListener("click", () => { modal.hidden = true; });
+    document.getElementById("resetBtn").addEventListener("click", resetGame);
+
+    window.addEventListener("resize", () => {
+      resize();
+      aimX = w * 0.5;
+      spawnSeed();
+    });
+
+    fillDataRows();
+    resize();
+    aimX = w * 0.5;
+    resetGame();
+    bestEl.textContent = String(best);
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
