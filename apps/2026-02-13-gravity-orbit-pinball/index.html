@@ -189,14 +189,13 @@
       const stateEl = document.getElementById("state");
       const resetBtn = document.getElementById("resetBtn");
 
-      const SOURCE_G = 130;
-      const SHOT_G = 2400;
-      const GOAL_G = 4200;
-      const SOFTEN = 90;
-      const WALL_BOUNCE = 0.84;
-      const MAX_SHOT_SPEED = 420;
+      const SHOT_G = 980;
+      const GOAL_G = 1850;
+      const SOFTEN = 120;
+      const MAX_SHOT_SPEED = 240;
       const MAX_PULL = 130;
-      const LAUNCH_SCALE = 2.65;
+      const LAUNCH_SCALE = 1.55;
+      const TIME_SCALE = 0.58;
 
       const game = {
         width: 0,
@@ -272,10 +271,7 @@
           r: Math.min(w, h) * 0.03
         };
 
-        game.bumpers = [
-          { x: w * 0.31, y: h * 0.62, r: Math.min(w, h) * 0.032, color: "#8fe9ff" },
-          { x: w * 0.67, y: h * 0.69, r: Math.min(w, h) * 0.036, color: "#ffa5a5" }
-        ];
+        game.bumpers = [];
 
         game.sources = [
           {
@@ -295,8 +291,8 @@
           {
             x: w * 0.29,
             y: h * 0.39,
-            vx: 58,
-            vy: -18,
+            vx: 0,
+            vy: 0,
             r: Math.min(w, h) * 0.031,
             mass: 1200,
             color: "#62bdff",
@@ -309,8 +305,8 @@
           {
             x: w * 0.71,
             y: h * 0.44,
-            vx: -33,
-            vy: 46,
+            vx: 0,
+            vy: 0,
             r: Math.min(w, h) * 0.036,
             mass: 1450,
             color: "#f6a162",
@@ -323,8 +319,8 @@
           {
             x: w * 0.79,
             y: h * 0.53,
-            vx: -72,
-            vy: -21,
+            vx: 0,
+            vy: 0,
             r: Math.min(w, h) * 0.02,
             mass: 430,
             color: "#e3efff",
@@ -416,81 +412,14 @@
         return true;
       }
 
-      function updateSources(dt) {
-        const acc = game.sources.map(() => ({ x: 0, y: 0 }));
-
-        for (let i = 0; i < game.sources.length; i += 1) {
-          for (let j = i + 1; j < game.sources.length; j += 1) {
-            const a = game.sources[i];
-            const b = game.sources[j];
-            const dx = b.x - a.x;
-            const dy = b.y - a.y;
-            const distSq = dx * dx + dy * dy + SOFTEN;
-            const dist = Math.sqrt(distSq);
-            const nx = dx / dist;
-            const ny = dy / dist;
-
-            const pullA = (SOURCE_G * b.mass) / distSq;
-            const pullB = (SOURCE_G * a.mass) / distSq;
-
-            acc[i].x += nx * pullA;
-            acc[i].y += ny * pullA;
-            acc[j].x -= nx * pullB;
-            acc[j].y -= ny * pullB;
-          }
-        }
-
-        for (let i = 0; i < game.sources.length; i += 1) {
-          const s = game.sources[i];
-          const homeDx = s.anchorX - s.x;
-          const homeDy = s.anchorY - s.y;
-
-          acc[i].x += homeDx * s.anchorPull;
-          acc[i].y += homeDy * s.anchorPull;
-
-          s.vx += acc[i].x * dt;
-          s.vy += acc[i].y * dt;
-
-          const speed = Math.hypot(s.vx, s.vy);
-          if (speed > s.maxSpeed) {
-            const k = s.maxSpeed / speed;
-            s.vx *= k;
-            s.vy *= k;
-          }
-
-          s.x += s.vx * dt;
-          s.y += s.vy * dt;
-
-          const minX = s.r + 8;
-          const maxX = game.width - s.r - 8;
-          const minY = s.r + 8;
-          const maxY = game.height - s.r - 8;
-
-          if (s.x < minX) {
-            s.x = minX;
-            s.vx = Math.abs(s.vx) * 0.62;
-          } else if (s.x > maxX) {
-            s.x = maxX;
-            s.vx = -Math.abs(s.vx) * 0.62;
-          }
-
-          if (s.y < minY) {
-            s.y = minY;
-            s.vy = Math.abs(s.vy) * 0.62;
-          } else if (s.y > maxY) {
-            s.y = maxY;
-            s.vy = -Math.abs(s.vy) * 0.62;
-          }
-        }
-      }
-
       function updateShot(dt) {
         const p = game.shot;
         if (!p.active) {
           return;
         }
 
-        game.flightTime += dt;
+        const step = dt * TIME_SCALE;
+        game.flightTime += step;
 
         let ax = 0;
         let ay = 0;
@@ -513,8 +442,8 @@
         ax += (gdx / gDist) * gPull;
         ay += (gdy / gDist) * gPull;
 
-        p.vx += ax * dt;
-        p.vy += ay * dt;
+        p.vx += ax * step;
+        p.vy += ay * step;
 
         const speed = Math.hypot(p.vx, p.vy);
         if (speed > MAX_SHOT_SPEED) {
@@ -523,27 +452,20 @@
           p.vy *= k;
         }
 
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
+        p.x += p.vx * step;
+        p.y += p.vy * step;
 
-        if (p.x < p.r && p.vx < 0) {
-          p.x = p.r;
-          p.vx = Math.abs(p.vx) * WALL_BOUNCE;
-        } else if (p.x > game.width - p.r && p.vx > 0) {
-          p.x = game.width - p.r;
-          p.vx = -Math.abs(p.vx) * WALL_BOUNCE;
+        // Wrap around edges to mimic an endless space without solid walls.
+        if (p.x < -p.r) {
+          p.x = game.width + p.r;
+        } else if (p.x > game.width + p.r) {
+          p.x = -p.r;
         }
 
-        if (p.y < p.r && p.vy < 0) {
-          p.y = p.r;
-          p.vy = Math.abs(p.vy) * WALL_BOUNCE;
-        } else if (p.y > game.height - p.r && p.vy > 0) {
-          p.y = game.height - p.r;
-          p.vy = -Math.abs(p.vy) * WALL_BOUNCE;
-        }
-
-        for (const bumper of game.bumpers) {
-          resolveCircleCollision(p, bumper, 1.02);
+        if (p.y < -p.r) {
+          p.y = game.height + p.r;
+        } else if (p.y > game.height + p.r) {
+          p.y = -p.r;
         }
 
         let hitCore = false;
@@ -576,7 +498,7 @@
         }
 
         if (speed < 12) {
-          game.stillTime += dt;
+          game.stillTime += step;
         } else {
           game.stillTime = 0;
         }
@@ -837,10 +759,7 @@
         const dt = Math.min((timestamp - game.lastTimestamp) / 1000, 0.034);
         game.lastTimestamp = timestamp;
 
-        // Keep the stage static while idle; run celestial motion only during an active shot.
-        if (game.shot.active) {
-          updateSources(dt);
-        }
+        // Fixed stars: only the launched body is simulated.
         updateShot(dt);
         updateHud();
         draw();
