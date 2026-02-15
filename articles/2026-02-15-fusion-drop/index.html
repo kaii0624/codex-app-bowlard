@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Fusion Drop Notes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Sora:wght@200;300;400;500;600&family=IBM+Plex+Mono:wght@300;400&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    :root {
+      --bg-1: #eef5ff;
+      --bg-2: #eefbff;
+      --bg-3: #f8f3ff;
+      --bg-4: #fff7f1;
+      --bg-5: #eff6ff;
+      --text-strong: rgba(0, 0, 0, 0.8);
+      --text-main: rgba(0, 0, 0, 0.58);
+      --text-soft: rgba(0, 0, 0, 0.3);
+      --glass: rgba(255, 255, 255, 0.46);
+      --glass-line: rgba(255, 255, 255, 0.72);
+      --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+    }
+
+    body {
+      font-family: "Sora", "Hiragino Sans", "Yu Gothic", sans-serif;
+      color: var(--text-main);
+      background: linear-gradient(160deg, var(--bg-1) 0%, var(--bg-2) 24%, var(--bg-3) 50%, var(--bg-4) 76%, var(--bg-5) 100%);
+      overflow-x: hidden;
+    }
+
+    .bg-layer {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .aurora {
+      background:
+        radial-gradient(ellipse 92% 55% at 14% 4%, rgba(150, 198, 255, 0.3), transparent 56%),
+        radial-gradient(ellipse 66% 54% at 86% 18%, rgba(171, 221, 255, 0.2), transparent 50%),
+        radial-gradient(ellipse 80% 46% at 50% 96%, rgba(235, 183, 146, 0.16), transparent 54%),
+        radial-gradient(ellipse 46% 46% at 72% 64%, rgba(208, 170, 255, 0.14), transparent 52%);
+      z-index: 0;
+    }
+
+    .noise {
+      z-index: 1;
+      opacity: 0.02;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256' viewBox='0 0 256 256'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 256px 256px;
+      background-repeat: repeat;
+    }
+
+    .wrap {
+      position: relative;
+      z-index: 2;
+      width: min(100%, 420px);
+      margin: 0 auto;
+      padding: 44px 16px 60px;
+    }
+
+    .badge {
+      width: fit-content;
+      padding: 8px 20px;
+      border-radius: 40px;
+      border: 1px solid rgba(255, 255, 255, 0.74);
+      background: rgba(255, 255, 255, 0.56);
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      box-shadow: 0 2px 16px rgba(0, 0, 0, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.84);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 10px;
+      letter-spacing: 0.9px;
+      text-transform: uppercase;
+      color: rgba(0, 0, 0, 0.4);
+    }
+
+    h1 {
+      margin: 14px 0 6px;
+      font-size: 28px;
+      line-height: 1.2;
+      letter-spacing: -0.5px;
+      font-weight: 200;
+      color: rgba(0, 0, 0, 0.64);
+    }
+
+    h1 strong {
+      font-weight: 600;
+      color: var(--text-strong);
+    }
+
+    .meta {
+      margin: 0;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 11px;
+      letter-spacing: 0.8px;
+      color: rgba(0, 0, 0, 0.22);
+      text-transform: uppercase;
+    }
+
+    .article {
+      margin-top: 14px;
+      border-radius: 20px;
+      border: 1px solid var(--glass-line);
+      background: var(--glass);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      box-shadow:
+        0 10px 40px rgba(0, 0, 0, 0.04),
+        inset 0 1px 0 rgba(255, 255, 255, 0.94),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.02);
+      padding: 18px 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .article::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 10%;
+      right: 10%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.95), transparent);
+    }
+
+    .article p {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.8;
+      color: var(--text-main);
+    }
+
+    .article p + p {
+      margin-top: 12px;
+    }
+
+    .actions {
+      margin-top: 14px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 9px 18px;
+      border-radius: 14px;
+      border: 1px solid transparent;
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.2px;
+      transition: 0.3s var(--ease-spring);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    .btn.primary {
+      background: linear-gradient(135deg, rgba(100, 170, 255, 0.16), rgba(159, 130, 255, 0.1));
+      border-color: rgba(100, 170, 255, 0.25);
+      color: rgba(60, 120, 220, 0.86);
+      box-shadow: 0 2px 10px rgba(100, 170, 255, 0.08);
+    }
+
+    .btn.secondary {
+      background: rgba(255, 255, 255, 0.56);
+      border-color: rgba(0, 0, 0, 0.05);
+      color: rgba(0, 0, 0, 0.42);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+    }
+
+    .foot {
+      margin-top: 10px;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 10px;
+      letter-spacing: 0.7px;
+      color: var(--text-soft);
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-layer aurora" aria-hidden="true"></div>
+  <div class="bg-layer noise" aria-hidden="true"></div>
+
+  <main class="wrap">
+    <div class="badge">article</div>
+    <h1><strong>Fusion Drop</strong> Memo</h1>
+    <p class="meta">2026-02-15 / development note</p>
+
+    <article class="article">
+      <p>
+        このFusion Dropというのは、宇宙で起こる反応に強く惹かれたことが出発点です。
+        惑星まわりの反応も含めて、水素からヘリウムへ、さらにより大きな元素へとつながっていく流れに感銘を受けました。
+      </p>
+      <p>
+        その興味をゲーム化するときに、まだ自分がやったことのなかったスイカゲームの発想に似ているというアナロジーを見つけ、
+        元素がどんどん大きくなっていく手触りとして対応させました。
+      </p>
+      <p>
+        自然に核融合で大きくなっていくのは42番目の鉄原子まで、というイメージもこの中で再現し、
+        宇宙で実際に起こっている反応や、惑星ができていくようなダイナミクスをこのアプリに込めています。
+      </p>
+      <p>
+        単純にスイカゲームをやったことがなかったので、まず自分でもやってみたいという思いがあり、
+        そのまま実装して形にしました。
+      </p>
+
+      <div class="actions">
+        <a class="btn primary" href="../../apps/2026-02-15-fusion-drop/">App</a>
+        <a class="btn secondary" href="../../">Hub</a>
+      </div>
+    </article>
+
+    <p class="foot">advent build log</p>
+  </main>
+</body>
+</html>
