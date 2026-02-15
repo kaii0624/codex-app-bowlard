@@ -272,9 +272,9 @@
     <div class="sheet">
       <h2>REACTION / PROCESS</h2>
       <ul class="list">
-        <li>s過程: 中性子捕獲 → 不安定化 → 時間でβ崩壊(進化)</li>
-        <li>r過程: 中性子ラッシュ(10秒) → 大量不安定化 → 連鎖進化</li>
-        <li>γ過程: 高温中のγヒットで捕獲ゲージ-1</li>
+        <li>s過程: n接触で捕獲+1 / 満タンで不安定化</li>
+        <li>β崩壊: タイマー0で次元素へ進化</li>
+        <li>r過程: 10s中性子ラッシュで連鎖加速</li>
       </ul>
       <button type="button" class="btn secondary" id="closeReactionsBtn">CLOSE</button>
     </div>
@@ -296,16 +296,21 @@
       const closeReactionsBtn = document.getElementById("closeReactionsBtn");
 
       const ELEMENTS = [
-        { id: "Fe", next: 1, radius: 16, captureNeed: 2, lifeSec: 60, score: 120, color: "#8897ad", glow: "#b9c5d8" },
-        { id: "Co", next: 2, radius: 18, captureNeed: 2, lifeSec: 60, score: 160, color: "#6f86aa", glow: "#a2c1ef" },
-        { id: "Ni", next: 3, radius: 20, captureNeed: 3, lifeSec: 60, score: 220, color: "#5f98b0", glow: "#86d4f1" },
-        { id: "Cu", next: 4, radius: 22, captureNeed: 3, lifeSec: 60, score: 300, color: "#af7b54", glow: "#f3b983" },
-        { id: "Zn", next: 5, radius: 24, captureNeed: 4, lifeSec: 60, score: 380, color: "#8f9a74", glow: "#d9e1a8" },
-        { id: "Ga", next: 6, radius: 26, captureNeed: 4, lifeSec: 60, score: 470, color: "#7d7f9f", glow: "#c3bee9" },
-        { id: "Ge", next: 7, radius: 28, captureNeed: 5, lifeSec: 60, score: 560, color: "#61789f", glow: "#a5c7f6" },
-        { id: "As", next: 8, radius: 31, captureNeed: 5, lifeSec: 60, score: 680, color: "#739f8d", glow: "#a9edce" },
-        { id: "Se", next: 9, radius: 34, captureNeed: 6, lifeSec: 60, score: 820, color: "#b58a5e", glow: "#f4c591" },
-        { id: "Br", next: null, radius: 37, captureNeed: 6, lifeSec: 60, score: 0, color: "#ba6464", glow: "#ff9d9d" }
+        { id: "Fe", next: 1, radius: 16, captureNeed: 2, decaySec: 60, score: 130, color: "#8695aa", glow: "#b8c7dc" },
+        { id: "Co", next: 2, radius: 18, captureNeed: 2, decaySec: 56, score: 180, color: "#7889ac", glow: "#aebde3" },
+        { id: "Ni", next: 3, radius: 20, captureNeed: 3, decaySec: 52, score: 250, color: "#648ea8", glow: "#93c7e4" },
+        { id: "Cu", next: 4, radius: 22, captureNeed: 3, decaySec: 48, score: 340, color: "#ad7951", glow: "#f0ba88" },
+        { id: "Zn", next: 5, radius: 24, captureNeed: 4, decaySec: 44, score: 460, color: "#8da172", glow: "#d7e4a9" },
+        { id: "Sr", next: 6, radius: 26, captureNeed: 4, decaySec: 40, score: 620, color: "#7596aa", glow: "#b3def1" },
+        { id: "Ag", next: 7, radius: 28, captureNeed: 5, decaySec: 36, score: 820, color: "#929cb5", glow: "#d2dcf2" },
+        { id: "Sn", next: 8, radius: 30, captureNeed: 5, decaySec: 33, score: 1060, color: "#7a90a3", glow: "#bfd2e6" },
+        { id: "Xe", next: 9, radius: 32, captureNeed: 6, decaySec: 30, score: 1350, color: "#8f7da8", glow: "#ccbaeb" },
+        { id: "Ba", next: 10, radius: 34, captureNeed: 6, decaySec: 28, score: 1700, color: "#938f70", glow: "#dbd6aa" },
+        { id: "Au", next: 11, radius: 36, captureNeed: 7, decaySec: 26, score: 2150, color: "#b4873a", glow: "#ffd787" },
+        { id: "Pb", next: 12, radius: 38, captureNeed: 7, decaySec: 24, score: 2720, color: "#6f7f93", glow: "#b0c3d6" },
+        { id: "Bi", next: 13, radius: 40, captureNeed: 8, decaySec: 22, score: 3400, color: "#867f9e", glow: "#ccc3e6" },
+        { id: "Th", next: 14, radius: 43, captureNeed: 8, decaySec: 20, score: 4200, color: "#876a55", glow: "#dcb59f" },
+        { id: "U", next: null, radius: 46, captureNeed: 9, decaySec: 18, score: 0, color: "#5f9d69", glow: "#9fddb0" }
       ];
 
       const CONSTANTS = {
@@ -313,20 +318,27 @@
         wallBounce: 0.26,
         floorBounce: 0.2,
         floorDrag: 0.985,
-        pairCooldown: 0.45,
-        capturePoints: 6,
-        captureEnergy: 5,
-        unstableBonusCut: 0.95,
-        burstDuration: 10,
-        burstInterval: 54,
-        burstMultiplier: 2,
-        burstRainInterval: 0.24,
-        gammaDuration: 8,
-        gammaInterval: 43,
+        pairCooldown: 0.12,
+        capturePoints: 8,
+        unstableStartBonus: 24,
+        unstableCut: 0.9,
+        evolveKick: 110,
+        chainHoldSec: 3.4,
+        rushDuration: 10,
+        rushInterval: 56,
+        rushThreshold: 100,
+        rushChargePerCapture: 4,
+        rushChargePerDecay: 16,
+        rushRainInterval: 0.2,
         topLine: 74,
-        topDangerLimit: 1.2,
-        dropCooldown: 0.42,
-        dropCooldownBurst: 0.17
+        topDangerLimit: 1.25,
+        dropCooldown: 0.4,
+        dropCooldownRush: 0.16,
+        normalNeutronRate: 0.74,
+        rushNeutronRate: 0.94,
+        neutronTtl: 7.8,
+        neutronRadius: 8,
+        subSteps: 2
       };
 
       const state = {
@@ -343,14 +355,11 @@
         best: Number(localStorage.getItem("heavy-fusion-drop-best") || 0),
         chain: 0,
         chainTimer: 0,
-        burstEnergy: 0,
-        burstActive: false,
-        burstLeft: 0,
-        burstRainClock: 0,
-        nextBurstAt: CONSTANTS.burstInterval,
-        gammaActive: false,
-        gammaLeft: 0,
-        nextGammaAt: CONSTANTS.gammaInterval,
+        rushCharge: 0,
+        rushActive: false,
+        rushLeft: 0,
+        rushRainClock: 0,
+        nextRushAt: CONSTANTS.rushInterval,
         queue: [],
         dropLockUntil: 0,
         danger: 0,
@@ -367,22 +376,14 @@
       }
 
       function nextPiece() {
-        const roll = Math.random();
-        if (state.gammaActive && roll < 0.2) {
-          return { kind: "gamma" };
-        }
-        if (state.burstActive) {
-          if (roll < 0.88) return { kind: "neutron" };
-          return { kind: "element", elementIndex: 0 };
-        }
-        if (roll < 0.7) return { kind: "neutron" };
+        const neutronRate = state.rushActive ? CONSTANTS.rushNeutronRate : CONSTANTS.normalNeutronRate;
+        if (Math.random() < neutronRate) return { kind: "neutron" };
         return { kind: "element", elementIndex: 0 };
       }
 
       function pieceLabel(piece) {
-        if (piece.kind === "neutron") return "n";
-        if (piece.kind === "gamma") return "γ";
-        return ELEMENTS[piece.elementIndex].id;
+        if (!piece) return "-";
+        return piece.kind === "neutron" ? "n" : "Fe";
       }
 
       function createBallFromPiece(piece, x, y) {
@@ -391,41 +392,33 @@
           x,
           y,
           vx: 0,
-          vy: 0
+          vy: 0,
+          dead: false
         };
 
         if (piece.kind === "neutron") {
           return {
             ...base,
             kind: "neutron",
-            r: scaleRadius(8),
+            r: scaleRadius(CONSTANTS.neutronRadius),
             color: "#84d8ff",
-            glow: "#ddf6ff"
+            glow: "#ddf6ff",
+            ttl: CONSTANTS.neutronTtl
           };
         }
 
-        if (piece.kind === "gamma") {
-          return {
-            ...base,
-            kind: "gamma",
-            r: scaleRadius(9),
-            color: "#ffd27f",
-            glow: "#fff0c7",
-            ttl: 14
-          };
-        }
-
-        const spec = ELEMENTS[piece.elementIndex];
+        const idx = piece.elementIndex ?? 0;
+        const spec = ELEMENTS[idx];
         return {
           ...base,
           kind: "element",
-          elementIndex: piece.elementIndex,
+          elementIndex: idx,
           r: scaleRadius(spec.radius),
           capture: 0,
           captureNeed: spec.captureNeed,
           unstable: false,
-          decayLeft: spec.lifeSec,
-          decayMax: spec.lifeSec
+          decayLeft: spec.decaySec,
+          decayMax: spec.decaySec
         };
       }
 
@@ -450,10 +443,8 @@
             ball.y *= sy;
             if (ball.kind === "element") {
               ball.r = scaleRadius(ELEMENTS[ball.elementIndex].radius);
-            } else if (ball.kind === "neutron") {
-              ball.r = scaleRadius(8);
             } else {
-              ball.r = scaleRadius(9);
+              ball.r = scaleRadius(CONSTANTS.neutronRadius);
             }
           }
         }
@@ -468,7 +459,7 @@
           const x = gap * (i + 1) + (Math.random() - 0.5) * 10;
           const y = state.height - scaleRadius(42) - i * scaleRadius(3);
           const seed = createBallFromPiece({ kind: "element", elementIndex: 0 }, x, y);
-          seed.vx = (Math.random() - 0.5) * 80;
+          seed.vx = (Math.random() - 0.5) * 72;
           state.balls.push(seed);
         }
       }
@@ -483,14 +474,11 @@
         state.score = 0;
         state.chain = 0;
         state.chainTimer = 0;
-        state.burstEnergy = 0;
-        state.burstActive = false;
-        state.burstLeft = 0;
-        state.burstRainClock = 0;
-        state.nextBurstAt = CONSTANTS.burstInterval;
-        state.gammaActive = false;
-        state.gammaLeft = 0;
-        state.nextGammaAt = CONSTANTS.gammaInterval;
+        state.rushCharge = 0;
+        state.rushActive = false;
+        state.rushLeft = 0;
+        state.rushRainClock = 0;
+        state.nextRushAt = CONSTANTS.rushInterval;
         state.queue = [nextPiece(), nextPiece()];
         state.dropLockUntil = 0;
         state.danger = 0;
@@ -505,71 +493,62 @@
           localStorage.setItem("heavy-fusion-drop-best", String(state.best));
         }
 
-        document.body.dataset.ballCount = String(state.balls.length);
-        document.body.dataset.gameOver = state.gameOver ? "1" : "0";
-
         scoreEl.textContent = String(state.score);
         bestEl.textContent = String(state.best);
         chainEl.textContent = String(state.chain);
 
-        if (state.burstActive) {
-          burstEl.textContent = `${state.burstLeft.toFixed(1)}s`;
-          phaseEl.textContent = `r-PROCESS x${CONSTANTS.burstMultiplier}`;
+        if (state.rushActive) {
+          burstEl.textContent = `${state.rushLeft.toFixed(1)}s`;
+          phaseEl.textContent = "r-PROCESS";
           phaseEl.style.color = "#ffd88e";
         } else {
-          burstEl.textContent = `${Math.round(state.burstEnergy)}%`;
-          if (state.gammaActive) {
-            phaseEl.textContent = `γ HOT ${state.gammaLeft.toFixed(1)}s`;
-            phaseEl.style.color = "#ffd287";
-          } else {
-            phaseEl.textContent = "s-PROCESS";
-            phaseEl.style.color = "#dce8ff";
-          }
+          burstEl.textContent = `${Math.round(state.rushCharge)}%`;
+          phaseEl.textContent = "s-PROCESS";
+          phaseEl.style.color = "#dce8ff";
         }
 
         nextPieceEl.textContent = pieceLabel(state.queue[0]);
       }
 
-      function startBurst() {
-        state.burstActive = true;
-        state.burstLeft = CONSTANTS.burstDuration;
-        state.burstRainClock = 0;
-        state.burstEnergy = 0;
-        state.nextBurstAt = state.time + CONSTANTS.burstInterval;
+      function startRush() {
+        state.rushActive = true;
+        state.rushLeft = CONSTANTS.rushDuration;
+        state.rushRainClock = 0;
+        state.rushCharge = 0;
+        state.nextRushAt = state.time + CONSTANTS.rushInterval;
       }
 
       function spawnNeutronRain() {
-        const ball = createBallFromPiece(
-          { kind: "neutron" },
-          clamp(Math.random() * state.width, scaleRadius(10), state.width - scaleRadius(10)),
-          scaleRadius(16)
-        );
-        ball.vx = (Math.random() - 0.5) * 70;
-        ball.vy = 80 + Math.random() * 160;
-        state.balls.push(ball);
+        const burstCount = Math.random() < 0.3 ? 2 : 1;
+        for (let i = 0; i < burstCount; i += 1) {
+          const neutron = createBallFromPiece(
+            { kind: "neutron" },
+            clamp(Math.random() * state.width, scaleRadius(10), state.width - scaleRadius(10)),
+            scaleRadius(15)
+          );
+          neutron.vx = (Math.random() - 0.5) * 78;
+          neutron.vy = 90 + Math.random() * 150;
+          state.balls.push(neutron);
+        }
       }
 
       function captureByNeutron(element) {
         if (element.unstable) {
-          element.decayLeft = Math.max(3, element.decayLeft - CONSTANTS.unstableBonusCut);
-        } else {
-          element.capture = Math.min(element.captureNeed, element.capture + 1);
-          if (element.capture >= element.captureNeed) {
-            element.unstable = true;
-            element.decayLeft = element.decayMax;
-          }
+          element.decayLeft = Math.max(0.45, element.decayLeft - CONSTANTS.unstableCut);
+          state.score += CONSTANTS.capturePoints + 2;
+          state.rushCharge = clamp(state.rushCharge + CONSTANTS.rushChargePerCapture * 0.6, 0, CONSTANTS.rushThreshold);
+          return;
         }
 
-        const captureScore = state.burstActive ? Math.round(CONSTANTS.capturePoints * 1.5) : CONSTANTS.capturePoints;
-        state.score += captureScore;
-        state.burstEnergy = clamp(state.burstEnergy + CONSTANTS.captureEnergy, 0, 100);
-      }
+        element.capture = Math.min(element.captureNeed, element.capture + 1);
+        state.score += CONSTANTS.capturePoints;
+        state.rushCharge = clamp(state.rushCharge + CONSTANTS.rushChargePerCapture, 0, CONSTANTS.rushThreshold);
 
-      function hitByGamma(element) {
-        element.capture = Math.max(0, element.capture - 1);
-        if (element.unstable && element.capture < element.captureNeed) {
-          element.unstable = false;
+        if (element.capture >= element.captureNeed) {
+          element.unstable = true;
           element.decayLeft = element.decayMax;
+          state.score += CONSTANTS.unstableStartBonus;
+          state.rushCharge = clamp(state.rushCharge + CONSTANTS.rushChargePerCapture * 2, 0, CONSTANTS.rushThreshold);
         }
       }
 
@@ -582,29 +561,30 @@
           return;
         }
 
-        const nextIndex = current.next;
-        const next = ELEMENTS[nextIndex];
-
-        element.elementIndex = nextIndex;
+        const next = ELEMENTS[current.next];
+        element.elementIndex = current.next;
         element.r = scaleRadius(next.radius);
         element.capture = 0;
         element.captureNeed = next.captureNeed;
         element.unstable = false;
-        element.decayLeft = next.lifeSec;
-        element.decayMax = next.lifeSec;
-        element.vy -= 110;
+        element.decayLeft = next.decaySec;
+        element.decayMax = next.decaySec;
+        element.vy -= CONSTANTS.evolveKick;
 
-        const mult = state.burstActive ? CONSTANTS.burstMultiplier : 1;
-        state.score += next.score * mult;
-        state.chain += 1;
-        state.chainTimer = 3.2;
-        state.burstEnergy = clamp(state.burstEnergy + 14, 0, 100);
+        state.chain = state.chainTimer > 0 ? state.chain + 1 : 1;
+        state.chainTimer = CONSTANTS.chainHoldSec;
+
+        const chainMult = 1 + Math.min(8, state.chain - 1) * 0.14;
+        const rushMult = state.rushActive ? 1.35 : 1;
+        state.score += Math.round(next.score * chainMult * rushMult);
+        state.rushCharge = clamp(state.rushCharge + CONSTANTS.rushChargePerDecay, 0, CONSTANTS.rushThreshold);
       }
 
       function handleReaction(a, b) {
+        if (a.dead || b.dead) return;
+
         let element = null;
         let neutron = null;
-        let gamma = null;
 
         if (a.kind === "element" && b.kind === "neutron") {
           element = a;
@@ -614,34 +594,15 @@
           neutron = a;
         }
 
-        if (!element) {
-          if (a.kind === "element" && b.kind === "gamma") {
-            element = a;
-            gamma = b;
-          } else if (a.kind === "gamma" && b.kind === "element") {
-            element = b;
-            gamma = a;
-          }
-        }
-
-        if (!element) return;
+        if (!element || !neutron) return;
 
         const key = a.id < b.id ? `${a.id}|${b.id}` : `${b.id}|${a.id}`;
         const seenAt = state.pairCache.get(key) || -999;
         if (state.time - seenAt < CONSTANTS.pairCooldown) return;
         state.pairCache.set(key, state.time);
 
-        if (neutron) {
-          captureByNeutron(element);
-          neutron.vx += (Math.random() - 0.5) * 40;
-          neutron.vy -= 16;
-          return;
-        }
-
-        if (gamma) {
-          hitByGamma(element);
-          gamma.dead = true;
-        }
+        captureByNeutron(element);
+        neutron.dead = true;
       }
 
       function updateWorld(dt) {
@@ -652,41 +613,29 @@
           }
         }
 
-        if (!state.burstActive && (state.burstEnergy >= 100 || state.time >= state.nextBurstAt)) {
-          startBurst();
+        if (!state.rushActive && (state.rushCharge >= CONSTANTS.rushThreshold || state.time >= state.nextRushAt)) {
+          startRush();
         }
 
-        if (state.burstActive) {
-          state.burstLeft -= dt;
-          state.burstRainClock += dt;
-          while (state.burstRainClock >= CONSTANTS.burstRainInterval) {
-            state.burstRainClock -= CONSTANTS.burstRainInterval;
+        if (state.rushActive) {
+          state.rushLeft -= dt;
+          state.rushRainClock += dt;
+          while (state.rushRainClock >= CONSTANTS.rushRainInterval) {
+            state.rushRainClock -= CONSTANTS.rushRainInterval;
             spawnNeutronRain();
           }
-          if (state.burstLeft <= 0) {
-            state.burstActive = false;
-            state.burstLeft = 0;
+          if (state.rushLeft <= 0) {
+            state.rushActive = false;
+            state.rushLeft = 0;
           }
         }
 
-        if (!state.gammaActive && state.time >= state.nextGammaAt) {
-          state.gammaActive = true;
-          state.gammaLeft = CONSTANTS.gammaDuration;
-        }
-        if (state.gammaActive) {
-          state.gammaLeft -= dt;
-          if (state.gammaLeft <= 0) {
-            state.gammaActive = false;
-            state.gammaLeft = 0;
-            state.nextGammaAt = state.time + CONSTANTS.gammaInterval;
-          }
-        }
+        const step = dt / CONSTANTS.subSteps;
 
-        const steps = 2;
-        const step = dt / steps;
-
-        for (let s = 0; s < steps; s += 1) {
+        for (let s = 0; s < CONSTANTS.subSteps; s += 1) {
           for (const ball of state.balls) {
+            if (ball.dead) continue;
+
             const gScale = ball.kind === "neutron" ? 0.88 : 1;
             ball.vy += CONSTANTS.gravity * gScale * step;
             ball.x += ball.vx * step;
@@ -720,8 +669,12 @@
 
           for (let i = 0; i < state.balls.length; i += 1) {
             const a = state.balls[i];
+            if (a.dead) continue;
+
             for (let j = i + 1; j < state.balls.length; j += 1) {
               const b = state.balls[j];
+              if (b.dead) continue;
+
               const dx = b.x - a.x;
               const dy = b.y - a.y;
               const dist = Math.hypot(dx, dy) || 0.0001;
@@ -757,26 +710,26 @@
         }
 
         let topContact = false;
-
         for (const ball of state.balls) {
-          if (ball.kind === "gamma") {
+          if (ball.dead) continue;
+
+          if (ball.kind === "neutron") {
             ball.ttl -= dt;
             if (ball.ttl <= 0) {
               ball.dead = true;
             }
+            continue;
           }
 
-          if (ball.kind === "element") {
-            if (ball.unstable) {
-              ball.decayLeft -= dt;
-              if (ball.decayLeft <= 0) {
-                evolveElement(ball);
-              }
+          if (ball.unstable) {
+            ball.decayLeft -= dt;
+            if (ball.decayLeft <= 0) {
+              evolveElement(ball);
             }
+          }
 
-            if (ball.y - ball.r < CONSTANTS.topLine) {
-              topContact = true;
-            }
+          if (ball.y - ball.r < CONSTANTS.topLine) {
+            topContact = true;
           }
         }
 
@@ -792,9 +745,9 @@
 
         state.balls = state.balls.filter((ball) => !ball.dead);
 
-        if (state.pairCache.size > 1200) {
+        if (state.pairCache.size > 900) {
           for (const [key, at] of state.pairCache) {
-            if (state.time - at > 3) {
+            if (state.time - at > 2.2) {
               state.pairCache.delete(key);
             }
           }
@@ -803,16 +756,17 @@
 
       function drawGaugeDots(ball) {
         const total = ball.captureNeed;
-        if (total <= 0 || total > 8) return;
+        if (total <= 0) return;
 
         const y = ball.y + ball.r * 0.36;
-        const spacing = clamp(ball.r * 0.36, 4, 9);
+        const spacing = clamp(ball.r * 0.24, 3.5, 8);
         const startX = ball.x - ((total - 1) * spacing) / 2;
+        const rr = clamp(ball.r * 0.085, 1.8, 3.6);
 
         for (let i = 0; i < total; i += 1) {
           ctx.beginPath();
-          ctx.arc(startX + i * spacing, y, clamp(ball.r * 0.1, 2, 4), 0, Math.PI * 2);
-          ctx.fillStyle = i < ball.capture ? "rgba(255, 245, 215, 0.95)" : "rgba(255, 255, 255, 0.2)";
+          ctx.arc(startX + i * spacing, y, rr, 0, Math.PI * 2);
+          ctx.fillStyle = i < ball.capture ? "rgba(255, 246, 223, 0.96)" : "rgba(255, 255, 255, 0.2)";
           ctx.fill();
         }
       }
@@ -820,14 +774,13 @@
       function drawBall(ball) {
         if (ball.kind === "element") {
           const spec = ELEMENTS[ball.elementIndex];
-
           const grad = ctx.createRadialGradient(
-            ball.x - ball.r * 0.3,
-            ball.y - ball.r * 0.35,
-            ball.r * 0.15,
+            ball.x - ball.r * 0.28,
+            ball.y - ball.r * 0.34,
+            ball.r * 0.14,
             ball.x,
             ball.y,
-            ball.r * 1.15
+            ball.r * 1.16
           );
           grad.addColorStop(0, spec.glow);
           grad.addColorStop(1, spec.color);
@@ -839,12 +792,12 @@
 
           ctx.beginPath();
           ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
-          ctx.strokeStyle = "rgba(12, 20, 34, 0.6)";
+          ctx.strokeStyle = "rgba(12, 20, 34, 0.58)";
           ctx.lineWidth = 1.2;
           ctx.stroke();
 
           ctx.fillStyle = "#eff5ff";
-          ctx.font = `${Math.max(10, ball.r * 0.64)}px sans-serif`;
+          ctx.font = `${Math.max(10, ball.r * 0.62)}px sans-serif`;
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.fillText(spec.id, ball.x, ball.y - ball.r * 0.06);
@@ -853,7 +806,6 @@
 
           if (ball.unstable) {
             const ratio = clamp(ball.decayLeft / ball.decayMax, 0, 1);
-
             ctx.beginPath();
             ctx.arc(ball.x, ball.y, ball.r + 3, 0, Math.PI * 2);
             ctx.strokeStyle = "rgba(255, 188, 113, 0.28)";
@@ -862,27 +814,23 @@
 
             ctx.beginPath();
             ctx.arc(ball.x, ball.y, ball.r + 3, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * ratio);
-            ctx.strokeStyle = ratio < 0.28 ? "#ff7a63" : "#ffc072";
+            ctx.strokeStyle = ratio < 0.25 ? "#ff7a63" : "#ffc072";
             ctx.lineWidth = 3;
             ctx.stroke();
 
-            ctx.fillStyle = "rgba(255, 237, 212, 0.95)";
-            ctx.font = `${Math.max(8, ball.r * 0.33)}px sans-serif`;
-            ctx.fillText(Math.ceil(ball.decayLeft), ball.x, ball.y - ball.r * 0.72);
+            ctx.fillStyle = "rgba(255, 237, 212, 0.96)";
+            ctx.font = `${Math.max(8, ball.r * 0.32)}px sans-serif`;
+            ctx.fillText(Math.ceil(ball.decayLeft), ball.x, ball.y - ball.r * 0.73);
           }
 
-          return;
-        }
+          if (spec.id === "U") {
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.r + 6, 0, Math.PI * 2);
+            ctx.strokeStyle = "rgba(158, 233, 170, 0.32)";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+          }
 
-        if (ball.kind === "neutron") {
-          ctx.beginPath();
-          ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
-          ctx.fillStyle = ball.color;
-          ctx.fill();
-          ctx.beginPath();
-          ctx.arc(ball.x - ball.r * 0.25, ball.y - ball.r * 0.28, ball.r * 0.45, 0, Math.PI * 2);
-          ctx.fillStyle = ball.glow;
-          ctx.fill();
           return;
         }
 
@@ -890,11 +838,11 @@
         ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
         ctx.fillStyle = ball.color;
         ctx.fill();
-        ctx.fillStyle = "#3e2b0f";
-        ctx.font = `${Math.max(9, ball.r * 1.2)}px sans-serif`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText("γ", ball.x, ball.y + 0.6);
+
+        ctx.beginPath();
+        ctx.arc(ball.x - ball.r * 0.25, ball.y - ball.r * 0.28, ball.r * 0.45, 0, Math.PI * 2);
+        ctx.fillStyle = ball.glow;
+        ctx.fill();
       }
 
       function draw() {
@@ -903,26 +851,36 @@
         const fieldGrad = ctx.createLinearGradient(0, 0, 0, state.height);
         fieldGrad.addColorStop(0, "rgba(78, 113, 160, 0.13)");
         fieldGrad.addColorStop(0.6, "rgba(26, 44, 70, 0.08)");
-        fieldGrad.addColorStop(1, "rgba(7, 10, 16, 0.22)");
+        fieldGrad.addColorStop(1, "rgba(7, 10, 16, 0.24)");
         ctx.fillStyle = fieldGrad;
         ctx.fillRect(0, 0, state.width, state.height);
 
+        if (state.rushActive) {
+          ctx.fillStyle = "rgba(255, 155, 84, 0.08)";
+          ctx.fillRect(0, 0, state.width, state.height);
+        }
+
+        const dangerRatio = clamp(state.danger / CONSTANTS.topDangerLimit, 0, 1);
         ctx.beginPath();
         ctx.moveTo(0, CONSTANTS.topLine);
         ctx.lineTo(state.width, CONSTANTS.topLine);
-        ctx.strokeStyle = "rgba(255, 122, 105, 0.26)";
+        ctx.strokeStyle = `rgba(255, 122, 105, ${0.26 + dangerRatio * 0.45})`;
         ctx.lineWidth = 2;
         ctx.stroke();
 
+        const preview = state.queue[0];
+        const launcherColor = preview && preview.kind === "element" ? "#f1c17d" : "#84d8ff";
+        const launcherTrail = preview && preview.kind === "element" ? "rgba(241, 193, 125, 0.35)" : "rgba(132, 216, 255, 0.35)";
+
         ctx.beginPath();
         ctx.arc(state.launcherX, scaleRadius(15), scaleRadius(10), 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(132, 216, 255, 0.85)";
+        ctx.fillStyle = launcherColor;
         ctx.fill();
 
         ctx.beginPath();
         ctx.moveTo(state.launcherX, scaleRadius(26));
         ctx.lineTo(state.launcherX, scaleRadius(58));
-        ctx.strokeStyle = "rgba(132, 216, 255, 0.35)";
+        ctx.strokeStyle = launcherTrail;
         ctx.lineWidth = 1.6;
         ctx.stroke();
 
@@ -954,13 +912,13 @@
         const probe = createBallFromPiece(piece, 0, 0);
         const x = clamp(state.launcherX, probe.r + 2, state.width - probe.r - 2);
         const y = probe.r + scaleRadius(14);
-
         const ball = createBallFromPiece(piece, x, y);
-        ball.vy = 12;
+
+        ball.vy = piece.kind === "neutron" ? 88 : 16;
         state.balls.push(ball);
 
         state.queue.push(nextPiece());
-        state.dropLockUntil = state.time + (state.burstActive ? CONSTANTS.dropCooldownBurst : CONSTANTS.dropCooldown);
+        state.dropLockUntil = state.time + (state.rushActive ? CONSTANTS.dropCooldownRush : CONSTANTS.dropCooldown);
       }
 
       function setLauncher(clientX) {
