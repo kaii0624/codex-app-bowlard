@@ -123,48 +123,8 @@
       margin-bottom: 16px;
     }
 
-    .pill {
-      position: relative;
-      width: fit-content;
-      padding: 8px 22px;
-      border-radius: 40px;
-      border: 1px solid rgba(255, 255, 255, 0.7);
-      background: rgba(255, 255, 255, 0.55);
-      backdrop-filter: blur(30px);
-      -webkit-backdrop-filter: blur(30px);
-      box-shadow: 0 2px 16px rgba(0, 0, 0, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.8);
-      font-size: 11px;
-      letter-spacing: 0.08em;
-      color: rgba(0, 0, 0, 0.46);
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      text-transform: uppercase;
-      overflow: hidden;
-      isolation: isolate;
-    }
-
-    .pill::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      border-radius: 40px;
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.4), transparent 60%);
-      pointer-events: none;
-      z-index: -1;
-    }
-
-    .pill-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, rgba(100, 170, 255, 0.6), rgba(200, 140, 255, 0.5));
-      box-shadow: 0 0 8px rgba(120, 170, 255, 0.3);
-      flex: 0 0 auto;
-    }
-
     h1 {
-      margin: 14px 0 8px;
+      margin: 0 0 8px;
       font-size: 26px;
       line-height: 1.2;
       letter-spacing: -0.5px;
@@ -179,10 +139,21 @@
 
     .subtitle {
       margin: 8px 0 0;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
       font-size: 12px;
       line-height: 1.65;
       color: rgba(0, 0, 0, 0.34);
       letter-spacing: 0.01em;
+    }
+
+    .subtitle-sep {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 11px;
+      color: rgba(0, 0, 0, 0.24);
+      letter-spacing: 0.4px;
     }
 
     .cards {
@@ -448,12 +419,14 @@
 
   <main class="shell">
     <header class="top">
-      <div class="pill">
-        <span class="pill-dot" aria-hidden="true"></span>
-        <span id="monthBadge">-</span>
-      </div>
       <h1><strong>App Advent</strong> Record</h1>
-      <p class="subtitle">エディターなしで音声入力だけで作るアプリ開発記録</p>
+      <p class="subtitle">
+        <span>エディターなし</span>
+        <span class="subtitle-sep" aria-hidden="true">~</span>
+        <span>音声入力だけで作る</span>
+        <span class="subtitle-sep" aria-hidden="true">|</span>
+        <span>アプリ開発記録</span>
+      </p>
     </header>
 
     <section class="cards" id="cardList" aria-label="日別アプリ記録"></section>
@@ -482,18 +455,9 @@
     ];
 
     const cardList = document.getElementById("cardList");
-    const monthBadge = document.getElementById("monthBadge");
-
-    const monthNames = [
-      "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"
-    ];
 
     function pad2(value) {
       return String(value).padStart(2, "0");
-    }
-
-    function dateKey(year, month, day) {
-      return `${year}-${pad2(month + 1)}-${pad2(day)}`;
     }
 
     function appIcon() {
@@ -638,8 +602,6 @@
           firstOpenCard = card;
         }
       });
-
-      monthBadge.textContent = `${monthNames[month]} ${year}`;
 
       if (!firstOpenCard && cardList.firstElementChild) {
         firstOpenCard = cardList.firstElementChild;
