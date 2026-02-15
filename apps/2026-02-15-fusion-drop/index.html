@@ -338,22 +338,20 @@
       const SIZE_STEP_LEVELS = 2;
       const SIZE_GROUP_COUNT = Math.floor(MAX_LEVEL / SIZE_STEP_LEVELS);
       const TWO_STEP_GROWTH = Math.pow(Math.pow(LEGACY_GROWTH, MAX_LEVEL) * FE_SIZE_MULTIPLIER, 1 / SIZE_GROUP_COUNT);
-      const GRAVITY = 1880;
-      const MAX_FALL_SPEED = 560;
-      const SPAWN_DROP_SPEED = 120;
-      const AIR_DAMPING = 0.994;
-      const SIDE_BOUNCE = 0.05;
-      const CEIL_BOUNCE = 0.03;
-      const FLOOR_BOUNCE = 0.04;
-      const FLOOR_DRAG = 0.9;
-      const COLLISION_RESTITUTION = 0.05;
-      const COLLISION_DAMPING = 0.82;
-      const CONTACT_FRICTION = 0.22;
+      const GRAVITY = 2480;
+      const MAX_FALL_SPEED = 980;
+      const SPAWN_DROP_SPEED = 620;
+      const AIR_DAMPING = 0.999;
+      const SIDE_BOUNCE = 0.18;
+      const CEIL_BOUNCE = 0.08;
+      const FLOOR_BOUNCE = 0.14;
+      const FLOOR_DRAG = 0.985;
+      const COLLISION_RESTITUTION = 0.17;
+      const COLLISION_DAMPING = 0.97;
+      const CONTACT_FRICTION = 0.045;
       const SUB_STEPS = 3;
       const SOLVER_PASSES = 3;
-      const RESTING_SPEED = 26;
-      const RESTING_AGE = 0.4;
-      const ANCHORED_WEIGHT = 6;
+      const RESTING_SPEED = 14;
       const BOUNDARY_EPS = 0.02;
 
       const game = {
@@ -494,16 +492,8 @@
         }
       }
 
-      function isAnchored(atom) {
-        return atom.age > RESTING_AGE && Math.abs(atom.vy) < RESTING_SPEED;
-      }
-
       function effectiveMass(atom) {
-        let mass = atom.r * atom.r;
-        if (isAnchored(atom)) {
-          mass *= ANCHORED_WEIGHT;
-        }
-        return mass;
+        return atom.r * atom.r;
       }
 
       function countIronOnBoard() {
@@ -632,14 +622,6 @@
         b.vx += fx * invMassB;
         b.vy += fy * invMassB;
 
-        if (isAnchored(a)) {
-          a.vx *= 0.96;
-          if (Math.abs(a.vy) < RESTING_SPEED) a.vy = 0;
-        }
-        if (isAnchored(b)) {
-          b.vx *= 0.96;
-          if (Math.abs(b.vy) < RESTING_SPEED) b.vy = 0;
-        }
       }
 
       function mergePairs() {
@@ -692,8 +674,8 @@
             newLevel,
             (a.x + b.x) * 0.5,
             (a.y + b.y) * 0.5,
-            (a.vx + b.vx) * 0.26,
-            (a.vy + b.vy) * 0.24 - 14
+            (a.vx + b.vx) * 0.34,
+            (a.vy + b.vy) * 0.32 - 20
           );
           clampAtomInside(atom);
           spawned.push(atom);
@@ -748,13 +730,6 @@
             atom.x += atom.vx * stepDt;
             atom.y += atom.vy * stepDt;
             atom.vx *= AIR_DAMPING;
-
-            if (isAnchored(atom)) {
-              atom.vx *= 0.97;
-              if (Math.abs(atom.vy) < RESTING_SPEED) {
-                atom.vy = 0;
-              }
-            }
 
             clampAtomInside(atom);
           }
