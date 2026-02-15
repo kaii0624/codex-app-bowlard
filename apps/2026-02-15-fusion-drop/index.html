@@ -43,6 +43,7 @@
     }
 
     .app {
+      position: relative;
       width: min(100vw, 430px);
       height: 100dvh;
       padding: 10px;
@@ -156,7 +157,7 @@
     .bottom {
       padding: 8px;
       display: grid;
-      grid-template-columns: 1fr auto;
+      grid-template-columns: 1fr auto auto;
       gap: 8px;
       align-items: center;
     }
@@ -198,8 +199,66 @@
       cursor: pointer;
     }
 
+    .btn.secondary {
+      color: #d8e6ff;
+      background: linear-gradient(130deg, #426ec8, #6a58c6);
+    }
+
     .btn:active {
       transform: scale(0.99);
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      display: grid;
+      place-items: center;
+      padding: 14px;
+      background: rgba(4, 8, 16, 0.76);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+
+    .overlay[hidden] {
+      display: none;
+    }
+
+    .sheet {
+      width: min(100%, 360px);
+      border-radius: 14px;
+      border: 1px solid rgba(146, 184, 255, 0.35);
+      background: rgba(10, 17, 36, 0.95);
+      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.45);
+      padding: 12px;
+      display: grid;
+      gap: 9px;
+    }
+
+    .sheet h2 {
+      margin: 0;
+      font-size: 0.76rem;
+      letter-spacing: 0.09em;
+      color: #c9ddff;
+    }
+
+    .rules {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 5px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: #e5efff;
+    }
+
+    .rules li {
+      padding: 5px 8px;
+      border: 1px solid rgba(146, 184, 255, 0.2);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.03);
     }
 
     @keyframes nebulaFloat {
@@ -240,8 +299,8 @@
   <main class="app">
     <section class="panel hud" aria-label="HUD">
       <div class="cell"><span class="k">SCORE</span><span class="v" id="score">0</span></div>
-      <div class="cell"><span class="k">STAGE</span><span class="v" id="stage">1</span></div>
-      <div class="cell"><span class="k">FE</span><span class="v" id="fe">0/3</span></div>
+      <div class="cell"><span class="k">CHAIN</span><span class="v" id="chain">0</span></div>
+      <div class="cell"><span class="k">FE</span><span class="v" id="fe">0</span></div>
       <div class="cell"><span class="k">G</span><span class="v" id="gravity">1.00</span></div>
     </section>
 
@@ -252,7 +311,16 @@
 
     <section class="panel bottom">
       <p class="state" id="state">TAP TO DROP</p>
+      <button type="button" class="btn secondary" id="rulesBtn">REACTIONS</button>
       <button type="button" class="btn" id="resetBtn">RESET</button>
+    </section>
+
+    <section class="overlay" id="rulesOverlay" hidden aria-label="反応一覧">
+      <div class="sheet">
+        <h2>FUSION LIST</h2>
+        <ul class="rules" id="rulesList"></ul>
+        <button type="button" class="btn secondary" id="closeRulesBtn">CLOSE</button>
+      </div>
     </section>
   </main>
 
@@ -261,33 +329,33 @@
       const canvas = document.getElementById("field");
       const ctx = canvas.getContext("2d");
       const scoreEl = document.getElementById("score");
-      const stageEl = document.getElementById("stage");
+      const chainEl = document.getElementById("chain");
       const feEl = document.getElementById("fe");
       const gravityEl = document.getElementById("gravity");
       const nextEl = document.getElementById("next");
       const stateEl = document.getElementById("state");
+      const rulesBtn = document.getElementById("rulesBtn");
       const resetBtn = document.getElementById("resetBtn");
+      const rulesOverlay = document.getElementById("rulesOverlay");
+      const rulesList = document.getElementById("rulesList");
+      const closeRulesBtn = document.getElementById("closeRulesBtn");
 
       const ELEMENTS = [
-        { label: "H", fill: "#8fc8ff", glow: "#5eaaf2" },
-        { label: "He", fill: "#b2d3ff", glow: "#7ba7f0" },
-        { label: "C", fill: "#8cf0df", glow: "#46ccb8" },
-        { label: "O", fill: "#7df0b4", glow: "#3fbe89" },
-        { label: "Ne", fill: "#ffe08c", glow: "#efb659" },
-        { label: "Mg", fill: "#ffd091", glow: "#e89b56" },
-        { label: "Si", fill: "#ffba8f", glow: "#df8055" },
-        { label: "S", fill: "#ffa48c", glow: "#d45c52" },
-        { label: "Ar", fill: "#d5a7ff", glow: "#9867d5" },
-        { label: "Ca", fill: "#c3b2ff", glow: "#7f74de" },
-        { label: "Fe", fill: "#ff9c74", glow: "#e25b43" }
+        { id: "H", label: "H", fill: "#8fc8ff", glow: "#5eaaf2", shortLifeSec: 0 },
+        { id: "He", label: "He", fill: "#b2d3ff", glow: "#7ba7f0", shortLifeSec: 60 },
+        { id: "C", label: "C", fill: "#8cf0df", glow: "#46ccb8", shortLifeSec: 0 },
+        { id: "O", label: "O", fill: "#7df0b4", glow: "#3fbe89", shortLifeSec: 0 },
+        { id: "Ne", label: "Ne", fill: "#ffe08c", glow: "#efb659", shortLifeSec: 60 },
+        { id: "Mg", label: "Mg", fill: "#ffd091", glow: "#e89b56", shortLifeSec: 0 },
+        { id: "Si", label: "Si", fill: "#ffba8f", glow: "#df8055", shortLifeSec: 0 },
+        { id: "Fe", label: "Fe", fill: "#ff9c74", glow: "#e25b43", shortLifeSec: 0 }
       ];
 
       const MAX_LEVEL = ELEMENTS.length - 1;
       const TOP_LINE = 74;
       const BASE_GRAVITY = 780;
-      const FE_TARGET = 3;
       const BASE_COOLDOWN = 220;
-      const MERGE_TOUCH_RATIO = 1.08;
+      const MERGE_TOUCH_RATIO = 1.002;
       const MIN_FUSION_AGE = 0;
       const BASE_RADIUS_MIN = 20.5;
       const RADIUS_GROWTH = 1.115;
@@ -303,13 +371,10 @@
         pointerX: 160,
         nextLevel: 0,
         score: 0,
-        stage: 1,
-        multiplier: 1,
         combo: 0,
         comboTimer: 0,
         pairLevel: 0,
         pairRemaining: 0,
-        feCharge: 0,
         nextDropAt: 0,
         topDanger: 0,
         over: false,
@@ -337,6 +402,42 @@
         }
         game.pairRemaining -= 1;
         return game.pairLevel;
+      }
+
+      function buildRulesList() {
+        const reactions = [];
+        for (let i = 0; i < MAX_LEVEL; i += 1) {
+          const from = ELEMENTS[i].label;
+          const to = ELEMENTS[i + 1].label;
+          reactions.push(`${from} + ${from} -> ${to}`);
+        }
+
+        const shortLives = ELEMENTS
+          .map((element, index) => ({ element, index }))
+          .filter((entry) => entry.element.shortLifeSec > 0)
+          .map((entry) => {
+            const back = ELEMENTS[Math.max(0, entry.index - 1)].label;
+            return `${entry.element.label} ${entry.element.shortLifeSec}s -> ${back}`;
+          });
+
+        rulesList.innerHTML = "";
+        for (const line of reactions) {
+          const li = document.createElement("li");
+          li.textContent = line;
+          rulesList.appendChild(li);
+        }
+        for (const line of shortLives) {
+          const li = document.createElement("li");
+          li.textContent = `Short-Life: ${line}`;
+          rulesList.appendChild(li);
+        }
+        const terminal = document.createElement("li");
+        terminal.textContent = "Fe is terminal (no further fusion).";
+        rulesList.appendChild(terminal);
+      }
+
+      function setRulesVisible(visible) {
+        rulesOverlay.hidden = !visible;
       }
 
       function pointerMargin() {
@@ -368,6 +469,8 @@
       }
 
       function createAtom(level, x, y, vx = 0, vy = 0) {
+        const spec = ELEMENTS[level];
+        const lifeMax = spec.shortLifeSec || 0;
         return {
           id: ++game.sequence,
           level,
@@ -376,7 +479,9 @@
           vx,
           vy,
           r: game.radii[level],
-          age: 0
+          age: 0,
+          lifeMax,
+          lifeLeft: lifeMax
         };
       }
 
@@ -391,8 +496,8 @@
       function updateHud() {
         const ironOnBoard = countIronOnBoard();
         scoreEl.textContent = String(game.score);
-        stageEl.textContent = String(game.stage);
-        feEl.textContent = `${game.feCharge}/${FE_TARGET}`;
+        chainEl.textContent = String(game.combo);
+        feEl.textContent = String(ironOnBoard);
         gravityEl.textContent = (1 + ironOnBoard * 0.16).toFixed(2);
         nextEl.textContent = `NEXT ${ELEMENTS[game.nextLevel].label}`;
       }
@@ -443,32 +548,9 @@
         game.pointerX = clamp(game.pointerX, pointerMargin(), game.width - pointerMargin());
       }
 
-      function triggerSupernova() {
-        const survivors = [];
-        for (const atom of game.atoms) {
-          if (atom.level === MAX_LEVEL) {
-            continue;
-          }
-          const surviveChance = atom.level >= 6 ? 0.8 : 0.36;
-          if (Math.random() < surviveChance) {
-            atom.vx += (Math.random() - 0.5) * 160;
-            atom.vy -= Math.random() * 210;
-            survivors.push(atom);
-          } else {
-            game.score += Math.round((atom.level + 1) * 5 * game.multiplier);
-          }
-        }
-        game.atoms = survivors;
-        game.stage += 1;
-        game.multiplier = Math.min(4, game.multiplier + 0.45);
-        game.feCharge = 0;
-        game.flash = 0.7;
-        game.score += Math.round(360 * game.stage * game.multiplier);
-        setState("SUPERNOVA", "good", 900);
-      }
-
       function tryDrop() {
         if (game.over) return;
+        if (!rulesOverlay.hidden) return;
         const now = performance.now();
         if (now < game.nextDropAt) return;
 
@@ -500,13 +582,14 @@
 
             if (!nearTouch) continue;
 
-            if (a.level === b.level && a.level < MAX_LEVEL) {
-              const avgVx = (a.vx + b.vx) * 0.5;
-              const avgVy = (a.vy + b.vy) * 0.5;
-              a.vx = a.vx * 0.35 + avgVx * 0.65;
-              b.vx = b.vx * 0.35 + avgVx * 0.65;
-              a.vy = a.vy * 0.35 + avgVy * 0.65;
-              b.vy = b.vy * 0.35 + avgVy * 0.65;
+            if (
+              a.level === b.level &&
+              a.level < MAX_LEVEL &&
+              a.age > MIN_FUSION_AGE &&
+              b.age > MIN_FUSION_AGE
+            ) {
+              merges.push([a, b]);
+              continue;
             }
 
             if (dist < minDist) {
@@ -530,15 +613,6 @@
                 b.vx += impulse * nx;
                 b.vy += impulse * ny;
               }
-            }
-
-            if (
-              a.level === b.level &&
-              a.level < MAX_LEVEL &&
-              a.age > MIN_FUSION_AGE &&
-              b.age > MIN_FUSION_AGE
-            ) {
-              merges.push([a, b]);
             }
           }
         }
@@ -564,16 +638,8 @@
             (a.vy + b.vy) * 0.35 - 28
           );
           spawned.push(atom);
-          const chainBoost = 1 + game.combo * 0.12;
-          game.score += Math.round((newLevel + 1) * (newLevel + 2) * 9 * game.multiplier * chainBoost);
-
-          if (newLevel === MAX_LEVEL) {
-            game.feCharge += 1;
-            setState(`FE ${game.feCharge}/${FE_TARGET}`, "warn", 600);
-            if (game.feCharge >= FE_TARGET) {
-              triggerSupernova();
-            }
-          }
+          const chainBoost = 1 + Math.min(8, game.combo) * 0.1;
+          game.score += Math.round((newLevel + 1) * (newLevel + 2) * 8 * chainBoost);
         }
 
         if (consumed.size) {
@@ -582,6 +648,7 @@
 
           game.combo = game.comboTimer > 0 ? game.combo + mergedCount : mergedCount;
           game.comboTimer = 0.85;
+          game.flash = Math.min(0.8, game.flash + 0.12 * mergedCount);
           if (!game.over) {
             setState(`FUSION x${game.combo}`, "good", 480);
           }
@@ -590,10 +657,32 @@
 
       function stepPhysics(dt) {
         const ironOnBoard = countIronOnBoard();
-        const gravity = BASE_GRAVITY * (1 + ironOnBoard * 0.16 + (game.stage - 1) * 0.06);
+        const gravity = BASE_GRAVITY * (1 + ironOnBoard * 0.16);
+        const decayedIds = new Set();
+        const decaySpawn = [];
 
         for (const atom of game.atoms) {
           atom.age += dt;
+
+          if (atom.lifeMax > 0) {
+            atom.lifeLeft -= dt;
+            if (atom.lifeLeft <= 0) {
+              decayedIds.add(atom.id);
+              if (atom.level > 0) {
+                const nextAtom = createAtom(
+                  atom.level - 1,
+                  atom.x,
+                  atom.y,
+                  atom.vx * 0.22 + (Math.random() - 0.5) * 30,
+                  Math.min(-22, atom.vy * 0.2 - 12)
+                );
+                nextAtom.age = 0.04;
+                decaySpawn.push(nextAtom);
+              }
+              continue;
+            }
+          }
+
           atom.vy += gravity * dt;
           atom.x += atom.vx * dt;
           atom.y += atom.vy * dt;
@@ -615,6 +704,17 @@
             if (Math.abs(atom.vy) < 16) {
               atom.vy = 0;
             }
+          }
+        }
+
+        if (decayedIds.size) {
+          game.atoms = game.atoms.filter((atom) => !decayedIds.has(atom.id));
+          game.atoms.push(...decaySpawn);
+          game.combo = 0;
+          game.comboTimer = 0;
+          game.score = Math.max(0, game.score - decayedIds.size * 18);
+          if (!game.over) {
+            setState("DECAY", "warn", 560);
           }
         }
 
@@ -650,7 +750,8 @@
 
       function drawScene() {
         const t = performance.now() * 0.001;
-        const hue = (212 + game.stage * 14) % 360;
+        const ironOnBoard = countIronOnBoard();
+        const hue = (212 + ironOnBoard * 9) % 360;
         const grad = ctx.createLinearGradient(0, 0, 0, game.height);
         grad.addColorStop(0, `hsl(${hue} 62% 11%)`);
         grad.addColorStop(0.5, `hsl(${(hue + 24) % 360} 58% 8%)`);
@@ -665,7 +766,7 @@
           const cy = game.height * cloud.y + Math.cos(t * 0.17 + cloud.hue) * 9;
           const radius = Math.max(game.width, game.height) * cloud.r;
           const nebula = ctx.createRadialGradient(cx, cy, radius * 0.08, cx, cy, radius);
-          nebula.addColorStop(0, `hsla(${(cloud.hue + game.stage * 7) % 360} 95% 72% / ${cloud.alpha})`);
+          nebula.addColorStop(0, `hsla(${(cloud.hue + game.combo * 5) % 360} 95% 72% / ${cloud.alpha})`);
           nebula.addColorStop(0.45, `hsla(${(cloud.hue + 26) % 360} 85% 58% / ${cloud.alpha * 0.42})`);
           nebula.addColorStop(1, "rgba(0, 0, 0, 0)");
           ctx.fillStyle = nebula;
@@ -765,6 +866,27 @@
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.fillText(spec.label, atom.x, atom.y + 0.5);
+
+          if (atom.lifeMax > 0) {
+            const lifeRatio = clamp(atom.lifeLeft / atom.lifeMax, 0, 1);
+            ctx.save();
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.24)";
+            ctx.lineWidth = Math.max(1.8, atom.r * 0.12);
+            ctx.beginPath();
+            ctx.arc(atom.x, atom.y, atom.r + ctx.lineWidth * 0.65, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.strokeStyle = lifeRatio > 0.35 ? "#8de8bf" : "#ffae86";
+            ctx.beginPath();
+            ctx.arc(
+              atom.x,
+              atom.y,
+              atom.r + ctx.lineWidth * 0.65,
+              -Math.PI * 0.5,
+              -Math.PI * 0.5 + Math.PI * 2 * lifeRatio
+            );
+            ctx.stroke();
+            ctx.restore();
+          }
         }
 
         if (game.flash > 0) {
@@ -776,13 +898,10 @@
       function resetGame() {
         game.atoms = [];
         game.score = 0;
-        game.stage = 1;
-        game.multiplier = 1;
         game.combo = 0;
         game.comboTimer = 0;
         game.pairLevel = 0;
         game.pairRemaining = 0;
-        game.feCharge = 0;
         game.topDanger = 0;
         game.over = false;
         game.flash = 0;
@@ -813,6 +932,11 @@
       });
 
       window.addEventListener("keydown", (event) => {
+        if (!rulesOverlay.hidden && event.key === "Escape") {
+          setRulesVisible(false);
+          return;
+        }
+
         if (event.key === "ArrowLeft") {
           game.pointerX = clamp(game.pointerX - 18, pointerMargin(), game.width - pointerMargin());
         } else if (event.key === "ArrowRight") {
@@ -823,9 +947,24 @@
         }
       });
 
+      rulesBtn.addEventListener("click", () => {
+        setRulesVisible(true);
+      });
+
+      closeRulesBtn.addEventListener("click", () => {
+        setRulesVisible(false);
+      });
+
+      rulesOverlay.addEventListener("click", (event) => {
+        if (event.target === rulesOverlay) {
+          setRulesVisible(false);
+        }
+      });
+
       resetBtn.addEventListener("click", resetGame);
       window.addEventListener("resize", resizeCanvas);
 
+      buildRulesList();
       resizeCanvas();
       resetGame();
       requestAnimationFrame(tick);
