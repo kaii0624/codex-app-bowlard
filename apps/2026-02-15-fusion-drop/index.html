@@ -49,7 +49,7 @@
       padding: 10px;
       display: grid;
       gap: 8px;
-      grid-template-rows: auto 1fr auto;
+      grid-template-rows: auto auto 1fr;
     }
 
     .panel {
@@ -63,7 +63,7 @@
     .hud {
       padding: 8px;
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 6px;
     }
 
@@ -154,7 +154,7 @@
       pointer-events: none;
     }
 
-    .bottom {
+    .controls {
       padding: 8px;
       display: grid;
       grid-template-columns: 1fr auto auto;
@@ -286,11 +286,19 @@
 
     @media (max-width: 392px) {
       .hud {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
       }
 
       .cell {
         min-height: 40px;
+      }
+
+      .controls {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .controls .state {
+        grid-column: 1 / -1;
       }
     }
   </style>
@@ -301,18 +309,17 @@
       <div class="cell"><span class="k">SCORE</span><span class="v" id="score">0</span></div>
       <div class="cell"><span class="k">CHAIN</span><span class="v" id="chain">0</span></div>
       <div class="cell"><span class="k">FE</span><span class="v" id="fe">0</span></div>
-      <div class="cell"><span class="k">G</span><span class="v" id="gravity">1.00</span></div>
+    </section>
+
+    <section class="panel controls">
+      <p class="state" id="state">TAP TO DROP</p>
+      <button type="button" class="btn secondary" id="rulesBtn">REACTIONS</button>
+      <button type="button" class="btn" id="resetBtn">RESET</button>
     </section>
 
     <section class="stage panel">
       <canvas id="field" aria-label="Fusion Drop"></canvas>
       <div class="next" id="next">NEXT H</div>
-    </section>
-
-    <section class="panel bottom">
-      <p class="state" id="state">TAP TO DROP</p>
-      <button type="button" class="btn secondary" id="rulesBtn">REACTIONS</button>
-      <button type="button" class="btn" id="resetBtn">RESET</button>
     </section>
 
     <section class="overlay" id="rulesOverlay" hidden aria-label="反応一覧">
@@ -331,7 +338,6 @@
       const scoreEl = document.getElementById("score");
       const chainEl = document.getElementById("chain");
       const feEl = document.getElementById("fe");
-      const gravityEl = document.getElementById("gravity");
       const nextEl = document.getElementById("next");
       const stateEl = document.getElementById("state");
       const rulesBtn = document.getElementById("rulesBtn");
@@ -353,12 +359,17 @@
 
       const MAX_LEVEL = ELEMENTS.length - 1;
       const TOP_LINE = 74;
-      const BASE_GRAVITY = 780;
       const BASE_COOLDOWN = 220;
       const MERGE_TOUCH_RATIO = 1.002;
       const MIN_FUSION_AGE = 0;
       const BASE_RADIUS_MIN = 20.5;
-      const RADIUS_GROWTH = 1.115;
+      const LEGACY_GROWTH = 1.115;
+      const FE_SIZE_MULTIPLIER = 2;
+      const SIZE_STEP_LEVELS = 2;
+      const SIZE_GROUP_COUNT = Math.floor(MAX_LEVEL / SIZE_STEP_LEVELS);
+      const TWO_STEP_GROWTH = Math.pow(Math.pow(LEGACY_GROWTH, MAX_LEVEL) * FE_SIZE_MULTIPLIER, 1 / SIZE_GROUP_COUNT);
+      const FALL_TARGET_SPEED = 205;
+      const FLOW_PULL = 1.45;
 
       const game = {
         width: 0,
@@ -498,7 +509,6 @@
         scoreEl.textContent = String(game.score);
         chainEl.textContent = String(game.combo);
         feEl.textContent = String(ironOnBoard);
-        gravityEl.textContent = (1 + ironOnBoard * 0.16).toFixed(2);
         nextEl.textContent = `NEXT ${ELEMENTS[game.nextLevel].label}`;
       }
 
@@ -515,7 +525,10 @@
         ctx.setTransform(game.dpr, 0, 0, game.dpr, 0, 0);
 
         const base = Math.max(BASE_RADIUS_MIN, Math.min(game.width, game.height) * 0.052);
-        game.radii = ELEMENTS.map((_, idx) => base * Math.pow(RADIUS_GROWTH, idx));
+        game.radii = ELEMENTS.map((_, idx) => {
+          const levelGroup = Math.floor(idx / SIZE_STEP_LEVELS);
+          return base * Math.pow(TWO_STEP_GROWTH, levelGroup);
+        });
 
         const starCount = Math.round(clamp((game.width * game.height) / 1200, 90, 170));
         game.stars = Array.from({ length: starCount }, () => ({
@@ -554,15 +567,14 @@
         const now = performance.now();
         if (now < game.nextDropAt) return;
 
-        const ironOnBoard = countIronOnBoard();
         const level = game.nextLevel;
         const r = game.radii[level];
         const spawnX = clamp(game.pointerX, r + 2, game.width - r - 2);
         const spawnY = Math.max(r + 4, TOP_LINE - 20);
 
-        game.atoms.push(createAtom(level, spawnX, spawnY, 0, 22 + ironOnBoard * 24));
+        game.atoms.push(createAtom(level, spawnX, spawnY, 0, FALL_TARGET_SPEED));
         game.nextLevel = pullNextLevel();
-        game.nextDropAt = now + Math.max(90, BASE_COOLDOWN - ironOnBoard * 20);
+        game.nextDropAt = now + BASE_COOLDOWN;
         updateHud();
       }
 
@@ -656,8 +668,6 @@
       }
 
       function stepPhysics(dt) {
-        const ironOnBoard = countIronOnBoard();
-        const gravity = BASE_GRAVITY * (1 + ironOnBoard * 0.16);
         const decayedIds = new Set();
         const decaySpawn = [];
 
@@ -683,7 +693,7 @@
             }
           }
 
-          atom.vy += gravity * dt;
+          atom.vy += (FALL_TARGET_SPEED - atom.vy) * FLOW_PULL * dt;
           atom.x += atom.vx * dt;
           atom.y += atom.vy * dt;
 
