@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>RIKU Superchat Burst</title>
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+    }
+
+    body {
+      position: relative;
+      font-family: "Arial Black", "Segoe UI", sans-serif;
+      touch-action: manipulation;
+    }
+
+    .stage {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+    }
+
+    #particleCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .word-wrap {
+      position: relative;
+      z-index: 2;
+      padding: 0.2em 0.28em;
+      isolation: isolate;
+    }
+
+    .word {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.04em;
+      font-size: clamp(40px, 18vw, 96px);
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: 0.02em;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    .letter {
+      display: inline-block;
+      opacity: 0;
+      transform: translateY(44px) scale(0.45);
+      filter: blur(16px);
+      background-image: linear-gradient(
+        92deg,
+        hsl(336deg 100% 67%) 0%,
+        hsl(40deg 100% 67%) 17%,
+        hsl(88deg 100% 66%) 34%,
+        hsl(184deg 100% 68%) 52%,
+        hsl(250deg 100% 73%) 72%,
+        hsl(314deg 100% 69%) 100%
+      );
+      background-size: 230% 100%;
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow:
+        0 0 6px rgba(255, 255, 255, 0.96),
+        0 0 12px rgba(255, 255, 255, 0.88),
+        0 0 20px rgba(170, 90, 255, 0.88),
+        0 0 34px rgba(90, 222, 255, 0.82),
+        0 0 48px rgba(100, 255, 170, 0.76);
+      will-change: transform, opacity, filter;
+    }
+
+    .letter.show {
+      animation:
+        letter-pop 620ms cubic-bezier(0.19, 1.32, 0.3, 1),
+        letter-rainbow 2.4s linear infinite;
+      animation-fill-mode: forwards;
+    }
+
+    .sheen {
+      position: absolute;
+      inset: -38% -45%;
+      z-index: 3;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateX(-150%) rotate(-14deg);
+      background: linear-gradient(
+        104deg,
+        transparent 36%,
+        rgba(255, 255, 255, 0.02) 43%,
+        rgba(255, 255, 255, 0.9) 50%,
+        rgba(255, 255, 255, 0.3) 56%,
+        transparent 64%
+      );
+      mix-blend-mode: screen;
+      filter: blur(1px);
+    }
+
+    .sheen.run {
+      animation: sweep 760ms cubic-bezier(0.2, 0.9, 0.25, 1) forwards;
+    }
+
+    @keyframes letter-pop {
+      0% {
+        opacity: 0;
+        transform: translateY(44px) scale(0.45);
+        filter: blur(16px);
+      }
+      56% {
+        opacity: 1;
+        transform: translateY(-9px) scale(1.18);
+        filter: blur(0);
+      }
+      78% {
+        transform: translateY(3px) scale(0.98);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+      }
+    }
+
+    @keyframes letter-rainbow {
+      from {
+        background-position: 0% 50%;
+      }
+      to {
+        background-position: 230% 50%;
+      }
+    }
+
+    @keyframes sweep {
+      0% {
+        opacity: 0;
+        transform: translateX(-150%) rotate(-14deg);
+      }
+      14% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0;
+        transform: translateX(150%) rotate(-14deg);
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="stage" aria-label="RIKU burst animation">
+    <canvas id="particleCanvas"></canvas>
+    <div class="word-wrap" id="wordWrap">
+      <div class="word" id="word" aria-live="off"></div>
+      <div class="sheen" id="sheen" aria-hidden="true"></div>
+    </div>
+  </main>
+
+  <script>
+    (function () {
+      const WORD = "RIKU";
+      const wordEl = document.getElementById("word");
+      const wordWrapEl = document.getElementById("wordWrap");
+      const sheenEl = document.getElementById("sheen");
+      const canvas = document.getElementById("particleCanvas");
+      const ctx = canvas.getContext("2d", { alpha: false });
+
+      // CONFIG: timing and visual intensity knobs for quick tuning.
+      const CONFIG = {
+        letterDelay: 120, // ms between letter pops
+        burstCount: 34, // particles per letter burst
+        finishMultiplier: 2.4, // final burst intensity vs normal burst
+        trailAlpha: 0.14, // lower = longer trail, higher = quicker fade
+        gravity: 0.05, // downward pull on particles
+        drag: 0.985, // air resistance per frame
+        minLife: 520, // shortest particle life (ms)
+        maxLife: 1200, // longest particle life (ms)
+        starRatio: 0.22, // percentage of star-shaped sparks
+        glowBoostMs: 130, // extra glow duration right after spawn
+        finishDelay: 700 // delay after last letter before sheen/finish burst (ms)
+      };
+
+      const particles = [];
+      const letters = [];
+      let viewportW = 0;
+      let viewportH = 0;
+      let dpr = 1;
+      let lastTick = performance.now();
+      let runToken = 0;
+      let replayBlockUntil = 0;
+
+      function clamp(value, min, max) {
+        return Math.min(max, Math.max(min, value));
+      }
+
+      function rand(min, max) {
+        return min + Math.random() * (max - min);
+      }
+
+      function sleep(ms) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+      }
+
+      function resizeCanvas() {
+        dpr = clamp(window.devicePixelRatio || 1, 1, 2);
+        viewportW = window.innerWidth;
+        viewportH = window.innerHeight;
+
+        canvas.width = Math.floor(viewportW * dpr);
+        canvas.height = Math.floor(viewportH * dpr);
+        canvas.style.width = viewportW + "px";
+        canvas.style.height = viewportH + "px";
+
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.globalCompositeOperation = "source-over";
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, 0, viewportW, viewportH);
+      }
+
+      function createLetters() {
+        wordEl.textContent = "";
+        for (const char of WORD) {
+          const span = document.createElement("span");
+          span.className = "letter";
+          span.textContent = char;
+          wordEl.appendChild(span);
+          letters.push(span);
+        }
+      }
+
+      function resetLetters() {
+        for (const letter of letters) {
+          letter.classList.remove("show");
+          letter.style.animation = "none";
+          void letter.offsetHeight;
+          letter.style.animation = "";
+        }
+      }
+
+      function getCenterOfElement(el) {
+        const rect = el.getBoundingClientRect();
+        return {
+          x: rect.left + rect.width * 0.5,
+          y: rect.top + rect.height * 0.5
+        };
+      }
+
+      function spawnBurst(x, y, count, speedBoost) {
+        for (let i = 0; i < count; i += 1) {
+          const angle = rand(0, Math.PI * 2);
+          const speed = rand(2.2, 8.8) * speedBoost;
+          const life = rand(CONFIG.minLife, CONFIG.maxLife);
+          const isStar = Math.random() < CONFIG.starRatio;
+
+          particles.push({
+            x,
+            y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            radius: rand(1, 4),
+            life,
+            maxLife: life,
+            drag: CONFIG.drag - rand(0, 0.02),
+            gravity: CONFIG.gravity + rand(-0.01, 0.03),
+            hue: rand(0, 360),
+            hueDrift: rand(-0.7, 0.9),
+            rotation: rand(0, Math.PI * 2),
+            rotationSpeed: rand(-0.08, 0.08),
+            star: isStar,
+            glowBoost: CONFIG.glowBoostMs
+          });
+        }
+      }
+
+      function drawStar(x, y, outerRadius, innerRadius, rotation) {
+        const spikes = 5;
+        ctx.beginPath();
+        for (let i = 0; i < spikes * 2; i += 1) {
+          const angle = rotation + (Math.PI / spikes) * i;
+          const radius = i % 2 === 0 ? outerRadius : innerRadius;
+          const px = x + Math.cos(angle) * radius;
+          const py = y + Math.sin(angle) * radius;
+          if (i === 0) {
+            ctx.moveTo(px, py);
+          } else {
+            ctx.lineTo(px, py);
+          }
+        }
+        ctx.closePath();
+      }
+
+      function updateAndDrawParticles(deltaMs) {
+        const frameFactor = deltaMs / 16.6667;
+
+        for (let i = particles.length - 1; i >= 0; i -= 1) {
+          const p = particles[i];
+          p.life -= deltaMs;
+
+          if (p.life <= 0) {
+            particles.splice(i, 1);
+            continue;
+          }
+
+          const dragPow = Math.pow(p.drag, frameFactor);
+          p.vx *= dragPow;
+          p.vy = p.vy * dragPow + p.gravity * frameFactor;
+          p.x += p.vx * frameFactor;
+          p.y += p.vy * frameFactor;
+          p.hue = (p.hue + p.hueDrift * frameFactor + 360) % 360;
+          p.rotation += p.rotationSpeed * frameFactor;
+          p.glowBoost = Math.max(0, p.glowBoost - deltaMs);
+
+          const t = clamp(p.life / p.maxLife, 0, 1);
+          const boost = p.glowBoost > 0 ? p.glowBoost / CONFIG.glowBoostMs : 0;
+          const radius = p.radius * (0.64 + (1 - t) * 0.58 + boost * 0.36);
+          const alpha = clamp(0.16 + t * 0.74 + boost * 0.42, 0, 1);
+          const lightness = clamp(58 + (1 - t) * 12 + boost * 9, 45, 82);
+          const fillColor = "hsla(" + p.hue.toFixed(1) + ",100%," + lightness.toFixed(1) + "% ," + alpha.toFixed(3) + ")";
+          const shadowAlpha = clamp(alpha + 0.2, 0, 1);
+          const shadowColor = "hsla(" + p.hue.toFixed(1) + ",100%,72%," + shadowAlpha.toFixed(3) + ")";
+
+          ctx.fillStyle = fillColor;
+          ctx.shadowBlur = 8 + radius * 7 + boost * 20;
+          ctx.shadowColor = shadowColor;
+
+          if (p.star) {
+            drawStar(p.x, p.y, radius * 1.3, radius * 0.55, p.rotation);
+            ctx.fill();
+          } else {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+
+        ctx.shadowBlur = 0;
+      }
+
+      function frame(now) {
+        const deltaMs = Math.min(34, now - lastTick);
+        lastTick = now;
+
+        ctx.globalCompositeOperation = "source-over";
+        ctx.fillStyle = "rgba(0, 0, 0, " + CONFIG.trailAlpha + ")";
+        ctx.fillRect(0, 0, viewportW, viewportH);
+
+        ctx.globalCompositeOperation = "lighter";
+        updateAndDrawParticles(deltaMs);
+
+        requestAnimationFrame(frame);
+      }
+
+      function clearParticlesAndCanvas() {
+        particles.length = 0;
+        ctx.globalCompositeOperation = "source-over";
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, 0, viewportW, viewportH);
+      }
+
+      async function playAnimation() {
+        runToken += 1;
+        const currentRun = runToken;
+
+        sheenEl.classList.remove("run");
+        resetLetters();
+
+        await sleep(20);
+
+        for (let i = 0; i < letters.length; i += 1) {
+          if (currentRun !== runToken) {
+            return;
+          }
+
+          const letter = letters[i];
+          letter.classList.add("show");
+
+          const center = getCenterOfElement(letter);
+          spawnBurst(center.x, center.y, CONFIG.burstCount, rand(0.92, 1.18));
+
+          await sleep(CONFIG.letterDelay);
+        }
+
+        if (currentRun !== runToken) {
+          return;
+        }
+
+        await sleep(CONFIG.finishDelay);
+
+        sheenEl.classList.remove("run");
+        void sheenEl.offsetWidth;
+        sheenEl.classList.add("run");
+
+        const center = getCenterOfElement(wordWrapEl);
+        const finalCount = Math.round(CONFIG.burstCount * CONFIG.finishMultiplier);
+        spawnBurst(center.x, center.y, finalCount, 1.9);
+      }
+
+      function replay() {
+        const now = performance.now();
+        if (now < replayBlockUntil) {
+          return;
+        }
+        replayBlockUntil = now + 160;
+
+        clearParticlesAndCanvas();
+        lastTick = performance.now();
+        playAnimation();
+      }
+
+      window.addEventListener("resize", resizeCanvas, { passive: true });
+      document.addEventListener("pointerdown", replay, { passive: true });
+
+      createLetters();
+      resizeCanvas();
+      requestAnimationFrame(frame);
+      playAnimation();
+    })();
+  </script>
+</body>
+</html>
