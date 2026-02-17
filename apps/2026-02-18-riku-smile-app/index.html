@@ -1,0 +1,762 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <title>RIKU SMILE App</title>
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+    }
+
+    body {
+      font-family: "Arial Black", "Segoe UI", sans-serif;
+      touch-action: manipulation;
+    }
+
+    .stage {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      background: #000;
+    }
+
+    #video {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1);
+      filter: brightness(0.72) saturate(1.15) contrast(1.04);
+      z-index: 0;
+    }
+
+    #particleCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .word-wrap {
+      position: absolute;
+      left: 50%;
+      top: 46%;
+      transform: translate(-50%, -50%);
+      z-index: 2;
+      padding: 0.2em 0.28em;
+      isolation: isolate;
+      pointer-events: none;
+    }
+
+    .word {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.04em;
+      font-size: clamp(40px, 18vw, 96px);
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: 0.02em;
+      user-select: none;
+    }
+
+    .letter {
+      display: inline-block;
+      opacity: 0;
+      transform: translateY(44px) scale(0.45);
+      filter: blur(16px);
+      background-image: linear-gradient(
+        92deg,
+        hsl(336deg 100% 67%) 0%,
+        hsl(40deg 100% 67%) 17%,
+        hsl(88deg 100% 66%) 34%,
+        hsl(184deg 100% 68%) 52%,
+        hsl(250deg 100% 73%) 72%,
+        hsl(314deg 100% 69%) 100%
+      );
+      background-size: 230% 100%;
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow:
+        0 0 6px rgba(255, 255, 255, 0.96),
+        0 0 12px rgba(255, 255, 255, 0.88),
+        0 0 20px rgba(170, 90, 255, 0.88),
+        0 0 34px rgba(90, 222, 255, 0.82),
+        0 0 48px rgba(100, 255, 170, 0.76);
+      will-change: transform, opacity, filter;
+    }
+
+    .letter.show {
+      animation:
+        letter-pop 620ms cubic-bezier(0.19, 1.32, 0.3, 1),
+        letter-rainbow 2.4s linear infinite;
+      animation-fill-mode: forwards;
+    }
+
+    .sheen {
+      position: absolute;
+      inset: -38% -45%;
+      z-index: 3;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateX(-150%) rotate(-14deg);
+      background: linear-gradient(
+        104deg,
+        transparent 36%,
+        rgba(255, 255, 255, 0.02) 43%,
+        rgba(255, 255, 255, 0.9) 50%,
+        rgba(255, 255, 255, 0.3) 56%,
+        transparent 64%
+      );
+      mix-blend-mode: screen;
+      filter: blur(1px);
+    }
+
+    .sheen.run {
+      animation: sweep 760ms cubic-bezier(0.2, 0.9, 0.25, 1) forwards;
+    }
+
+    .status {
+      position: absolute;
+      left: 10px;
+      bottom: calc(10px + env(safe-area-inset-bottom));
+      z-index: 4;
+      padding: 4px 8px;
+      border-radius: 9px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: rgba(255, 255, 255, 0.9);
+      background: rgba(0, 0, 0, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      backdrop-filter: blur(4px);
+    }
+
+    #error {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.88);
+      background: rgba(0, 0, 0, 0.7);
+      text-align: center;
+      padding: 16px;
+    }
+
+    @keyframes letter-pop {
+      0% {
+        opacity: 0;
+        transform: translateY(44px) scale(0.45);
+        filter: blur(16px);
+      }
+      56% {
+        opacity: 1;
+        transform: translateY(-9px) scale(1.18);
+        filter: blur(0);
+      }
+      78% {
+        transform: translateY(3px) scale(0.98);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+      }
+    }
+
+    @keyframes letter-rainbow {
+      from {
+        background-position: 0% 50%;
+      }
+      to {
+        background-position: 230% 50%;
+      }
+    }
+
+    @keyframes sweep {
+      0% {
+        opacity: 0;
+        transform: translateX(-150%) rotate(-14deg);
+      }
+      14% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0;
+        transform: translateX(150%) rotate(-14deg);
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="stage" id="stage" aria-label="RIKU Smile App">
+    <video id="video" autoplay playsinline muted></video>
+    <canvas id="particleCanvas"></canvas>
+
+    <div class="word-wrap" id="wordWrap">
+      <div class="word" id="word" aria-live="off"></div>
+      <div class="sheen" id="sheen" aria-hidden="true"></div>
+    </div>
+
+    <div class="status" id="status">init</div>
+    <div id="error">camera unavailable</div>
+  </main>
+
+  <script>
+    (() => {
+      const WORD = "RIKU";
+      const stageEl = document.getElementById("stage");
+      const video = document.getElementById("video");
+      const wordEl = document.getElementById("word");
+      const wordWrapEl = document.getElementById("wordWrap");
+      const sheenEl = document.getElementById("sheen");
+      const statusEl = document.getElementById("status");
+      const errorEl = document.getElementById("error");
+      const canvas = document.getElementById("particleCanvas");
+      const ctx = canvas.getContext("2d", { alpha: false });
+
+      // CONFIG: smile sampling and burst look can be tuned here.
+      const CONFIG = {
+        letterDelay: 120, // ms between letter pops
+        burstCount: 34, // particles per letter burst
+        finishMultiplier: 2.4, // final burst intensity vs normal burst
+        trailAlpha: 0.14, // lower = longer trail, higher = quicker fade
+        gravity: 0.05, // downward pull on particles
+        drag: 0.985, // air resistance per frame
+        minLife: 520, // shortest particle life (ms)
+        maxLife: 1200, // longest particle life (ms)
+        starRatio: 0.22, // percentage of star-shaped sparks
+        glowBoostMs: 130, // extra glow duration right after spawn
+        finishDelay: 700, // delay after last letter before sheen/finish burst (ms)
+        triggerCooldownMs: 1700, // minimum time between smile-triggered bursts
+        sampleIntervalMs: 333, // frame sampling interval for smile inference
+        sampleWidth: 320, // JPEG sampling width for infer API
+        inferTimeoutMs: 1500, // network timeout for /infer
+        inferFailToFallback: 3, // switch to client inference after N failures
+        clientSmileThreshold: 0.12 // delta threshold for client smile fallback
+      };
+
+      const particles = [];
+      const letters = [];
+      const sampleCanvas = document.createElement("canvas");
+      const sampleCtx = sampleCanvas.getContext("2d", { willReadFrequently: true });
+      sampleCanvas.width = CONFIG.sampleWidth;
+      sampleCanvas.height = Math.round(CONFIG.sampleWidth * 0.75);
+
+      const inferEndpoint =
+        location.hostname === "localhost" || location.hostname === "127.0.0.1"
+          ? "/infer"
+          : "http://localhost:8080/infer";
+
+      const detection = {
+        source: "server",
+        inFlight: false,
+        failCount: 0,
+        faceDetector: null,
+        baseline: 0.38,
+        smoothScore: 0,
+        lastSmile: false,
+        lastTriggerAt: 0,
+        noFaceFrames: 0
+      };
+
+      let viewportW = 0;
+      let viewportH = 0;
+      let dpr = 1;
+      let lastTick = performance.now();
+      let runToken = 0;
+      let replayBlockUntil = 0;
+
+      function clamp(value, min, max) {
+        return Math.min(max, Math.max(min, value));
+      }
+
+      function rand(min, max) {
+        return min + Math.random() * (max - min);
+      }
+
+      function sleep(ms) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+      }
+
+      function frameToJpegBlob() {
+        return new Promise((resolve) => {
+          sampleCanvas.toBlob(resolve, "image/jpeg", 0.62);
+        });
+      }
+
+      function resizeCanvas() {
+        dpr = clamp(window.devicePixelRatio || 1, 1, 2);
+        viewportW = window.innerWidth;
+        viewportH = window.innerHeight;
+
+        canvas.width = Math.floor(viewportW * dpr);
+        canvas.height = Math.floor(viewportH * dpr);
+        canvas.style.width = viewportW + "px";
+        canvas.style.height = viewportH + "px";
+
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.globalCompositeOperation = "source-over";
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, 0, viewportW, viewportH);
+      }
+
+      function createLetters() {
+        wordEl.textContent = "";
+        letters.length = 0;
+
+        for (const char of WORD) {
+          const span = document.createElement("span");
+          span.className = "letter";
+          span.textContent = char;
+          wordEl.appendChild(span);
+          letters.push(span);
+        }
+      }
+
+      function resetLetters() {
+        for (const letter of letters) {
+          letter.classList.remove("show");
+          letter.style.animation = "none";
+          void letter.offsetHeight;
+          letter.style.animation = "";
+        }
+      }
+
+      function getCenterOfElement(el) {
+        const rect = el.getBoundingClientRect();
+        return {
+          x: rect.left + rect.width * 0.5,
+          y: rect.top + rect.height * 0.5
+        };
+      }
+
+      function spawnBurst(x, y, count, speedBoost) {
+        for (let i = 0; i < count; i += 1) {
+          const angle = rand(0, Math.PI * 2);
+          const speed = rand(2.2, 8.8) * speedBoost;
+          const life = rand(CONFIG.minLife, CONFIG.maxLife);
+          const isStar = Math.random() < CONFIG.starRatio;
+
+          particles.push({
+            x,
+            y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            radius: rand(1, 4),
+            life,
+            maxLife: life,
+            drag: CONFIG.drag - rand(0, 0.02),
+            gravity: CONFIG.gravity + rand(-0.01, 0.03),
+            hue: rand(0, 360),
+            hueDrift: rand(-0.7, 0.9),
+            rotation: rand(0, Math.PI * 2),
+            rotationSpeed: rand(-0.08, 0.08),
+            star: isStar,
+            glowBoost: CONFIG.glowBoostMs
+          });
+        }
+      }
+
+      function drawStar(x, y, outerRadius, innerRadius, rotation) {
+        const spikes = 5;
+        ctx.beginPath();
+
+        for (let i = 0; i < spikes * 2; i += 1) {
+          const angle = rotation + (Math.PI / spikes) * i;
+          const radius = i % 2 === 0 ? outerRadius : innerRadius;
+          const px = x + Math.cos(angle) * radius;
+          const py = y + Math.sin(angle) * radius;
+
+          if (i === 0) {
+            ctx.moveTo(px, py);
+          } else {
+            ctx.lineTo(px, py);
+          }
+        }
+
+        ctx.closePath();
+      }
+
+      function updateAndDrawParticles(deltaMs) {
+        const frameFactor = deltaMs / 16.6667;
+
+        for (let i = particles.length - 1; i >= 0; i -= 1) {
+          const p = particles[i];
+          p.life -= deltaMs;
+
+          if (p.life <= 0) {
+            particles.splice(i, 1);
+            continue;
+          }
+
+          const dragPow = Math.pow(p.drag, frameFactor);
+          p.vx *= dragPow;
+          p.vy = p.vy * dragPow + p.gravity * frameFactor;
+          p.x += p.vx * frameFactor;
+          p.y += p.vy * frameFactor;
+          p.hue = (p.hue + p.hueDrift * frameFactor + 360) % 360;
+          p.rotation += p.rotationSpeed * frameFactor;
+          p.glowBoost = Math.max(0, p.glowBoost - deltaMs);
+
+          const t = clamp(p.life / p.maxLife, 0, 1);
+          const boost = p.glowBoost > 0 ? p.glowBoost / CONFIG.glowBoostMs : 0;
+          const radius = p.radius * (0.64 + (1 - t) * 0.58 + boost * 0.36);
+          const alpha = clamp(0.16 + t * 0.74 + boost * 0.42, 0, 1);
+          const lightness = clamp(58 + (1 - t) * 12 + boost * 9, 45, 82);
+          const fillColor = "hsla(" + p.hue.toFixed(1) + ",100%," + lightness.toFixed(1) + "% ," + alpha.toFixed(3) + ")";
+          const shadowAlpha = clamp(alpha + 0.2, 0, 1);
+          const shadowColor = "hsla(" + p.hue.toFixed(1) + ",100%,72%," + shadowAlpha.toFixed(3) + ")";
+
+          ctx.fillStyle = fillColor;
+          ctx.shadowBlur = 8 + radius * 7 + boost * 20;
+          ctx.shadowColor = shadowColor;
+
+          if (p.star) {
+            drawStar(p.x, p.y, radius * 1.3, radius * 0.55, p.rotation);
+            ctx.fill();
+          } else {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+
+        ctx.shadowBlur = 0;
+      }
+
+      function frame(now) {
+        const deltaMs = Math.min(34, now - lastTick);
+        lastTick = now;
+
+        ctx.globalCompositeOperation = "source-over";
+        ctx.fillStyle = "rgba(0, 0, 0, " + CONFIG.trailAlpha + ")";
+        ctx.fillRect(0, 0, viewportW, viewportH);
+
+        ctx.globalCompositeOperation = "lighter";
+        updateAndDrawParticles(deltaMs);
+
+        requestAnimationFrame(frame);
+      }
+
+      function clearParticlesAndCanvas() {
+        particles.length = 0;
+        ctx.globalCompositeOperation = "source-over";
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, 0, viewportW, viewportH);
+      }
+
+      async function playBurstAnimation() {
+        runToken += 1;
+        const currentRun = runToken;
+
+        sheenEl.classList.remove("run");
+        resetLetters();
+
+        await sleep(20);
+
+        for (let i = 0; i < letters.length; i += 1) {
+          if (currentRun !== runToken) {
+            return;
+          }
+
+          const letter = letters[i];
+          letter.classList.add("show");
+
+          const center = getCenterOfElement(letter);
+          spawnBurst(center.x, center.y, CONFIG.burstCount, rand(0.92, 1.18));
+
+          await sleep(CONFIG.letterDelay);
+        }
+
+        if (currentRun !== runToken) {
+          return;
+        }
+
+        await sleep(CONFIG.finishDelay);
+
+        sheenEl.classList.remove("run");
+        void sheenEl.offsetWidth;
+        sheenEl.classList.add("run");
+
+        const center = getCenterOfElement(wordWrapEl);
+        const finalCount = Math.round(CONFIG.burstCount * CONFIG.finishMultiplier);
+        spawnBurst(center.x, center.y, finalCount, 1.9);
+      }
+
+      function triggerBySmile(source, score) {
+        const now = performance.now();
+        if (now - detection.lastTriggerAt < CONFIG.triggerCooldownMs) {
+          return;
+        }
+
+        detection.lastTriggerAt = now;
+        playBurstAnimation();
+        statusEl.textContent = source + " " + score.toFixed(2);
+      }
+
+      function replay() {
+        const now = performance.now();
+        if (now < replayBlockUntil) {
+          return;
+        }
+
+        replayBlockUntil = now + 160;
+        clearParticlesAndCanvas();
+        lastTick = performance.now();
+        playBurstAnimation();
+      }
+
+      function updateStatus(source, hasFace, score, smile) {
+        const faceLabel = hasFace ? "face" : "noface";
+        const smileLabel = smile ? "smile" : "-";
+        statusEl.textContent = source + " " + faceLabel + " " + score.toFixed(2) + " " + smileLabel;
+      }
+
+      async function inferViaServer(blob) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), CONFIG.inferTimeoutMs);
+
+        try {
+          const response = await fetch(inferEndpoint, {
+            method: "POST",
+            mode: "cors",
+            headers: {
+              "Content-Type": "image/jpeg"
+            },
+            body: blob,
+            signal: controller.signal
+          });
+
+          if (!response.ok) {
+            throw new Error("HTTP " + response.status);
+          }
+
+          const payload = await response.json();
+          return {
+            smile: Boolean(payload.smile),
+            score: Number(payload.score) || 0,
+            hasFace: Boolean(payload.hasFace),
+            source: "server"
+          };
+        } finally {
+          clearTimeout(timer);
+        }
+      }
+
+      function sampleMouthMetric(box) {
+        const maxX = Math.max(0, sampleCanvas.width - 4);
+        const maxY = Math.max(0, sampleCanvas.height - 4);
+        const x = Math.floor(clamp(box.x, 0, maxX));
+        const y = Math.floor(clamp(box.y, 0, maxY));
+        const maxW = Math.max(4, sampleCanvas.width - x);
+        const maxH = Math.max(4, sampleCanvas.height - y);
+        const w = Math.max(4, Math.min(Math.floor(box.w), maxW));
+        const h = Math.max(4, Math.min(Math.floor(box.h), maxH));
+
+        const image = sampleCtx.getImageData(x, y, w, h).data;
+        const pixelCount = image.length / 4;
+
+        let brightCount = 0;
+        let contrastCount = 0;
+        let sumLum = 0;
+
+        for (let i = 0; i < image.length; i += 4) {
+          const r = image[i];
+          const g = image[i + 1];
+          const b = image[i + 2];
+          const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+          const maxC = Math.max(r, g, b);
+          const minC = Math.min(r, g, b);
+
+          sumLum += lum;
+          if (lum > 168) {
+            brightCount += 1;
+          }
+          if (maxC - minC > 48) {
+            contrastCount += 1;
+          }
+        }
+
+        const brightRatio = brightCount / pixelCount;
+        const contrastRatio = contrastCount / pixelCount;
+        const meanLum = (sumLum / pixelCount) / 255;
+
+        return brightRatio * 0.72 + contrastRatio * 0.48 + meanLum * 0.2;
+      }
+
+      async function inferViaClient() {
+        let hasFace = true;
+        let box = {
+          x: sampleCanvas.width * 0.26,
+          y: sampleCanvas.height * 0.56,
+          w: sampleCanvas.width * 0.48,
+          h: sampleCanvas.height * 0.28
+        };
+
+        if (detection.faceDetector) {
+          try {
+            const faces = await detection.faceDetector.detect(sampleCanvas);
+            if (faces.length) {
+              const face = faces[0].boundingBox;
+              hasFace = true;
+              box = {
+                x: face.x + face.width * 0.22,
+                y: face.y + face.height * 0.58,
+                w: face.width * 0.56,
+                h: face.height * 0.30
+              };
+              detection.noFaceFrames = 0;
+            } else {
+              hasFace = false;
+              detection.noFaceFrames += 1;
+            }
+          } catch {
+            hasFace = false;
+          }
+        }
+
+        if (!hasFace && detection.faceDetector) {
+          return {
+            smile: false,
+            score: 0,
+            hasFace: false,
+            source: "client"
+          };
+        }
+
+        const metric = sampleMouthMetric(box);
+        detection.baseline = detection.baseline * 0.92 + metric * 0.08;
+
+        const delta = metric - detection.baseline;
+        detection.smoothScore = detection.smoothScore * 0.7 + delta * 0.3;
+        const smile = detection.smoothScore > CONFIG.clientSmileThreshold;
+        const score = detection.smoothScore * 16 + 2.2;
+
+        return {
+          smile,
+          score,
+          hasFace,
+          source: "client"
+        };
+      }
+
+      async function sendFrame() {
+        if (detection.inFlight || !sampleCtx || video.readyState < 2) {
+          return;
+        }
+
+        const sourceWidth = video.videoWidth;
+        const sourceHeight = video.videoHeight;
+        if (!sourceWidth || !sourceHeight) {
+          return;
+        }
+
+        detection.inFlight = true;
+
+        try {
+          sampleCanvas.height = Math.max(1, Math.round((sourceHeight / sourceWidth) * CONFIG.sampleWidth));
+          sampleCtx.drawImage(video, 0, 0, CONFIG.sampleWidth, sampleCanvas.height);
+
+          let result;
+
+          if (detection.source === "server") {
+            const jpegBlob = await frameToJpegBlob();
+            if (!jpegBlob) {
+              throw new Error("JPEG encode failed");
+            }
+
+            try {
+              result = await inferViaServer(jpegBlob);
+              detection.failCount = 0;
+            } catch {
+              detection.failCount += 1;
+              if (detection.failCount >= CONFIG.inferFailToFallback) {
+                detection.source = "client";
+              }
+              result = {
+                smile: false,
+                score: 0,
+                hasFace: false,
+                source: detection.source
+              };
+            }
+          }
+
+          if (!result || detection.source === "client") {
+            result = await inferViaClient();
+          }
+
+          updateStatus(result.source, result.hasFace, result.score, result.smile);
+
+          if (result.smile && !detection.lastSmile) {
+            triggerBySmile(result.source, result.score);
+          }
+
+          detection.lastSmile = result.smile;
+        } catch {
+          updateStatus("error", false, 0, false);
+          detection.lastSmile = false;
+        } finally {
+          detection.inFlight = false;
+        }
+      }
+
+      async function startCamera() {
+        try {
+          if ("FaceDetector" in window) {
+            detection.faceDetector = new window.FaceDetector({ maxDetectedFaces: 1, fastMode: true });
+          }
+
+          const stream = await navigator.mediaDevices.getUserMedia({
+            audio: false,
+            video: {
+              facingMode: "user"
+            }
+          });
+
+          video.srcObject = stream;
+          await video.play();
+
+          updateStatus(detection.source, true, 0, false);
+          setInterval(sendFrame, CONFIG.sampleIntervalMs);
+        } catch {
+          errorEl.style.display = "flex";
+          updateStatus("camera", false, 0, false);
+        }
+      }
+
+      window.addEventListener("resize", resizeCanvas, { passive: true });
+      stageEl.addEventListener("pointerdown", replay, { passive: true });
+
+      createLetters();
+      resizeCanvas();
+      requestAnimationFrame(frame);
+      startCamera();
+    })();
+  </script>
+</body>
+</html>
