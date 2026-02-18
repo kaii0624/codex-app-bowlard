@@ -24,6 +24,8 @@
     }
 
     body {
+      position: fixed;
+      inset: 0;
       font-family: "Arial Black", "Segoe UI", sans-serif;
       touch-action: manipulation;
     }
@@ -33,6 +35,7 @@
       inset: 0;
       overflow: hidden;
       background: #000;
+      isolation: isolate;
     }
 
     #video {
@@ -42,7 +45,7 @@
       height: 100%;
       object-fit: cover;
       transform: scaleX(-1);
-      filter: brightness(0.72) saturate(1.15) contrast(1.04);
+      filter: brightness(0.76) saturate(1.18) contrast(1.05);
       z-index: 0;
     }
 
@@ -58,12 +61,13 @@
     .word-wrap {
       position: absolute;
       left: 50%;
-      top: 46%;
+      top: 36%;
       transform: translate(-50%, -50%);
       z-index: 2;
       padding: 0.2em 0.28em;
       isolation: isolate;
       pointer-events: none;
+      will-change: transform;
     }
 
     .word {
@@ -71,17 +75,18 @@
       align-items: center;
       justify-content: center;
       gap: 0.04em;
-      font-size: clamp(40px, 18vw, 96px);
+      font-size: clamp(38px, 16vw, 92px);
       line-height: 1;
       font-weight: 900;
       letter-spacing: 0.02em;
       user-select: none;
+      pointer-events: none;
     }
 
     .letter {
       display: inline-block;
       opacity: 0;
-      transform: translateY(44px) scale(0.45);
+      transform: translateY(-38px) scale(0.44);
       filter: blur(16px);
       background-image: linear-gradient(
         92deg,
@@ -169,16 +174,16 @@
     @keyframes letter-pop {
       0% {
         opacity: 0;
-        transform: translateY(44px) scale(0.45);
+        transform: translateY(-38px) scale(0.44);
         filter: blur(16px);
       }
       56% {
         opacity: 1;
-        transform: translateY(-9px) scale(1.18);
+        transform: translateY(8px) scale(1.18);
         filter: blur(0);
       }
       78% {
-        transform: translateY(3px) scale(0.98);
+        transform: translateY(-2px) scale(0.98);
       }
       100% {
         opacity: 1;
@@ -238,49 +243,38 @@
       const canvas = document.getElementById("particleCanvas");
       const ctx = canvas.getContext("2d", { alpha: false });
 
-      // CONFIG: smile sampling and burst look can be tuned here.
+      // CONFIG: tune camera sampling, face-follow behavior, and burst intensity.
       const CONFIG = {
-        letterDelay: 120, // ms between letter pops
-        burstCount: 34, // particles per letter burst
-        finishMultiplier: 2.4, // final burst intensity vs normal burst
+        letterDelay: 95, // ms between letter pops
+        burstCount: 38, // particles per letter burst
+        finishMultiplier: 2.35, // final burst intensity vs normal burst
         trailAlpha: 0.14, // lower = longer trail, higher = quicker fade
         gravity: 0.05, // downward pull on particles
         drag: 0.985, // air resistance per frame
         minLife: 520, // shortest particle life (ms)
         maxLife: 1200, // longest particle life (ms)
-        starRatio: 0.22, // percentage of star-shaped sparks
+        starRatio: 0.24, // percentage of star-shaped sparks
         glowBoostMs: 130, // extra glow duration right after spawn
-        finishDelay: 700, // delay after last letter before sheen/finish burst (ms)
-        triggerCooldownMs: 1700, // minimum time between smile-triggered bursts
-        sampleIntervalMs: 333, // frame sampling interval for smile inference
-        sampleWidth: 320, // JPEG sampling width for infer API
-        inferTimeoutMs: 1500, // network timeout for /infer
-        inferFailToFallback: 3, // switch to client inference after N failures
-        clientSmileThreshold: 0.12 // delta threshold for client smile fallback
+        finishDelay: 600, // delay after last letter before sheen/finish burst (ms)
+        faceSampleIntervalMs: 240, // face tracking interval
+        triggerCooldownMs: 1600, // minimum auto-trigger interval
+        anchorLerp: 0.26, // face-follow smoothing
+        detectWidth: 320 // offscreen detector width
       };
 
       const particles = [];
       const letters = [];
-      const sampleCanvas = document.createElement("canvas");
-      const sampleCtx = sampleCanvas.getContext("2d", { willReadFrequently: true });
-      sampleCanvas.width = CONFIG.sampleWidth;
-      sampleCanvas.height = Math.round(CONFIG.sampleWidth * 0.75);
+      const detectCanvas = document.createElement("canvas");
+      const detectCtx = detectCanvas.getContext("2d", { willReadFrequently: true });
+      detectCanvas.width = CONFIG.detectWidth;
+      detectCanvas.height = Math.round(CONFIG.detectWidth * 0.75);
 
-      const inferEndpoint =
-        location.hostname === "localhost" || location.hostname === "127.0.0.1"
-          ? "/infer"
-          : "http://localhost:8080/infer";
-
-      const detection = {
-        source: "server",
+      const faceState = {
+        detector: null,
         inFlight: false,
-        failCount: 0,
-        faceDetector: null,
-        baseline: 0.38,
-        smoothScore: 0,
-        lastSmile: false,
+        hasFace: false,
         lastTriggerAt: 0,
-        noFaceFrames: 0
+        lastSeenAt: 0
       };
 
       let viewportW = 0;
@@ -289,6 +283,9 @@
       let lastTick = performance.now();
       let runToken = 0;
       let replayBlockUntil = 0;
+
+      const anchor = { x: 0, y: 0 };
+      const targetAnchor = { x: 0, y: 0 };
 
       function clamp(value, min, max) {
         return Math.min(max, Math.max(min, value));
@@ -302,10 +299,25 @@
         return new Promise((resolve) => setTimeout(resolve, ms));
       }
 
-      function frameToJpegBlob() {
-        return new Promise((resolve) => {
-          sampleCanvas.toBlob(resolve, "image/jpeg", 0.62);
-        });
+      function getSafeTop() {
+        const safe = Number(getComputedStyle(document.documentElement).getPropertyValue("--safe-top") || 0);
+        return Number.isFinite(safe) ? safe : 0;
+      }
+
+      function updateWordWrapPosition() {
+        anchor.x += (targetAnchor.x - anchor.x) * CONFIG.anchorLerp;
+        anchor.y += (targetAnchor.y - anchor.y) * CONFIG.anchorLerp;
+        wordWrapEl.style.transform = "translate3d(" + anchor.x.toFixed(2) + "px," + anchor.y.toFixed(2) + "px,0) translate(-50%,-50%)";
+      }
+
+      function resetAnchor() {
+        const safeTop = getSafeTop();
+        targetAnchor.x = viewportW * 0.5;
+        targetAnchor.y = clamp(viewportH * 0.34, safeTop + 86, viewportH - 120);
+
+        anchor.x = targetAnchor.x;
+        anchor.y = targetAnchor.y;
+        updateWordWrapPosition();
       }
 
       function resizeCanvas() {
@@ -322,6 +334,8 @@
         ctx.globalCompositeOperation = "source-over";
         ctx.fillStyle = "#000";
         ctx.fillRect(0, 0, viewportW, viewportH);
+
+        resetAnchor();
       }
 
       function createLetters() {
@@ -452,6 +466,8 @@
         const deltaMs = Math.min(34, now - lastTick);
         lastTick = now;
 
+        updateWordWrapPosition();
+
         ctx.globalCompositeOperation = "source-over";
         ctx.fillStyle = "rgba(0, 0, 0, " + CONFIG.trailAlpha + ")";
         ctx.fillRect(0, 0, viewportW, viewportH);
@@ -507,245 +523,186 @@
         spawnBurst(center.x, center.y, finalCount, 1.9);
       }
 
-      function triggerBySmile(source, score) {
+      function triggerBurst(reason, force) {
         const now = performance.now();
-        if (now - detection.lastTriggerAt < CONFIG.triggerCooldownMs) {
+        if (!force && now - faceState.lastTriggerAt < CONFIG.triggerCooldownMs) {
           return;
         }
 
-        detection.lastTriggerAt = now;
+        faceState.lastTriggerAt = now;
         playBurstAnimation();
-        statusEl.textContent = source + " " + score.toFixed(2);
+        statusEl.textContent = reason;
       }
 
-      function replay() {
+      function replay(event) {
         const now = performance.now();
         if (now < replayBlockUntil) {
           return;
         }
 
         replayBlockUntil = now + 160;
+
+        if (event && Number.isFinite(event.clientX) && Number.isFinite(event.clientY)) {
+          targetAnchor.x = clamp(event.clientX, 56, viewportW - 56);
+          targetAnchor.y = clamp(event.clientY - 70, getSafeTop() + 70, viewportH - 120);
+        }
+
         clearParticlesAndCanvas();
         lastTick = performance.now();
-        playBurstAnimation();
+        triggerBurst("tap", true);
       }
 
-      function updateStatus(source, hasFace, score, smile) {
-        const faceLabel = hasFace ? "face" : "noface";
-        const smileLabel = smile ? "smile" : "-";
-        statusEl.textContent = source + " " + faceLabel + " " + score.toFixed(2) + " " + smileLabel;
-      }
-
-      async function inferViaServer(blob) {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), CONFIG.inferTimeoutMs);
-
-        try {
-          const response = await fetch(inferEndpoint, {
-            method: "POST",
-            mode: "cors",
-            headers: {
-              "Content-Type": "image/jpeg"
-            },
-            body: blob,
-            signal: controller.signal
-          });
-
-          if (!response.ok) {
-            throw new Error("HTTP " + response.status);
-          }
-
-          const payload = await response.json();
-          return {
-            smile: Boolean(payload.smile),
-            score: Number(payload.score) || 0,
-            hasFace: Boolean(payload.hasFace),
-            source: "server"
-          };
-        } finally {
-          clearTimeout(timer);
-        }
-      }
-
-      function sampleMouthMetric(box) {
-        const maxX = Math.max(0, sampleCanvas.width - 4);
-        const maxY = Math.max(0, sampleCanvas.height - 4);
-        const x = Math.floor(clamp(box.x, 0, maxX));
-        const y = Math.floor(clamp(box.y, 0, maxY));
-        const maxW = Math.max(4, sampleCanvas.width - x);
-        const maxH = Math.max(4, sampleCanvas.height - y);
-        const w = Math.max(4, Math.min(Math.floor(box.w), maxW));
-        const h = Math.max(4, Math.min(Math.floor(box.h), maxH));
-
-        const image = sampleCtx.getImageData(x, y, w, h).data;
-        const pixelCount = image.length / 4;
-
-        let brightCount = 0;
-        let contrastCount = 0;
-        let sumLum = 0;
-
-        for (let i = 0; i < image.length; i += 4) {
-          const r = image[i];
-          const g = image[i + 1];
-          const b = image[i + 2];
-          const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-          const maxC = Math.max(r, g, b);
-          const minC = Math.min(r, g, b);
-
-          sumLum += lum;
-          if (lum > 168) {
-            brightCount += 1;
-          }
-          if (maxC - minC > 48) {
-            contrastCount += 1;
-          }
+      function getVideoLayout() {
+        const vw = video.videoWidth;
+        const vh = video.videoHeight;
+        if (!vw || !vh) {
+          return null;
         }
 
-        const brightRatio = brightCount / pixelCount;
-        const contrastRatio = contrastCount / pixelCount;
-        const meanLum = (sumLum / pixelCount) / 255;
-
-        return brightRatio * 0.72 + contrastRatio * 0.48 + meanLum * 0.2;
-      }
-
-      async function inferViaClient() {
-        let hasFace = true;
-        let box = {
-          x: sampleCanvas.width * 0.26,
-          y: sampleCanvas.height * 0.56,
-          w: sampleCanvas.width * 0.48,
-          h: sampleCanvas.height * 0.28
-        };
-
-        if (detection.faceDetector) {
-          try {
-            const faces = await detection.faceDetector.detect(sampleCanvas);
-            if (faces.length) {
-              const face = faces[0].boundingBox;
-              hasFace = true;
-              box = {
-                x: face.x + face.width * 0.22,
-                y: face.y + face.height * 0.58,
-                w: face.width * 0.56,
-                h: face.height * 0.30
-              };
-              detection.noFaceFrames = 0;
-            } else {
-              hasFace = false;
-              detection.noFaceFrames += 1;
-            }
-          } catch {
-            hasFace = false;
-          }
-        }
-
-        if (!hasFace && detection.faceDetector) {
-          return {
-            smile: false,
-            score: 0,
-            hasFace: false,
-            source: "client"
-          };
-        }
-
-        const metric = sampleMouthMetric(box);
-        detection.baseline = detection.baseline * 0.92 + metric * 0.08;
-
-        const delta = metric - detection.baseline;
-        detection.smoothScore = detection.smoothScore * 0.7 + delta * 0.3;
-        const smile = detection.smoothScore > CONFIG.clientSmileThreshold;
-        const score = detection.smoothScore * 16 + 2.2;
+        const scale = Math.max(viewportW / vw, viewportH / vh);
+        const drawWidth = vw * scale;
+        const drawHeight = vh * scale;
 
         return {
-          smile,
-          score,
-          hasFace,
-          source: "client"
+          vw,
+          vh,
+          scale,
+          offsetX: (viewportW - drawWidth) * 0.5,
+          offsetY: (viewportH - drawHeight) * 0.5
         };
       }
 
-      async function sendFrame() {
-        if (detection.inFlight || !sampleCtx || video.readyState < 2) {
+      function mapVideoPointToViewport(pointX, pointY, mirrored) {
+        const layout = getVideoLayout();
+        if (!layout) {
+          return null;
+        }
+
+        const x = layout.offsetX + pointX * layout.scale;
+        const y = layout.offsetY + pointY * layout.scale;
+
+        return {
+          x: mirrored ? viewportW - x : x,
+          y,
+          scale: layout.scale
+        };
+      }
+
+      function largestFace(faces) {
+        let best = null;
+        let area = -1;
+
+        for (const face of faces) {
+          const box = face.boundingBox;
+          const currentArea = box.width * box.height;
+          if (currentArea > area) {
+            area = currentArea;
+            best = face;
+          }
+        }
+
+        return best;
+      }
+
+      async function trackFaceAndMaybeTrigger() {
+        if (!faceState.detector || faceState.inFlight || video.readyState < 2 || !detectCtx) {
           return;
         }
 
-        const sourceWidth = video.videoWidth;
-        const sourceHeight = video.videoHeight;
-        if (!sourceWidth || !sourceHeight) {
-          return;
-        }
-
-        detection.inFlight = true;
+        faceState.inFlight = true;
 
         try {
-          sampleCanvas.height = Math.max(1, Math.round((sourceHeight / sourceWidth) * CONFIG.sampleWidth));
-          sampleCtx.drawImage(video, 0, 0, CONFIG.sampleWidth, sampleCanvas.height);
+          const sourceWidth = video.videoWidth;
+          const sourceHeight = video.videoHeight;
 
-          let result;
-
-          if (detection.source === "server") {
-            const jpegBlob = await frameToJpegBlob();
-            if (!jpegBlob) {
-              throw new Error("JPEG encode failed");
-            }
-
-            try {
-              result = await inferViaServer(jpegBlob);
-              detection.failCount = 0;
-            } catch {
-              detection.failCount += 1;
-              if (detection.failCount >= CONFIG.inferFailToFallback) {
-                detection.source = "client";
-              }
-              result = {
-                smile: false,
-                score: 0,
-                hasFace: false,
-                source: detection.source
-              };
-            }
+          if (!sourceWidth || !sourceHeight) {
+            return;
           }
 
-          if (!result || detection.source === "client") {
-            result = await inferViaClient();
+          detectCanvas.height = Math.max(1, Math.round((sourceHeight / sourceWidth) * CONFIG.detectWidth));
+          detectCtx.drawImage(video, 0, 0, CONFIG.detectWidth, detectCanvas.height);
+
+          const faces = await faceState.detector.detect(detectCanvas);
+          if (!faces.length) {
+            faceState.hasFace = false;
+            statusEl.textContent = "cam";
+            return;
           }
 
-          updateStatus(result.source, result.hasFace, result.score, result.smile);
-
-          if (result.smile && !detection.lastSmile) {
-            triggerBySmile(result.source, result.score);
+          const face = largestFace(faces);
+          if (!face) {
+            return;
           }
 
-          detection.lastSmile = result.smile;
+          const box = face.boundingBox;
+          const mapX = video.videoWidth / detectCanvas.width;
+          const mapY = video.videoHeight / detectCanvas.height;
+
+          const faceCenterX = (box.x + box.width * 0.5) * mapX;
+          const faceTopY = box.y * mapY;
+          const faceHeight = box.height * mapY;
+
+          const point = mapVideoPointToViewport(faceCenterX, faceTopY, true);
+          if (!point) {
+            return;
+          }
+
+          targetAnchor.x = clamp(point.x, 56, viewportW - 56);
+          targetAnchor.y = clamp(point.y - faceHeight * point.scale * 0.72, getSafeTop() + 68, viewportH - 120);
+
+          faceState.hasFace = true;
+          faceState.lastSeenAt = performance.now();
+
+          triggerBurst("face", false);
         } catch {
-          updateStatus("error", false, 0, false);
-          detection.lastSmile = false;
+          statusEl.textContent = "cam";
         } finally {
-          detection.inFlight = false;
+          faceState.inFlight = false;
         }
+      }
+
+      function startFallbackLoop() {
+        setInterval(() => {
+          const now = performance.now();
+          const tooLongNoFace = now - faceState.lastSeenAt > CONFIG.triggerCooldownMs * 1.4;
+
+          if (!faceState.detector || tooLongNoFace) {
+            targetAnchor.x = viewportW * 0.5;
+            targetAnchor.y = clamp(viewportH * 0.34, getSafeTop() + 86, viewportH - 120);
+            triggerBurst("auto", false);
+          }
+        }, CONFIG.triggerCooldownMs + 360);
       }
 
       async function startCamera() {
         try {
           if ("FaceDetector" in window) {
-            detection.faceDetector = new window.FaceDetector({ maxDetectedFaces: 1, fastMode: true });
+            faceState.detector = new window.FaceDetector({ maxDetectedFaces: 2, fastMode: true });
           }
 
           const stream = await navigator.mediaDevices.getUserMedia({
             audio: false,
             video: {
-              facingMode: "user"
+              facingMode: "user",
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+              frameRate: { ideal: 30, max: 30 }
             }
           });
 
           video.srcObject = stream;
           await video.play();
 
-          updateStatus(detection.source, true, 0, false);
-          setInterval(sendFrame, CONFIG.sampleIntervalMs);
+          statusEl.textContent = faceState.detector ? "face" : "cam";
+
+          if (faceState.detector) {
+            setInterval(trackFaceAndMaybeTrigger, CONFIG.faceSampleIntervalMs);
+          } else {
+            startFallbackLoop();
+          }
         } catch {
           errorEl.style.display = "flex";
-          updateStatus("camera", false, 0, false);
+          statusEl.textContent = "error";
         }
       }
 
