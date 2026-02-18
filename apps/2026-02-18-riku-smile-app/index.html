@@ -257,9 +257,13 @@
         glowBoostMs: 130, // extra glow duration right after spawn
         finishDelay: 600, // delay after last letter before sheen/finish burst (ms)
         faceSampleIntervalMs: 240, // face tracking interval
-        triggerCooldownMs: 1600, // minimum auto-trigger interval
+        triggerCooldownMs: 1600, // minimum smile-trigger interval
         anchorLerp: 0.26, // face-follow smoothing
         detectWidth: 320, // offscreen detector width
+        smileThreshold: 0.0015, // mouth metric delta threshold
+        baselineLerp: 0.02, // baseline adaptation speed
+        scoreLerp: 0.42, // smile score smoothing
+        inferTimeoutMs: 1200, // localhost infer timeout
         preferredCameraPattern: /(facetime|built[- ]?in|isight|macbook|hd camera)/i // prefer Mac camera
       };
 
@@ -275,10 +279,15 @@
         inFlight: false,
         hasFace: false,
         lastTriggerAt: 0,
-        lastSeenAt: 0
+        baseline: 0.34,
+        baselineReady: false,
+        smoothScore: 0,
+        lastSmile: false,
+        serverFailCount: 0
       };
 
       let activeStream = null;
+      const inferEndpoint = "http://localhost:8080/infer";
 
       let viewportW = 0;
       let viewportH = 0;
@@ -607,8 +616,80 @@
         return best;
       }
 
+      function sampleMouthMetric(region) {
+        const maxX = Math.max(0, detectCanvas.width - 4);
+        const maxY = Math.max(0, detectCanvas.height - 4);
+        const x = Math.floor(clamp(region.x, 0, maxX));
+        const y = Math.floor(clamp(region.y, 0, maxY));
+        const maxW = Math.max(4, detectCanvas.width - x);
+        const maxH = Math.max(4, detectCanvas.height - y);
+        const w = Math.max(4, Math.min(Math.floor(region.w), maxW));
+        const h = Math.max(4, Math.min(Math.floor(region.h), maxH));
+
+        const image = detectCtx.getImageData(x, y, w, h).data;
+        const pixelCount = image.length / 4;
+
+        let sumLum = 0;
+        let sumLum2 = 0;
+
+        for (let i = 0; i < image.length; i += 4) {
+          const r = image[i];
+          const g = image[i + 1];
+          const b = image[i + 2];
+          const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+          sumLum += lum;
+          sumLum2 += lum * lum;
+        }
+
+        const meanLum = (sumLum / pixelCount) / 255;
+        const meanLum2 = (sumLum2 / pixelCount) / (255 * 255);
+        const variance = Math.max(0, meanLum2 - meanLum * meanLum);
+        return meanLum + variance * 0.65;
+      }
+
+      function frameToJpegBlob() {
+        return new Promise((resolve) => {
+          detectCanvas.toBlob(resolve, "image/jpeg", 0.62);
+        });
+      }
+
+      async function inferSmileViaServer() {
+        const blob = await frameToJpegBlob();
+        if (!blob) {
+          throw new Error("blob");
+        }
+
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), CONFIG.inferTimeoutMs);
+
+        try {
+          const response = await fetch(inferEndpoint, {
+            method: "POST",
+            mode: "cors",
+            headers: {
+              "Content-Type": "image/jpeg"
+            },
+            body: blob,
+            signal: controller.signal
+          });
+
+          if (!response.ok) {
+            throw new Error("HTTP " + response.status);
+          }
+
+          const payload = await response.json();
+          return {
+            smile: Boolean(payload.smile),
+            score: Number(payload.score) || 0,
+            hasFace: Boolean(payload.hasFace)
+          };
+        } finally {
+          clearTimeout(timer);
+        }
+      }
+
       async function trackFaceAndMaybeTrigger() {
-        if (!faceState.detector || faceState.inFlight || video.readyState < 2 || !detectCtx) {
+        if (faceState.inFlight || video.readyState < 2 || !detectCtx) {
           return;
         }
 
@@ -625,38 +706,96 @@
           detectCanvas.height = Math.max(1, Math.round((sourceHeight / sourceWidth) * CONFIG.detectWidth));
           detectCtx.drawImage(video, 0, 0, CONFIG.detectWidth, detectCanvas.height);
 
-          const faces = await faceState.detector.detect(detectCanvas);
-          if (!faces.length) {
-            faceState.hasFace = false;
-            statusEl.textContent = "cam";
+          let faceBox = null;
+
+          if (faceState.detector) {
+            const faces = await faceState.detector.detect(detectCanvas);
+            if (!faces.length) {
+              faceState.hasFace = false;
+              faceState.lastSmile = false;
+              faceState.baselineReady = false;
+              statusEl.textContent = "noface";
+              return;
+            }
+            faceBox = largestFace(faces)?.boundingBox || null;
+          } else {
+            // Fallback when FaceDetector API is unavailable.
+            faceBox = {
+              x: detectCanvas.width * 0.24,
+              y: detectCanvas.height * 0.12,
+              width: detectCanvas.width * 0.52,
+              height: detectCanvas.height * 0.7
+            };
+          }
+
+          if (!faceBox) {
             return;
           }
 
-          const face = largestFace(faces);
-          if (!face) {
-            return;
-          }
-
-          const box = face.boundingBox;
           const mapX = video.videoWidth / detectCanvas.width;
           const mapY = video.videoHeight / detectCanvas.height;
 
-          const faceCenterX = (box.x + box.width * 0.5) * mapX;
-          const faceTopY = box.y * mapY;
-          const faceHeight = box.height * mapY;
+          const faceCenterX = (faceBox.x + faceBox.width * 0.5) * mapX;
+          const faceTopY = faceBox.y * mapY;
+          const faceHeight = faceBox.height * mapY;
 
           const point = mapVideoPointToViewport(faceCenterX, faceTopY, true);
-          if (!point) {
-            return;
+          if (point) {
+            targetAnchor.x = clamp(point.x, 56, viewportW - 56);
+            targetAnchor.y = clamp(point.y - faceHeight * point.scale * 0.72, getSafeTop() + 68, viewportH - 120);
           }
 
-          targetAnchor.x = clamp(point.x, 56, viewportW - 56);
-          targetAnchor.y = clamp(point.y - faceHeight * point.scale * 0.72, getSafeTop() + 68, viewportH - 120);
+          let smile = false;
+          let score = 0;
+          let sourceLabel = "client";
+
+          try {
+            const serverResult = await inferSmileViaServer();
+            sourceLabel = "server";
+            faceState.serverFailCount = 0;
+
+            if (!serverResult.hasFace) {
+              faceState.hasFace = false;
+              faceState.lastSmile = false;
+              faceState.baselineReady = false;
+              statusEl.textContent = "noface";
+              return;
+            }
+
+            smile = serverResult.smile;
+            score = serverResult.score;
+          } catch {
+            faceState.serverFailCount += 1;
+
+            const mouthRegion = {
+              x: faceBox.x + faceBox.width * 0.22,
+              y: faceBox.y + faceBox.height * 0.58,
+              w: faceBox.width * 0.56,
+              h: faceBox.height * 0.3
+            };
+
+            const metric = sampleMouthMetric(mouthRegion);
+            if (!faceState.baselineReady) {
+              faceState.baseline = metric;
+              faceState.smoothScore = 0;
+              faceState.baselineReady = true;
+            }
+
+            const delta = metric - faceState.baseline;
+            faceState.baseline = faceState.baseline * (1 - CONFIG.baselineLerp) + metric * CONFIG.baselineLerp;
+            faceState.smoothScore = faceState.smoothScore * (1 - CONFIG.scoreLerp) + delta * CONFIG.scoreLerp;
+            score = faceState.smoothScore;
+            smile = Math.abs(faceState.smoothScore) > CONFIG.smileThreshold;
+          }
 
           faceState.hasFace = true;
-          faceState.lastSeenAt = performance.now();
+          statusEl.textContent = (smile ? "smile " : "face ") + score.toFixed(3) + " " + sourceLabel;
 
-          triggerBurst("face", false);
+          if (smile && !faceState.lastSmile) {
+            triggerBurst("smile", false);
+          }
+
+          faceState.lastSmile = smile;
         } catch {
           statusEl.textContent = "cam";
         } finally {
@@ -664,23 +803,11 @@
         }
       }
 
-      function startFallbackLoop() {
-        setInterval(() => {
-          const now = performance.now();
-          const tooLongNoFace = now - faceState.lastSeenAt > CONFIG.triggerCooldownMs * 1.4;
-
-          if (!faceState.detector || tooLongNoFace) {
-            targetAnchor.x = viewportW * 0.5;
-            targetAnchor.y = clamp(viewportH * 0.34, getSafeTop() + 86, viewportH - 120);
-            triggerBurst("auto", false);
-          }
-        }, CONFIG.triggerCooldownMs + 360);
-      }
-
       async function startCamera() {
         try {
           if ("FaceDetector" in window) {
             faceState.detector = new window.FaceDetector({ maxDetectedFaces: 2, fastMode: true });
+            faceState.mode = "fd";
           }
 
           const stream = await getPreferredMacbookCameraStream();
@@ -688,13 +815,8 @@
           video.srcObject = stream;
           await video.play();
 
-          statusEl.textContent = faceState.detector ? "face" : "cam";
-
-          if (faceState.detector) {
-            setInterval(trackFaceAndMaybeTrigger, CONFIG.faceSampleIntervalMs);
-          } else {
-            startFallbackLoop();
-          }
+          statusEl.textContent = faceState.detector ? "face" : "smile";
+          setInterval(trackFaceAndMaybeTrigger, CONFIG.faceSampleIntervalMs);
         } catch {
           errorEl.style.display = "flex";
           statusEl.textContent = "error";
@@ -748,14 +870,15 @@
           if (preferred && preferred.deviceId) {
             const selectedDeviceId = warmupStream.getVideoTracks()[0]?.getSettings()?.deviceId;
             if (preferred.deviceId !== selectedDeviceId) {
-              stopTracks(warmupStream);
-              selectedStream = await navigator.mediaDevices.getUserMedia({
+              const switchedStream = await navigator.mediaDevices.getUserMedia({
                 ...baseConstraints,
                 video: {
                   ...baseConstraints.video,
                   deviceId: { exact: preferred.deviceId }
                 }
               });
+              stopTracks(warmupStream);
+              selectedStream = switchedStream;
             }
           }
         } catch {

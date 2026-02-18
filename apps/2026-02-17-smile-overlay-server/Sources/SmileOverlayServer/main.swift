@@ -23,15 +23,32 @@ func loadIndexHTML() -> Data? {
 let inferer = SmileInferer()
 let server = GCDWebServer()
 
+func withCORSHeaders(_ response: GCDWebServerResponse) -> GCDWebServerResponse {
+    response.setValue("*", forAdditionalHeader: "Access-Control-Allow-Origin")
+    response.setValue("POST, OPTIONS", forAdditionalHeader: "Access-Control-Allow-Methods")
+    response.setValue("Content-Type", forAdditionalHeader: "Access-Control-Allow-Headers")
+    response.setValue("true", forAdditionalHeader: "Access-Control-Allow-Private-Network")
+    response.setValue("86400", forAdditionalHeader: "Access-Control-Max-Age")
+    return response
+}
+
 server.addHandler(
     forMethod: "GET",
     path: "/",
     request: GCDWebServerRequest.self
 ) { _ in
     guard let html = loadIndexHTML() else {
-        return GCDWebServerResponse(statusCode: 500)
+        return withCORSHeaders(GCDWebServerResponse(statusCode: 500))
     }
-    return GCDWebServerDataResponse(data: html, contentType: "text/html; charset=utf-8")
+    return withCORSHeaders(GCDWebServerDataResponse(data: html, contentType: "text/html; charset=utf-8"))
+}
+
+server.addHandler(
+    forMethod: "OPTIONS",
+    path: "/infer",
+    request: GCDWebServerRequest.self
+) { _ in
+    withCORSHeaders(GCDWebServerResponse(statusCode: 204))
 }
 
 server.addHandler(
@@ -40,20 +57,20 @@ server.addHandler(
     request: GCDWebServerDataRequest.self
 ) { request in
     guard let dataRequest = request as? GCDWebServerDataRequest else {
-        return GCDWebServerResponse(statusCode: 400)
+        return withCORSHeaders(GCDWebServerResponse(statusCode: 400))
     }
 
     guard !dataRequest.data.isEmpty else {
-        return GCDWebServerResponse(statusCode: 400)
+        return withCORSHeaders(GCDWebServerResponse(statusCode: 400))
     }
 
     do {
         let result = try inferer.infer(jpegData: dataRequest.data)
         let jsonData = try JSONEncoder().encode(result)
-        return GCDWebServerDataResponse(data: jsonData, contentType: "application/json")
+        return withCORSHeaders(GCDWebServerDataResponse(data: jsonData, contentType: "application/json"))
     } catch {
         fputs("[infer] \(error)\n", stderr)
-        return GCDWebServerResponse(statusCode: 500)
+        return withCORSHeaders(GCDWebServerResponse(statusCode: 500))
     }
 }
 
