@@ -1,0 +1,1320 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <title>Vision Live Comments</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg-0: #080a10;
+      --bg-1: #101727;
+      --bg-2: #182036;
+      --ink: #f6f8ff;
+      --muted: rgba(246, 248, 255, 0.74);
+      --line: rgba(255, 255, 255, 0.14);
+      --panel: rgba(10, 12, 20, 0.58);
+      --panel-strong: rgba(10, 12, 20, 0.8);
+      --accent: #ff517d;
+      --accent-2: #4dd4ff;
+      --good: #59f0b5;
+      --warn: #ffd66e;
+      --bad: #ff8ba0;
+      --comment-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+      font-family: "Avenir Next", "Hiragino Sans", "Yu Gothic", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--bg-0);
+    }
+
+    body {
+      position: fixed;
+      inset: 0;
+      touch-action: manipulation;
+      user-select: none;
+    }
+
+    button,
+    input {
+      font: inherit;
+      color: inherit;
+    }
+
+    .app {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      background:
+        radial-gradient(1200px 900px at 12% 8%, rgba(255, 81, 125, 0.16), transparent 62%),
+        radial-gradient(900px 700px at 92% 18%, rgba(77, 212, 255, 0.16), transparent 58%),
+        linear-gradient(160deg, var(--bg-1), var(--bg-0) 54%, #0a0e18);
+      isolation: isolate;
+    }
+
+    #video {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1);
+      filter: contrast(1.05) saturate(1.08) brightness(0.82);
+      background: linear-gradient(160deg, #101727, #090b12 65%);
+    }
+
+    .video-fallback {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(60vmax 50vmax at 72% 22%, rgba(77, 212, 255, 0.2), transparent 60%),
+        radial-gradient(68vmax 42vmax at 18% 76%, rgba(255, 81, 125, 0.18), transparent 60%);
+      opacity: 0.85;
+      pointer-events: none;
+    }
+
+    .grain {
+      position: absolute;
+      inset: -20%;
+      pointer-events: none;
+      opacity: 0.16;
+      background-image:
+        radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.2) 0 0.8px, transparent 0.9px),
+        radial-gradient(circle at 80% 40%, rgba(255, 255, 255, 0.14) 0 0.8px, transparent 0.9px),
+        radial-gradient(circle at 40% 75%, rgba(255, 255, 255, 0.12) 0 0.8px, transparent 0.9px);
+      background-size: 18px 18px, 22px 22px, 26px 26px;
+      animation: grain-drift 14s linear infinite;
+      z-index: 2;
+    }
+
+    .top-scrim,
+    .bottom-scrim {
+      position: absolute;
+      left: 0;
+      right: 0;
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    .top-scrim {
+      top: 0;
+      height: 32%;
+      background: linear-gradient(180deg, rgba(4, 5, 8, 0.78), rgba(4, 5, 8, 0));
+    }
+
+    .bottom-scrim {
+      bottom: 0;
+      height: 52%;
+      background:
+        linear-gradient(180deg, rgba(4, 5, 8, 0) 0%, rgba(4, 5, 8, 0.55) 42%, rgba(4, 5, 8, 0.92) 100%),
+        radial-gradient(70% 100% at 8% 100%, rgba(255, 81, 125, 0.18), transparent 70%);
+    }
+
+    .hud {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 6;
+      display: grid;
+      gap: 10px;
+      padding:
+        calc(env(safe-area-inset-top) + 10px)
+        10px
+        0;
+    }
+
+    .hud-row {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: 1fr auto;
+      align-items: start;
+      min-width: 0;
+    }
+
+    .brand {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 30px;
+      max-width: 100%;
+      padding: 0 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(8, 10, 16, 0.52);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+      font-size: 12px;
+      line-height: 1;
+      letter-spacing: 0.02em;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .chip strong {
+      color: var(--ink);
+      font-weight: 800;
+      letter-spacing: 0.03em;
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--warn);
+      box-shadow: 0 0 10px rgba(255, 214, 110, 0.65);
+      flex: 0 0 auto;
+    }
+
+    .dot.good {
+      background: var(--good);
+      box-shadow: 0 0 10px rgba(89, 240, 181, 0.7);
+    }
+
+    .dot.bad {
+      background: var(--bad);
+      box-shadow: 0 0 10px rgba(255, 139, 160, 0.6);
+    }
+
+    .counter {
+      min-width: 78px;
+      justify-content: center;
+      color: var(--ink);
+      font-weight: 800;
+    }
+
+    .counter span {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .control-panel {
+      display: grid;
+      gap: 8px;
+      padding: 10px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 16px 30px rgba(0, 0, 0, 0.28);
+      width: min(100%, 420px);
+    }
+
+    .model-row {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .model-input {
+      min-width: 0;
+      height: 38px;
+      padding: 0 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--ink);
+      outline: none;
+      font-size: 13px;
+    }
+
+    .model-input::placeholder {
+      color: rgba(255, 255, 255, 0.38);
+    }
+
+    .icon-btn,
+    .main-btn {
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--ink);
+      border-radius: 12px;
+      height: 38px;
+      padding: 0 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      transition: transform 120ms ease, background 120ms ease, border-color 120ms ease, opacity 120ms ease;
+      white-space: nowrap;
+    }
+
+    .icon-btn:active,
+    .main-btn:active {
+      transform: scale(0.98);
+    }
+
+    .icon-btn[disabled],
+    .main-btn[disabled] {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .icon-btn svg {
+      width: 14px;
+      height: 14px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.9;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .main-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
+    }
+
+    .main-btn {
+      position: relative;
+      min-width: 0;
+      padding: 0 10px;
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
+        rgba(255, 255, 255, 0.04);
+    }
+
+    .main-btn[data-kind="start"] {
+      border-color: rgba(89, 240, 181, 0.25);
+    }
+
+    .main-btn[data-kind="snap"] {
+      border-color: rgba(77, 212, 255, 0.2);
+    }
+
+    .main-btn[data-kind="auto"] {
+      border-color: rgba(255, 81, 125, 0.22);
+    }
+
+    .main-btn.active {
+      background:
+        linear-gradient(180deg, rgba(255, 81, 125, 0.22), rgba(255, 81, 125, 0.06)),
+        rgba(255, 255, 255, 0.06);
+      border-color: rgba(255, 81, 125, 0.42);
+      box-shadow: inset 0 0 0 1px rgba(255, 81, 125, 0.18);
+    }
+
+    .main-btn .progress {
+      position: absolute;
+      inset: auto 0 0 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transform-origin: left center;
+      transform: scaleX(0);
+      opacity: 0.9;
+      pointer-events: none;
+    }
+
+    .note {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      font-size: 11px;
+      line-height: 1.2;
+      color: rgba(255, 255, 255, 0.64);
+      min-width: 0;
+    }
+
+    .note code {
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: rgba(255, 255, 255, 0.8);
+      font-family: "SF Mono", "Menlo", monospace;
+      font-size: 10px;
+    }
+
+    .status-line {
+      position: absolute;
+      left: 10px;
+      right: 10px;
+      bottom: calc(env(safe-area-inset-bottom) + 10px);
+      z-index: 8;
+      display: grid;
+      gap: 8px;
+      align-items: end;
+      pointer-events: none;
+    }
+
+    .comments {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 8px;
+      width: min(100%, 420px);
+      max-height: min(48dvh, 52vh);
+      align-content: end;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .comment {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 8px;
+      align-items: start;
+      padding: 9px 10px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0)),
+        rgba(8, 10, 16, 0.54);
+      backdrop-filter: blur(10px);
+      box-shadow: var(--comment-shadow);
+      animation: comment-in 260ms ease forwards, comment-out 420ms ease forwards;
+      animation-delay: 0ms, 15.6s;
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    .comment.system {
+      border-color: rgba(255, 214, 110, 0.24);
+      background:
+        linear-gradient(180deg, rgba(255, 214, 110, 0.08), rgba(255, 214, 110, 0)),
+        rgba(8, 10, 16, 0.62);
+    }
+
+    .avatar {
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      font-size: 10px;
+      font-weight: 900;
+      color: #fff;
+      background:
+        radial-gradient(circle at 28% 25%, rgba(255, 255, 255, 0.35), transparent 45%),
+        linear-gradient(135deg, rgba(255, 81, 125, 0.95), rgba(77, 212, 255, 0.95));
+      flex: 0 0 auto;
+    }
+
+    .comment.system .avatar {
+      background:
+        radial-gradient(circle at 28% 25%, rgba(255, 255, 255, 0.28), transparent 45%),
+        linear-gradient(135deg, rgba(255, 214, 110, 0.96), rgba(255, 152, 81, 0.95));
+      color: #111;
+    }
+
+    .bubble {
+      min-width: 0;
+      display: grid;
+      gap: 3px;
+    }
+
+    .meta {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      min-width: 0;
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 11px;
+      line-height: 1;
+      letter-spacing: 0.02em;
+    }
+
+    .meta .name {
+      max-width: 22ch;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: rgba(255, 255, 255, 0.92);
+      font-weight: 700;
+    }
+
+    .meta .time {
+      color: rgba(255, 255, 255, 0.48);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .text {
+      color: var(--ink);
+      font-size: 13px;
+      line-height: 1.22;
+      word-break: break-word;
+      text-shadow: 0 1px 6px rgba(0, 0, 0, 0.28);
+    }
+
+    .likes {
+      min-width: 28px;
+      display: grid;
+      justify-items: center;
+      gap: 2px;
+      padding-top: 2px;
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .likes svg {
+      width: 12px;
+      height: 12px;
+      fill: rgba(255, 81, 125, 0.92);
+      filter: drop-shadow(0 0 6px rgba(255, 81, 125, 0.4));
+    }
+
+    .bottom-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-height: 34px;
+      padding: 0 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: var(--panel-strong);
+      backdrop-filter: blur(10px);
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 11px;
+      line-height: 1;
+      letter-spacing: 0.02em;
+      pointer-events: auto;
+      width: min(100%, 420px);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.28);
+    }
+
+    .status-pill {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: rgba(255, 255, 255, 0.86);
+    }
+
+    .status-pill.bad {
+      color: var(--bad);
+    }
+
+    .status-pill.warn {
+      color: var(--warn);
+    }
+
+    .status-pill.good {
+      color: var(--good);
+    }
+
+    .pulse {
+      position: absolute;
+      inset: auto 14px 98px auto;
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      z-index: 5;
+      pointer-events: none;
+      background: rgba(255, 81, 125, 0.92);
+      box-shadow: 0 0 0 0 rgba(255, 81, 125, 0.6);
+      animation: pulse 1.8s ease infinite;
+      opacity: 0;
+      transition: opacity 180ms ease;
+    }
+
+    .pulse.active {
+      opacity: 1;
+    }
+
+    @keyframes comment-in {
+      from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.985);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes comment-out {
+      from {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+      to {
+        opacity: 0;
+        transform: translateY(-8px) scale(0.988);
+      }
+    }
+
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(255, 81, 125, 0.45);
+        transform: scale(0.96);
+      }
+      70% {
+        box-shadow: 0 0 0 12px rgba(255, 81, 125, 0);
+        transform: scale(1);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(255, 81, 125, 0);
+        transform: scale(0.96);
+      }
+    }
+
+    @keyframes grain-drift {
+      from {
+        transform: translate3d(0, 0, 0);
+      }
+      to {
+        transform: translate3d(-16px, -12px, 0);
+      }
+    }
+
+    @media (max-width: 420px) {
+      .chip {
+        min-height: 28px;
+        padding: 0 9px;
+        font-size: 11px;
+      }
+
+      .control-panel {
+        gap: 7px;
+        padding: 9px;
+      }
+
+      .model-input,
+      .icon-btn,
+      .main-btn {
+        height: 36px;
+        font-size: 12px;
+      }
+
+      .comment {
+        padding: 8px 9px;
+        gap: 7px;
+      }
+
+      .text {
+        font-size: 12px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .grain,
+      .pulse,
+      .comment {
+        animation: none !important;
+      }
+
+      .comment {
+        opacity: 1;
+        transform: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app" aria-label="Vision Live Comments">
+    <video id="video" playsinline muted autoplay></video>
+    <div class="video-fallback" aria-hidden="true"></div>
+    <div class="grain" aria-hidden="true"></div>
+    <div class="top-scrim" aria-hidden="true"></div>
+    <div class="bottom-scrim" aria-hidden="true"></div>
+    <div class="pulse" id="pulse" aria-hidden="true"></div>
+
+    <section class="hud" aria-label="controls">
+      <div class="hud-row">
+        <div class="brand" aria-label="status chips">
+          <div class="chip"><span class="dot" id="camDot"></span><strong>CAM</strong><span id="camLabel">OFF</span></div>
+          <div class="chip"><span class="dot" id="llmDot"></span><strong>LM</strong><span id="llmLabel">IDLE</span></div>
+          <div class="chip counter" aria-live="polite">NEXT <span id="nextCounter">60</span>s</div>
+        </div>
+      </div>
+
+      <div class="control-panel">
+        <div class="model-row">
+          <input
+            id="modelInput"
+            class="model-input"
+            list="modelList"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            placeholder="vision model id"
+            aria-label="Vision model id"
+          />
+          <button class="icon-btn" id="modelsButton" type="button" aria-label="Load models">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M8 2v2.6"></path>
+              <path d="M8 11.4V14"></path>
+              <path d="M2 8h2.6"></path>
+              <path d="M11.4 8H14"></path>
+              <path d="M3.8 3.8l1.8 1.8"></path>
+              <path d="M10.4 10.4l1.8 1.8"></path>
+              <path d="M12.2 3.8l-1.8 1.8"></path>
+              <path d="M5.6 10.4l-1.8 1.8"></path>
+            </svg>
+            MODELS
+          </button>
+          <button class="icon-btn" id="sendButton" type="button" aria-label="Send snapshot">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M14 2L2.6 7.2"></path>
+              <path d="M14 2l-3.8 12-2.3-5.2L2.6 7.2"></path>
+            </svg>
+            SNAP
+          </button>
+        </div>
+
+        <div class="main-row">
+          <button class="main-btn" data-kind="start" id="startButton" type="button">START</button>
+          <button class="main-btn" data-kind="auto" id="autoButton" type="button">
+            AUTO
+            <span class="progress" id="autoProgress" aria-hidden="true"></span>
+          </button>
+          <button class="main-btn" data-kind="snap" id="testButton" type="button">TEST</button>
+        </div>
+
+        <div class="note" aria-label="lm studio setup">
+          <span>GUI: Load/READY + Local Server Running</span>
+          <code>http://localhost:1234/v1</code>
+        </div>
+      </div>
+    </section>
+
+    <section class="status-line" aria-label="overlay comments">
+      <ul id="comments" class="comments" aria-live="polite" aria-label="comments"></ul>
+      <div class="bottom-bar">
+        <div class="status-pill" id="statusText">ready</div>
+        <div id="modelBadge" aria-live="polite">model: -</div>
+      </div>
+    </section>
+  </main>
+
+  <canvas id="captureCanvas" hidden></canvas>
+  <datalist id="modelList"></datalist>
+
+  <script>
+    const BASE_URL = "http://localhost:1234/v1";
+    const API_KEY = "lm-studio";
+    const POLL_INTERVAL_MS = 60000;
+    const VISION_PROMPT = "この画像をみてTiktokLIVE視聴者だと思ってコメントをしてください";
+    const SYSTEM_PROMPT = "あなたはTikTok LIVE視聴者のコメント役です。短い日本語コメントを1〜3行で返してください。";
+
+    const state = {
+      stream: null,
+      cameraReady: false,
+      autoEnabled: false,
+      sending: false,
+      models: [],
+      nextTickAt: 0,
+      autoTimeoutId: null,
+      clockTimerId: null,
+      commentSeq: 0,
+      llmState: "idle",
+      camState: "off",
+      lastStatusTone: "neutral",
+    };
+
+    const elements = {
+      video: document.getElementById("video"),
+      captureCanvas: document.getElementById("captureCanvas"),
+      comments: document.getElementById("comments"),
+      statusText: document.getElementById("statusText"),
+      modelBadge: document.getElementById("modelBadge"),
+      modelInput: document.getElementById("modelInput"),
+      modelList: document.getElementById("modelList"),
+      modelsButton: document.getElementById("modelsButton"),
+      sendButton: document.getElementById("sendButton"),
+      startButton: document.getElementById("startButton"),
+      autoButton: document.getElementById("autoButton"),
+      autoProgress: document.getElementById("autoProgress"),
+      testButton: document.getElementById("testButton"),
+      pulse: document.getElementById("pulse"),
+      nextCounter: document.getElementById("nextCounter"),
+      camDot: document.getElementById("camDot"),
+      llmDot: document.getElementById("llmDot"),
+      camLabel: document.getElementById("camLabel"),
+      llmLabel: document.getElementById("llmLabel"),
+    };
+
+    const viewerNames = [
+      "rin_77", "moca.live", "sea_taro", "nana_clip", "sora88", "yui_view", "aki_room", "mikan5",
+      "kuro_neo", "hana_loop", "tau_cat", "lime_soda", "ao_live", "poco", "riko_line", "zen_viewer"
+    ];
+
+    function setStatus(text, tone = "neutral") {
+      state.lastStatusTone = tone;
+      elements.statusText.textContent = text;
+      elements.statusText.className = "status-pill" + (tone === "neutral" ? "" : " " + tone);
+    }
+
+    function setCamState(mode) {
+      state.camState = mode;
+      elements.camLabel.textContent = mode.toUpperCase();
+      elements.camDot.classList.toggle("good", mode === "on");
+      elements.camDot.classList.toggle("bad", mode === "err");
+    }
+
+    function setLlmState(mode) {
+      state.llmState = mode;
+      elements.llmLabel.textContent = mode.toUpperCase();
+      elements.llmDot.classList.toggle("good", mode === "ok" || mode === "send");
+      elements.llmDot.classList.toggle("bad", mode === "err");
+    }
+
+    function updateModelBadge() {
+      const model = (elements.modelInput.value || "").trim();
+      elements.modelBadge.textContent = "model: " + (model || "-");
+    }
+
+    function setBusyUI() {
+      elements.sendButton.disabled = state.sending;
+      elements.modelsButton.disabled = state.sending;
+      elements.testButton.disabled = state.sending;
+      elements.pulse.classList.toggle("active", state.sending);
+    }
+
+    function escapeHtml(text) {
+      return text
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+
+    function formatShortTime(date) {
+      return date.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" });
+    }
+
+    function randomHandle() {
+      const base = viewerNames[Math.floor(Math.random() * viewerNames.length)];
+      const suffix = String(Math.floor(Math.random() * 90 + 10));
+      return base + suffix;
+    }
+
+    function randomLikes() {
+      return "+" + String(Math.floor(Math.random() * 8) + 1);
+    }
+
+    function addComment(text, kind = "llm") {
+      const content = String(text || "").trim();
+      if (!content) {
+        return;
+      }
+
+      const li = document.createElement("li");
+      li.className = "comment" + (kind === "system" ? " system" : "");
+
+      const handle = kind === "system" ? "system" : randomHandle();
+      const avatar = (kind === "system" ? "LM" : handle.slice(0, 2)).toUpperCase();
+      const safeText = escapeHtml(content);
+      const safeHandle = escapeHtml(handle);
+      const safeTime = escapeHtml(formatShortTime(new Date()));
+      const likes = kind === "system" ? "!" : randomLikes();
+
+      li.innerHTML = `
+        <div class="avatar" aria-hidden="true">${avatar}</div>
+        <div class="bubble">
+          <div class="meta">
+            <span class="name">${safeHandle}</span>
+            <span class="time">${safeTime}</span>
+          </div>
+          <div class="text">${safeText}</div>
+        </div>
+        <div class="likes" aria-hidden="true">
+          <svg viewBox="0 0 16 16"><path d="M8 14.2 6.9 13.2C3.2 9.9 1 7.9 1 5.3 1 3.3 2.6 1.8 4.5 1.8c1.1 0 2.1.5 2.8 1.4.7-.9 1.8-1.4 2.9-1.4 1.9 0 3.5 1.5 3.5 3.5 0 2.6-2.2 4.6-5.9 7.9L8 14.2Z"/></svg>
+          <span>${likes}</span>
+        </div>
+      `;
+
+      elements.comments.prepend(li);
+      state.commentSeq += 1;
+      li.dataset.seq = String(state.commentSeq);
+
+      while (elements.comments.children.length > 6) {
+        elements.comments.removeChild(elements.comments.lastElementChild);
+      }
+
+      window.setTimeout(() => {
+        li.remove();
+      }, 16050);
+    }
+
+    function splitCommentsFromResponse(text) {
+      const raw = String(text || "").trim();
+      if (!raw) {
+        return [];
+      }
+
+      const rows = raw
+        .split(/\n+/)
+        .map((line) => line.replace(/^[\-\*\d\.\)\s]+/, "").trim())
+        .filter(Boolean);
+
+      const source = rows.length ? rows : [raw];
+      const comments = [];
+
+      for (const row of source) {
+        const pieces = row
+          .split(/(?<=[。!?！？])\s*/u)
+          .map((piece) => piece.trim())
+          .filter(Boolean);
+
+        for (const piece of pieces) {
+          const clean = piece.replace(/^["'「『]/, "").replace(/["'」』]$/, "").trim();
+          if (clean && !comments.includes(clean)) {
+            comments.push(clean.slice(0, 72));
+          }
+          if (comments.length >= 3) {
+            return comments;
+          }
+        }
+      }
+
+      return comments.slice(0, 3);
+    }
+
+    function normalizeMessageContent(content) {
+      if (typeof content === "string") {
+        return content;
+      }
+      if (Array.isArray(content)) {
+        return content
+          .map((part) => {
+            if (!part) return "";
+            if (typeof part === "string") return part;
+            if (part.type === "text" && typeof part.text === "string") return part.text;
+            return "";
+          })
+          .join("\n")
+          .trim();
+      }
+      return "";
+    }
+
+    async function fetchJson(url, options, timeoutMs) {
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const response = await fetch(url, { ...options, signal: controller.signal });
+        const text = await response.text();
+        let data = null;
+        try {
+          data = text ? JSON.parse(text) : null;
+        } catch {
+          data = { raw: text };
+        }
+        if (!response.ok) {
+          const message = data?.error?.message || data?.message || ("HTTP " + response.status);
+          throw new Error(message);
+        }
+        return data;
+      } finally {
+        window.clearTimeout(timeoutId);
+      }
+    }
+
+    async function loadModels({ quiet = false } = {}) {
+      updateModelBadge();
+      if (!quiet) {
+        setStatus("models...", "warn");
+      }
+      setLlmState("send");
+      try {
+        const data = await fetchJson(BASE_URL + "/models", {
+          method: "GET",
+          headers: {
+            Authorization: "Bearer " + API_KEY,
+          },
+        }, 6000);
+
+        const ids = Array.isArray(data?.data)
+          ? data.data.map((item) => item?.id).filter((id) => typeof id === "string" && id.trim())
+          : [];
+
+        state.models = ids;
+        elements.modelList.innerHTML = "";
+        for (const id of ids) {
+          const option = document.createElement("option");
+          option.value = id;
+          elements.modelList.appendChild(option);
+        }
+
+        if (!elements.modelInput.value.trim() && ids[0]) {
+          elements.modelInput.value = ids[0];
+          updateModelBadge();
+        }
+
+        setLlmState("ok");
+        if (!quiet) {
+          setStatus(ids.length ? ("models " + ids.length) : "models 0", ids.length ? "good" : "warn");
+        }
+        return ids;
+      } catch (error) {
+        setLlmState("err");
+        if (!quiet) {
+          setStatus("models fail", "bad");
+          addComment("LM Studio /models に接続できません", "system");
+        }
+        return [];
+      }
+    }
+
+    async function ensureModel() {
+      const current = elements.modelInput.value.trim();
+      if (current) {
+        updateModelBadge();
+        return current;
+      }
+      const ids = await loadModels({ quiet: true });
+      const model = (elements.modelInput.value || ids[0] || "").trim();
+      if (!model) {
+        throw new Error("vision model id required");
+      }
+      updateModelBadge();
+      return model;
+    }
+
+    async function startCamera() {
+      if (state.cameraReady && state.stream) {
+        return true;
+      }
+
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setCamState("err");
+        setStatus("camera api none", "bad");
+        addComment("この環境では camera API を使えません", "system");
+        return false;
+      }
+
+      setCamState("wait");
+      setStatus("camera...", "warn");
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: {
+            facingMode: "user",
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
+        });
+
+        state.stream = stream;
+        elements.video.srcObject = stream;
+        try {
+          await elements.video.play();
+        } catch {
+          // Safari may require a follow-up user gesture; video element still has the stream.
+        }
+
+        state.cameraReady = true;
+        setCamState("on");
+        setStatus("camera on", "good");
+        addComment("camera preview start", "system");
+        return true;
+      } catch (error) {
+        state.cameraReady = false;
+        setCamState("err");
+        setStatus("camera blocked", "bad");
+        addComment("camera 許可が必要です", "system");
+        return false;
+      }
+    }
+
+    function drawFallbackFrame(ctx, width, height) {
+      const now = new Date();
+      const t = now.getTime() / 1000;
+      const g = ctx.createLinearGradient(0, 0, width, height);
+      g.addColorStop(0, "#0f1730");
+      g.addColorStop(0.5, "#161a2c");
+      g.addColorStop(1, "#2b1131");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, width, height);
+
+      ctx.fillStyle = "rgba(255,255,255,0.08)";
+      for (let i = 0; i < 18; i += 1) {
+        const x = (Math.sin(t * 0.9 + i * 2.2) * 0.5 + 0.5) * width;
+        const y = (Math.cos(t * 1.2 + i * 1.7) * 0.5 + 0.5) * height;
+        const r = 20 + (i % 5) * 7;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.fillStyle = "rgba(255,255,255,0.85)";
+      ctx.font = "bold 28px Avenir Next, sans-serif";
+      ctx.fillText("TEST FRAME", 24, 46);
+      ctx.font = "18px SF Mono, Menlo, monospace";
+      ctx.fillStyle = "rgba(255,255,255,0.72)";
+      ctx.fillText(now.toLocaleTimeString("ja-JP"), 24, 74);
+    }
+
+    function captureImageDataUrl({ allowFallback = false } = {}) {
+      const video = elements.video;
+      const hasVideo = state.cameraReady && video.videoWidth > 0 && video.videoHeight > 0;
+
+      if (!hasVideo && !allowFallback) {
+        return null;
+      }
+
+      const sourceWidth = hasVideo ? video.videoWidth : 640;
+      const sourceHeight = hasVideo ? video.videoHeight : 360;
+      const maxWidth = 768;
+      const width = Math.min(maxWidth, sourceWidth);
+      const height = Math.max(1, Math.round(sourceHeight * (width / sourceWidth)));
+
+      const canvas = elements.captureCanvas;
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d", { alpha: false });
+
+      if (!ctx) {
+        return null;
+      }
+
+      if (hasVideo) {
+        ctx.drawImage(video, 0, 0, width, height);
+      } else {
+        drawFallbackFrame(ctx, width, height);
+      }
+
+      return canvas.toDataURL("image/jpeg", 0.86);
+    }
+
+    function updateCountdownUI() {
+      let remain = 60;
+      let progress = 0;
+      if (state.autoEnabled && state.nextTickAt > 0) {
+        const delta = Math.max(0, state.nextTickAt - Date.now());
+        remain = Math.ceil(delta / 1000);
+        if (remain <= 0) {
+          remain = 0;
+        }
+        progress = Math.min(1, Math.max(0, 1 - (delta / POLL_INTERVAL_MS)));
+      }
+      elements.nextCounter.textContent = String(remain).padStart(2, "0");
+      elements.autoProgress.style.transform = "scaleX(" + progress.toFixed(4) + ")";
+      elements.autoButton.classList.toggle("active", state.autoEnabled);
+      elements.autoButton.textContent = state.autoEnabled ? "AUTO ON" : "AUTO";
+      elements.autoButton.appendChild(elements.autoProgress);
+    }
+
+    function stopAutoLoop() {
+      state.autoEnabled = false;
+      state.nextTickAt = 0;
+      if (state.autoTimeoutId) {
+        window.clearTimeout(state.autoTimeoutId);
+        state.autoTimeoutId = null;
+      }
+      if (state.clockTimerId) {
+        window.clearInterval(state.clockTimerId);
+        state.clockTimerId = null;
+      }
+      updateCountdownUI();
+    }
+
+    function scheduleNextAutoShot() {
+      if (!state.autoEnabled) {
+        return;
+      }
+      if (state.autoTimeoutId) {
+        window.clearTimeout(state.autoTimeoutId);
+      }
+      state.nextTickAt = Date.now() + POLL_INTERVAL_MS;
+      updateCountdownUI();
+      state.autoTimeoutId = window.setTimeout(async () => {
+        await sendSnapshot({ reason: "auto" });
+      }, POLL_INTERVAL_MS);
+    }
+
+    function startAutoLoop() {
+      state.autoEnabled = true;
+      if (!state.clockTimerId) {
+        state.clockTimerId = window.setInterval(updateCountdownUI, 250);
+      }
+      scheduleNextAutoShot();
+      updateCountdownUI();
+    }
+
+    async function sendSnapshot({ reason = "manual", allowFallback = false } = {}) {
+      if (state.sending) {
+        return;
+      }
+
+      const imageDataUrl = captureImageDataUrl({ allowFallback });
+      if (!imageDataUrl) {
+        setStatus("camera first", "warn");
+        addComment("START で camera を有効化してください", "system");
+        return;
+      }
+
+      state.sending = true;
+      setBusyUI();
+      setLlmState("send");
+      setStatus(reason === "auto" ? "auto send..." : "send...", "warn");
+
+      try {
+        const model = await ensureModel();
+        const payload = {
+          model,
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT },
+            {
+              role: "user",
+              content: [
+                { type: "text", text: VISION_PROMPT },
+                { type: "image_url", image_url: { url: imageDataUrl } }
+              ]
+            }
+          ],
+          stream: false
+        };
+
+        const data = await fetchJson(BASE_URL + "/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + API_KEY,
+          },
+          body: JSON.stringify(payload),
+        }, 90000);
+
+        const content = normalizeMessageContent(data?.choices?.[0]?.message?.content);
+        const comments = splitCommentsFromResponse(content);
+
+        if (!comments.length) {
+          addComment("コメントを取得できませんでした", "system");
+          setStatus("empty reply", "warn");
+          setLlmState("err");
+        } else {
+          comments.forEach((comment, index) => {
+            window.setTimeout(() => addComment(comment, "llm"), index * 180);
+          });
+          setStatus(reason === "auto" ? "auto ok" : "reply ok", "good");
+          setLlmState("ok");
+        }
+      } catch (error) {
+        const message = error?.message ? String(error.message) : "request failed";
+        addComment(message.length > 56 ? (message.slice(0, 56) + "...") : message, "system");
+        setStatus("llm fail", "bad");
+        setLlmState("err");
+      } finally {
+        state.sending = false;
+        setBusyUI();
+        if (state.autoEnabled) {
+          scheduleNextAutoShot();
+        } else {
+          updateCountdownUI();
+        }
+      }
+    }
+
+    async function toggleAuto() {
+      if (state.autoEnabled) {
+        stopAutoLoop();
+        setStatus("auto off", "warn");
+        return;
+      }
+
+      const ok = await startCamera();
+      if (!ok) {
+        return;
+      }
+
+      startAutoLoop();
+      setStatus("auto on", "good");
+      addComment("60s loop start", "system");
+    }
+
+    async function handleStart() {
+      const ok = await startCamera();
+      if (!ok) {
+        return;
+      }
+      if (!state.autoEnabled) {
+        startAutoLoop();
+        setStatus("auto on", "good");
+      }
+    }
+
+    async function handleTest() {
+      await sendSnapshot({ reason: "manual", allowFallback: true });
+    }
+
+    function bindEvents() {
+      elements.modelsButton.addEventListener("click", () => {
+        loadModels();
+      });
+
+      elements.sendButton.addEventListener("click", async () => {
+        const ok = await startCamera();
+        if (!ok) {
+          return;
+        }
+        await sendSnapshot({ reason: "manual" });
+      });
+
+      elements.startButton.addEventListener("click", () => {
+        handleStart();
+      });
+
+      elements.autoButton.addEventListener("click", () => {
+        toggleAuto();
+      });
+
+      elements.testButton.addEventListener("click", () => {
+        handleTest();
+      });
+
+      elements.modelInput.addEventListener("input", updateModelBadge);
+      elements.modelInput.addEventListener("change", updateModelBadge);
+
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden && state.autoEnabled) {
+          setStatus("hidden / auto on", "warn");
+        } else if (!document.hidden) {
+          updateCountdownUI();
+        }
+      });
+
+      window.addEventListener("beforeunload", () => {
+        stopAutoLoop();
+        if (state.stream) {
+          state.stream.getTracks().forEach((track) => track.stop());
+        }
+      });
+    }
+
+    function seedWelcomeComments() {
+      addComment("START で camera preview", "system");
+      addComment("SNAP で今のフレームを送信", "system");
+      addComment("AUTO ON で60秒ごとに送信", "system");
+    }
+
+    function init() {
+      updateModelBadge();
+      setCamState("off");
+      setLlmState("idle");
+      updateCountdownUI();
+      setStatus("ready");
+      bindEvents();
+      seedWelcomeComments();
+    }
+
+    init();
+  </script>
+</body>
+</html>
