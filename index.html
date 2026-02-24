@@ -398,6 +398,19 @@
         opacity: 1;
       }
     }
+
+    .section-label {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 10px;
+      letter-spacing: 0.9px;
+      text-transform: uppercase;
+      color: rgba(0, 0, 0, 0.28);
+      padding: 14px 4px 6px;
+    }
+
+    .section-label:first-child {
+      padding-top: 4px;
+    }
   </style>
 </head>
 <body>
@@ -467,6 +480,41 @@
         date: "2026-02-23",
         title: "Qwen Watch Preview",
         href: "./apps/2026-02-23-qwen-watch-preview/"
+      },
+      {
+        date: "2026-02-24",
+        title: "Kanji Daily",
+        href: "./apps/2026-02-24-kanji-daily/",
+        author: "ai",
+        articleHref: "./articles/2026-02-24-kanji-daily/"
+      },
+      {
+        date: "2026-02-24",
+        title: "AI Merge",
+        href: "./apps/2026-02-24-ai-merge/",
+        author: "ai",
+        articleHref: "./articles/2026-02-24-ai-merge/"
+      },
+      {
+        date: "2026-02-24",
+        title: "Career Clicker",
+        href: "./apps/2026-02-24-career-clicker/",
+        author: "ai",
+        articleHref: "./articles/2026-02-24-career-clicker/"
+      },
+      {
+        date: "2026-02-24",
+        title: "Omikuji",
+        href: "./apps/2026-02-24-omikuji/",
+        author: "ai",
+        articleHref: "./articles/2026-02-24-omikuji/"
+      },
+      {
+        date: "2026-02-24",
+        title: "Kotowaza Quiz",
+        href: "./apps/2026-02-24-kotowaza-quiz/",
+        author: "ai",
+        articleHref: "./articles/2026-02-24-kotowaza-quiz/"
       }
     ];
 
@@ -606,21 +654,34 @@
         .filter((entry) => entry.date.startsWith(monthPrefix))
         .sort((a, b) => a.date.localeCompare(b.date) || a._index - b._index);
 
+      const humanEntries = visibleEntries.filter((e) => e.author !== "ai");
+      const aiEntries = visibleEntries.filter((e) => e.author === "ai");
+
       let firstOpenCard = null;
       const currentMonthView = year === today.getFullYear() && month === today.getMonth();
+      let cardIndex = 0;
 
-      visibleEntries.forEach((entry, index) => {
-        const card = buildCard(entry, index);
-        cardList.appendChild(card);
+      function renderSection(sectionEntries, labelText) {
+        if (sectionEntries.length === 0) return;
+        const label = document.createElement("div");
+        label.className = "section-label";
+        label.textContent = labelText;
+        cardList.appendChild(label);
+        sectionEntries.forEach((entry) => {
+          const card = buildCard(entry, cardIndex++);
+          cardList.appendChild(card);
+          const day = Number(entry.date.slice(-2));
+          if (!firstOpenCard && (!currentMonthView || day <= today.getDate())) {
+            firstOpenCard = card;
+          }
+        });
+      }
 
-        const day = Number(entry.date.slice(-2));
-        if (!firstOpenCard && (!currentMonthView || day <= today.getDate())) {
-          firstOpenCard = card;
-        }
-      });
+      renderSection(humanEntries, "Human-made");
+      renderSection(aiEntries, "AI-generated");
 
-      if (!firstOpenCard && cardList.firstElementChild) {
-        firstOpenCard = cardList.firstElementChild;
+      if (!firstOpenCard && cardList.querySelector(".card")) {
+        firstOpenCard = cardList.querySelector(".card");
       }
 
       if (firstOpenCard) {
