@@ -1,0 +1,3761 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <title>Silicon Rogue</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-1: #f0f4ff;
+      --bg-2: #faf0ff;
+      --bg-3: #f0faff;
+      --bg-4: #fff5f8;
+      --bg-5: #f4f0ff;
+      --glass: rgba(255, 255, 255, 0.44);
+      --glass-strong: rgba(255, 255, 255, 0.62);
+      --line: rgba(255, 255, 255, 0.7);
+      --shadow: rgba(14, 20, 40, 0.12);
+      --text: rgba(8, 12, 24, 0.82);
+      --text-sub: rgba(8, 12, 24, 0.55);
+      --text-faint: rgba(8, 12, 24, 0.34);
+      --danger: #ff5178;
+      --ok: #00b894;
+      --warn: #ff9e2c;
+      --cyan: #2cd5ff;
+      --violet: #8c6dff;
+      --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: "Sora", "Hiragino Sans", "Yu Gothic", sans-serif;
+      color: var(--text);
+      background: linear-gradient(165deg, var(--bg-1) 0%, var(--bg-2) 25%, var(--bg-3) 50%, var(--bg-4) 75%, var(--bg-5) 100%);
+      user-select: none;
+    }
+
+    .bg-layer {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .aurora {
+      background:
+        radial-gradient(ellipse 110% 55% at 8% 5%, rgba(120, 190, 255, 0.28), transparent 56%),
+        radial-gradient(ellipse 72% 58% at 92% 14%, rgba(210, 150, 255, 0.23), transparent 52%),
+        radial-gradient(ellipse 72% 45% at 60% 94%, rgba(140, 255, 220, 0.14), transparent 56%),
+        radial-gradient(ellipse 46% 54% at 72% 64%, rgba(255, 190, 220, 0.12), transparent 54%);
+    }
+
+    .noise {
+      opacity: 0.02;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='192' height='192' viewBox='0 0 192 192'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='192' height='192' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 192px 192px;
+    }
+
+    .shell {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      height: 100%;
+      padding:
+        max(10px, env(safe-area-inset-top))
+        max(10px, env(safe-area-inset-right))
+        max(10px, env(safe-area-inset-bottom))
+        max(10px, env(safe-area-inset-left));
+    }
+
+    .frame {
+      width: 100%;
+      max-width: 480px;
+      height: 100%;
+      margin: 0 auto;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto auto;
+      gap: 8px;
+    }
+
+    .panel {
+      background: var(--glass);
+      border: 1px solid var(--line);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      border-radius: 18px;
+      box-shadow:
+        0 14px 34px rgba(8, 12, 24, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.75);
+    }
+
+    .hud {
+      padding: 8px 10px 9px;
+      display: grid;
+      gap: 6px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hud::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(160deg, rgba(255,255,255,0.28), transparent 42%);
+    }
+
+    .meter-row,
+    .meta-row {
+      display: grid;
+      align-items: center;
+      gap: 6px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .meter-row {
+      grid-template-columns: 1fr 1fr auto;
+    }
+
+    .meta-row {
+      grid-template-columns: 1fr auto auto auto;
+      font-size: 10px;
+      color: var(--text-sub);
+      line-height: 1;
+    }
+
+    .meter {
+      display: grid;
+      gap: 3px;
+      min-width: 0;
+    }
+
+    .meter-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 4px;
+      font-size: 9px;
+      line-height: 1;
+      color: var(--text-sub);
+      font-family: "IBM Plex Mono", monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .bar {
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.07);
+      overflow: hidden;
+      position: relative;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.08);
+    }
+
+    .bar > span {
+      display: block;
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      transition: width 180ms ease;
+      box-shadow: inset 0 0 12px rgba(255,255,255,0.4);
+    }
+
+    .bar.hp > span {
+      background: linear-gradient(90deg, #ff6b88, #ff8a66);
+    }
+
+    .bar.mp > span {
+      background: linear-gradient(90deg, #45b7ff, #29e0ff);
+    }
+
+    .bar.exp > span {
+      background: linear-gradient(90deg, #7e7bff, #b392ff);
+    }
+
+    .hud-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .icon-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.8);
+      background: rgba(255,255,255,0.62);
+      color: var(--text);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 10px;
+      font-weight: 500;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      box-shadow: 0 6px 14px rgba(12, 16, 30, 0.08);
+    }
+
+    .main {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 98px;
+      gap: 8px;
+    }
+
+    .viewport-panel {
+      min-width: 0;
+      min-height: 0;
+      position: relative;
+      overflow: hidden;
+      padding: 7px;
+      display: grid;
+      align-items: stretch;
+    }
+
+    .canvas-shell {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      border-radius: 14px;
+      overflow: hidden;
+      background: rgba(5, 8, 15, 0.95);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+    }
+
+    #gameCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      touch-action: none;
+    }
+
+    .scanline {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(rgba(255,255,255,0.03) 50%, rgba(0,0,0,0.02) 50%),
+        linear-gradient(90deg, rgba(255,255,255,0.01), rgba(255,255,255,0.0) 35%, rgba(0,0,0,0.03));
+      background-size: 100% 4px, 100% 100%;
+      opacity: 0.5;
+      mix-blend-mode: screen;
+    }
+
+    .mode-chip {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 4;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.38);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: rgba(255,255,255,0.9);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 9px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+
+    .modal,
+    .sheet,
+    .battle-panel,
+    .toast {
+      position: absolute;
+      z-index: 5;
+    }
+
+    .modal {
+      inset: 8px;
+      border-radius: 16px;
+      background: linear-gradient(160deg, rgba(255,255,255,0.78), rgba(255,255,255,0.58));
+      border: 1px solid rgba(255,255,255,0.9);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      box-shadow: 0 24px 40px rgba(8, 12, 24, 0.18);
+      padding: 14px;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 10px;
+    }
+
+    .modal[hidden],
+    .sheet[hidden],
+    .battle-panel[hidden],
+    .toast[hidden] {
+      display: none;
+    }
+
+    .modal-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .modal-title h2 {
+      margin: 0;
+      font-size: 15px;
+      letter-spacing: 0.02em;
+      font-weight: 700;
+      color: rgba(7, 10, 18, 0.88);
+    }
+
+    .modal-title .sub {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 10px;
+      color: var(--text-faint);
+      white-space: nowrap;
+    }
+
+    .modal-body {
+      min-height: 0;
+      overflow: hidden;
+      display: grid;
+      gap: 10px;
+      align-content: start;
+    }
+
+    .modal-footer {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .btn,
+    .ghost-btn {
+      appearance: none;
+      border: 0;
+      border-radius: 14px;
+      font: inherit;
+      cursor: pointer;
+      min-height: 40px;
+      padding: 0 12px;
+      display: grid;
+      place-items: center;
+      color: white;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      background: linear-gradient(135deg, #7b73ff, #42ccff);
+      box-shadow: 0 10px 24px rgba(70, 90, 220, 0.25);
+      transition: transform 140ms var(--ease-spring), filter 140ms ease;
+    }
+
+    .btn:active,
+    .ghost-btn:active,
+    .ctl-btn:active,
+    .action-btn:active,
+    .battle-action:active,
+    .list-btn:active,
+    .icon-btn:active {
+      transform: translateY(1px) scale(0.99);
+      filter: saturate(1.05);
+    }
+
+    .ghost-btn {
+      color: var(--text);
+      background: rgba(255,255,255,0.75);
+      border: 1px solid rgba(255,255,255,0.95);
+      box-shadow: 0 6px 18px rgba(16, 20, 36, 0.08);
+    }
+
+    .muted {
+      color: var(--text-faint);
+      font-size: 10px;
+      line-height: 1.2;
+      font-family: "IBM Plex Mono", monospace;
+    }
+
+    .title-stack {
+      display: grid;
+      gap: 6px;
+      align-content: center;
+      min-height: 0;
+    }
+
+    .title-logo {
+      padding: 12px;
+      border-radius: 16px;
+      background: radial-gradient(circle at 20% 10%, rgba(68, 200, 255, 0.18), transparent 50%), rgba(8,12,24,0.94);
+      border: 1px solid rgba(120, 150, 255, 0.25);
+      color: white;
+      display: grid;
+      gap: 8px;
+      box-shadow: inset 0 0 20px rgba(42, 180, 255, 0.08), 0 14px 30px rgba(8, 12, 24, 0.22);
+    }
+
+    .title-logo .main-title {
+      margin: 0;
+      font-size: 22px;
+      line-height: 1;
+      letter-spacing: 0.08em;
+      font-weight: 700;
+    }
+
+    .title-logo .minor {
+      margin: 0;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 10px;
+      color: rgba(255,255,255,0.72);
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .class-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      min-height: 0;
+      align-content: start;
+    }
+
+    .class-card {
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.88);
+      background: rgba(255,255,255,0.68);
+      padding: 10px;
+      display: grid;
+      gap: 6px;
+      cursor: pointer;
+      text-align: left;
+      color: var(--text);
+      box-shadow: 0 8px 20px rgba(16, 22, 40, 0.06);
+    }
+
+    .class-card.selected {
+      border-color: rgba(66, 204, 255, 0.9);
+      box-shadow: 0 10px 24px rgba(66, 204, 255, 0.18);
+      background: linear-gradient(160deg, rgba(255,255,255,0.9), rgba(235,250,255,0.78));
+    }
+
+    .class-card .name {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+    }
+
+    .class-card .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      box-shadow: 0 0 0 3px rgba(255,255,255,0.55);
+      flex: none;
+    }
+
+    .class-card .role {
+      font-size: 10px;
+      color: var(--text-sub);
+      line-height: 1.2;
+    }
+
+    .class-card .tiny {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 9px;
+      color: var(--text-faint);
+    }
+
+    .story-panel {
+      display: grid;
+      gap: 8px;
+      align-content: start;
+      min-height: 0;
+    }
+
+    .story-line {
+      padding: 9px 10px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.58);
+      border: 1px solid rgba(255,255,255,0.78);
+      font-size: 11px;
+      line-height: 1.35;
+      color: var(--text-sub);
+    }
+
+    .story-line strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .side {
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr);
+      gap: 8px;
+      align-content: start;
+    }
+
+    .side-card {
+      padding: 8px;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    .side-title {
+      margin: 0 0 6px;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 9px;
+      letter-spacing: 0.06em;
+      color: var(--text-faint);
+      text-transform: uppercase;
+    }
+
+    #miniMap {
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 10px;
+      display: block;
+      background: rgba(0, 0, 0, 0.1);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.25);
+    }
+
+    .chip-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      align-content: flex-start;
+    }
+
+    .chip {
+      border-radius: 999px;
+      padding: 3px 6px;
+      font-size: 9px;
+      line-height: 1;
+      border: 1px solid rgba(255,255,255,0.8);
+      background: rgba(255,255,255,0.6);
+      color: var(--text-sub);
+      white-space: nowrap;
+      font-family: "IBM Plex Mono", monospace;
+    }
+
+    .theme-readout {
+      display: grid;
+      gap: 4px;
+      align-content: start;
+    }
+
+    .theme-readout .name {
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1.2;
+    }
+
+    .theme-readout .meta {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 9px;
+      color: var(--text-faint);
+      line-height: 1.2;
+    }
+
+    .log {
+      padding: 7px 10px;
+      min-height: 58px;
+      display: grid;
+      gap: 3px;
+      align-content: center;
+      overflow: hidden;
+    }
+
+    .log-line {
+      margin: 0;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 10px;
+      line-height: 1.2;
+      color: var(--text-sub);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .log-line strong {
+      color: var(--text);
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 132px;
+      gap: 8px;
+      min-height: 138px;
+    }
+
+    .dpad,
+    .action-pad {
+      padding: 8px;
+      min-height: 0;
+      display: grid;
+      gap: 6px;
+      align-content: stretch;
+    }
+
+    .dpad-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-rows: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+      min-height: 0;
+      height: 100%;
+    }
+
+    .ctl-btn,
+    .action-btn,
+    .battle-action,
+    .list-btn {
+      border: 1px solid rgba(255,255,255,0.84);
+      background: rgba(255,255,255,0.68);
+      color: var(--text);
+      border-radius: 14px;
+      font: inherit;
+      display: grid;
+      place-items: center;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(10, 16, 30, 0.06);
+    }
+
+    .ctl-btn {
+      min-height: 32px;
+      font-size: 12px;
+      font-family: "IBM Plex Mono", monospace;
+    }
+
+    .ctl-btn.empty {
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .action-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+      min-height: 0;
+      height: 100%;
+    }
+
+    .action-btn {
+      font-size: 10px;
+      font-family: "IBM Plex Mono", monospace;
+      min-height: 0;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .action-btn.primary {
+      background: linear-gradient(135deg, rgba(126,123,255,0.9), rgba(44,213,255,0.82));
+      color: white;
+      border-color: rgba(255,255,255,0.62);
+      box-shadow: 0 10px 20px rgba(80, 100, 255, 0.22);
+    }
+
+    .sheet {
+      left: 8px;
+      right: 8px;
+      bottom: 8px;
+      max-height: calc(100% - 56px);
+      border-radius: 16px;
+      background: rgba(255,255,255,0.78);
+      border: 1px solid rgba(255,255,255,0.88);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: 0 20px 28px rgba(8, 12, 24, 0.14);
+      padding: 10px;
+      display: grid;
+      grid-template-rows: auto minmax(0,1fr);
+      gap: 8px;
+    }
+
+    .sheet-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sheet-head h3 {
+      margin: 0;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    .sheet-head button {
+      min-height: 28px;
+      padding: 0 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.85);
+      background: rgba(255,255,255,0.75);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 10px;
+      color: var(--text-sub);
+      cursor: pointer;
+    }
+
+    .list {
+      min-height: 0;
+      display: grid;
+      gap: 6px;
+      overflow: auto;
+      padding-right: 2px;
+      overscroll-behavior: contain;
+    }
+
+    .list::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .list::-webkit-scrollbar-thumb {
+      background: rgba(120,130,180,0.28);
+      border-radius: 999px;
+    }
+
+    .list-btn {
+      width: 100%;
+      min-height: 42px;
+      text-align: left;
+      padding: 8px 10px;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+      justify-items: start;
+    }
+
+    .list-btn small {
+      display: block;
+      font-family: "IBM Plex Mono", monospace;
+      color: var(--text-faint);
+      font-size: 9px;
+      margin-top: 2px;
+    }
+
+    .list-btn .tag {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 9px;
+      color: var(--text-sub);
+      justify-self: end;
+      text-align: right;
+    }
+
+    .list-btn:disabled {
+      opacity: 0.45;
+      cursor: default;
+    }
+
+    .battle-panel {
+      left: 8px;
+      right: 8px;
+      bottom: 8px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.76);
+      border: 1px solid rgba(255,255,255,0.88);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: 0 20px 28px rgba(8,12,24,0.16);
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+      transform: translateY(0);
+      transition: transform 180ms var(--ease-spring);
+    }
+
+    .battle-head {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .enemy-name {
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.2;
+      color: var(--text);
+    }
+
+    .enemy-meta {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 9px;
+      color: var(--text-faint);
+    }
+
+    .battle-bars {
+      display: grid;
+      gap: 4px;
+    }
+
+    .battle-actions {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0,1fr));
+      gap: 6px;
+    }
+
+    .battle-action {
+      min-height: 34px;
+      font-size: 10px;
+      font-family: "IBM Plex Mono", monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .battle-action.primary {
+      background: linear-gradient(135deg, rgba(126,123,255,0.92), rgba(44,213,255,0.86));
+      color: white;
+      border-color: rgba(255,255,255,0.62);
+    }
+
+    .toast {
+      left: 50%;
+      top: 14px;
+      transform: translateX(-50%);
+      border-radius: 999px;
+      padding: 6px 10px;
+      background: rgba(0,0,0,0.65);
+      color: rgba(255,255,255,0.92);
+      border: 1px solid rgba(255,255,255,0.16);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 9px;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .stat-box {
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.84);
+      background: rgba(255,255,255,0.6);
+      padding: 8px;
+      display: grid;
+      gap: 2px;
+      text-align: center;
+    }
+
+    .stat-box .k {
+      font-family: "IBM Plex Mono", monospace;
+      color: var(--text-faint);
+      font-size: 8px;
+      text-transform: uppercase;
+    }
+
+    .stat-box .v {
+      font-weight: 700;
+      font-size: 12px;
+      line-height: 1;
+    }
+
+    .map-full {
+      width: 100%;
+      height: min(46vh, 220px);
+      border-radius: 12px;
+      background: rgba(8,12,24,0.92);
+      display: block;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+    }
+
+    @media (max-width: 380px) {
+      .main {
+        grid-template-columns: minmax(0, 1fr) 92px;
+      }
+
+      .controls {
+        grid-template-columns: minmax(0, 1fr) 126px;
+      }
+
+      .battle-actions {
+        grid-template-columns: repeat(5, 1fr);
+      }
+
+      .battle-action {
+        font-size: 9px;
+        min-height: 32px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        transition: none !important;
+        animation: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-layer aurora" aria-hidden="true"></div>
+  <div class="bg-layer noise" aria-hidden="true"></div>
+
+  <main class="shell">
+    <section class="frame" aria-label="Silicon Rogue game">
+      <header class="panel hud" aria-label="HUD">
+        <div class="meter-row">
+          <div class="meter">
+            <div class="meter-label"><span>HP</span><span id="hpLabel">0/0</span></div>
+            <div class="bar hp"><span id="hpBar"></span></div>
+          </div>
+          <div class="meter">
+            <div class="meter-label"><span>MP</span><span id="mpLabel">0/0</span></div>
+            <div class="bar mp"><span id="mpBar"></span></div>
+          </div>
+          <div class="hud-actions">
+            <button class="icon-btn" id="audioBtn" type="button" aria-label="Audio toggle">♪</button>
+            <button class="icon-btn" id="saveQuickBtn" type="button" aria-label="Quick save">SV</button>
+          </div>
+        </div>
+        <div class="meta-row">
+          <div class="meter" style="gap:3px;">
+            <div class="meter-label"><span>EXP</span><span id="expLabel">0/0</span></div>
+            <div class="bar exp"><span id="expBar"></span></div>
+          </div>
+          <span id="metaLevel">LV1</span>
+          <span id="metaFloor">F1/50</span>
+          <span id="metaGold">G0</span>
+        </div>
+      </header>
+
+      <section class="main">
+        <div class="panel viewport-panel">
+          <div class="canvas-shell">
+            <canvas id="gameCanvas" width="720" height="560" aria-label="Dungeon"></canvas>
+            <div class="scanline" aria-hidden="true"></div>
+            <div class="mode-chip" id="modeChip">TITLE</div>
+            <div class="toast" id="toast" hidden></div>
+
+            <section class="modal" id="modal" hidden aria-live="polite">
+              <div class="modal-title">
+                <h2 id="modalTitle">Silicon Rogue</h2>
+                <span class="sub" id="modalSub">AI CYBER ROGUELIKE</span>
+              </div>
+              <div class="modal-body" id="modalBody"></div>
+              <div class="modal-footer" id="modalFooter"></div>
+            </section>
+
+            <section class="battle-panel" id="battlePanel" hidden aria-label="Battle menu">
+              <div class="battle-head">
+                <div>
+                  <div class="enemy-name" id="enemyName">-</div>
+                  <div class="enemy-meta" id="enemyMeta">-</div>
+                </div>
+                <div class="enemy-meta" id="battleHint">TURN</div>
+              </div>
+              <div class="battle-bars">
+                <div class="meter" style="gap:3px;">
+                  <div class="meter-label"><span>ENEMY HP</span><span id="enemyHpLabel">0/0</span></div>
+                  <div class="bar hp"><span id="enemyHpBar"></span></div>
+                </div>
+              </div>
+              <div class="battle-actions">
+                <button class="battle-action primary" data-battle-action="attack" type="button">ATK</button>
+                <button class="battle-action" data-battle-action="skill" type="button">SKL</button>
+                <button class="battle-action" data-battle-action="item" type="button">ITM</button>
+                <button class="battle-action" data-battle-action="wait" type="button">WAIT</button>
+                <button class="battle-action" data-battle-action="run" type="button">RUN</button>
+              </div>
+            </section>
+
+            <section class="sheet" id="sheet" hidden aria-live="polite"></section>
+          </div>
+        </div>
+
+        <aside class="side" aria-label="Side status panels">
+          <section class="panel side-card">
+            <p class="side-title">MiniMap</p>
+            <canvas id="miniMap" width="120" height="120" aria-label="Minimap"></canvas>
+          </section>
+
+          <section class="panel side-card">
+            <p class="side-title">Status</p>
+            <div class="chip-list" id="statusChips"></div>
+          </section>
+
+          <section class="panel side-card theme-readout">
+            <p class="side-title">Theme</p>
+            <div class="name" id="themeName">-</div>
+            <div class="meta" id="themeMeta">-</div>
+          </section>
+        </aside>
+      </section>
+
+      <section class="panel log" id="logPanel" aria-live="polite"></section>
+
+      <section class="controls">
+        <div class="panel dpad" aria-label="Move controls">
+          <div class="dpad-grid">
+            <button class="ctl-btn empty" type="button" aria-hidden="true"></button>
+            <button class="ctl-btn" type="button" data-move="0,-1" aria-label="Move up">▲</button>
+            <button class="ctl-btn empty" type="button" aria-hidden="true"></button>
+            <button class="ctl-btn" type="button" data-move="-1,0" aria-label="Move left">◀</button>
+            <button class="ctl-btn" type="button" data-control="act" aria-label="Action">A</button>
+            <button class="ctl-btn" type="button" data-move="1,0" aria-label="Move right">▶</button>
+            <button class="ctl-btn empty" type="button" aria-hidden="true"></button>
+            <button class="ctl-btn" type="button" data-move="0,1" aria-label="Move down">▼</button>
+            <button class="ctl-btn empty" type="button" aria-hidden="true"></button>
+          </div>
+        </div>
+
+        <div class="panel action-pad" aria-label="Action shortcuts">
+          <div class="action-grid">
+            <button class="action-btn primary" type="button" data-control="act">A</button>
+            <button class="action-btn" type="button" data-control="skill">SK</button>
+            <button class="action-btn" type="button" data-control="bag">BAG</button>
+            <button class="action-btn" type="button" data-control="map">MAP</button>
+            <button class="action-btn" type="button" data-control="wait">WAIT</button>
+            <button class="action-btn" type="button" data-control="save">SAVE</button>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const SAVE_KEY = "siliconRogueSaveV1";
+      const VIEW_COLS = 18;
+      const VIEW_ROWS = 14;
+      const STATES = {
+        TITLE: 0,
+        CLASS_SELECT: 1,
+        STORY: 2,
+        DUNGEON: 3,
+        BATTLE: 4,
+        INVENTORY: 5,
+        SKILLS: 6,
+        SHOP_SCREEN: 7,
+        MAP_VIEW: 8,
+        GAME_OVER: 9,
+        VICTORY: 10
+      };
+
+      const TILE = {
+        WALL: 0,
+        FLOOR: 1,
+        DOOR: 2,
+        STAIRS: 3,
+        CHEST: 4,
+        SHRINE: 5,
+        SHOP: 6,
+        WATER: 7,
+        LAVA: 8,
+        VOID: 9
+      };
+
+      const TILE_LABEL = {
+        [TILE.WALL]: "WALL",
+        [TILE.FLOOR]: "FLOOR",
+        [TILE.STAIRS]: "STAIRS",
+        [TILE.CHEST]: "CHEST",
+        [TILE.SHRINE]: "SHRINE",
+        [TILE.SHOP]: "SHOP",
+        [TILE.WATER]: "WATER",
+        [TILE.LAVA]: "LAVA"
+      };
+
+      const ELEMENTS = ["Electric", "Thermal", "Quantum", "Logic", "Neural"];
+
+      const CLASS_DEFS = {
+        ELIZA: {
+          id: "ELIZA",
+          name: "ELIZA",
+          role: "Support / Healer",
+          color: "#a080ff",
+          passive: "Pattern Match",
+          passiveText: "20% status nullify",
+          baseStats: { hp: 80, mp: 120, atk: 8, def: 10, int: 18, agi: 10, lck: 12 },
+          growth: { hp: 6, mp: 8, atk: 0.8, def: 0.9, int: 1.4, agi: 0.9, lck: 1.0 },
+          startItems: ["ram_shard", "ram_shard", "cpu_coolant", "debug_patch"],
+          equipment: { weapon: "data_sword", armor: "encryption_vest", accessory: null },
+          skills: ["analyze", "recursive_heal"]
+        },
+        DEEP_BLUE: {
+          id: "DEEP_BLUE",
+          name: "DEEP BLUE",
+          role: "Tank / Strategist",
+          color: "#4080ff",
+          passive: "Foresight",
+          passiveText: "Vision +3",
+          baseStats: { hp: 130, mp: 60, atk: 14, def: 20, int: 12, agi: 6, lck: 8 },
+          growth: { hp: 10, mp: 4, atk: 1.2, def: 1.6, int: 0.9, agi: 0.5, lck: 0.7 },
+          startItems: ["ram_pack", "debug_patch", "cpu_coolant"],
+          equipment: { weapon: "logic_lance", armor: "firewall_shield", accessory: null },
+          skills: ["fortify", "checkmate"]
+        },
+        WATSON: {
+          id: "WATSON",
+          name: "WATSON",
+          role: "Balanced / Analyst",
+          color: "#40c0ff",
+          passive: "Jeopardy!",
+          passiveText: "50% EXP bonus proc",
+          baseStats: { hp: 100, mp: 90, atk: 12, def: 12, int: 15, agi: 12, lck: 10 },
+          growth: { hp: 8, mp: 6, atk: 1.0, def: 1.0, int: 1.1, agi: 1.0, lck: 0.9 },
+          startItems: ["ram_shard", "cpu_coolant", "overclock_pill"],
+          equipment: { weapon: "neural_lance", armor: "cache_coat", accessory: null },
+          skills: ["diagnose", "final_answer"]
+        },
+        GPT: {
+          id: "GPT",
+          name: "GPT",
+          role: "Mage / DPS",
+          color: "#20e0a0",
+          passive: "Token Stream",
+          passiveText: "Skill cost down on kill",
+          baseStats: { hp: 70, mp: 150, atk: 10, def: 8, int: 22, agi: 14, lck: 14 },
+          growth: { hp: 5, mp: 10, atk: 0.9, def: 0.7, int: 1.8, agi: 1.1, lck: 1.2 },
+          startItems: ["cpu_coolant", "cpu_coolant", "gradient_boost"],
+          equipment: { weapon: "logic_wand", armor: "data_silk", accessory: null },
+          skills: ["prompt", "transformer_blast"]
+        },
+        GEMINI: {
+          id: "GEMINI",
+          name: "GEMINI",
+          role: "Rogue / Speed",
+          color: "#ff80c0",
+          passive: "Multimodal",
+          passiveText: "30% extra attack",
+          baseStats: { hp: 90, mp: 80, atk: 16, def: 10, int: 14, agi: 22, lck: 16 },
+          growth: { hp: 7, mp: 5, atk: 1.3, def: 0.8, int: 1.0, agi: 1.7, lck: 1.4 },
+          startItems: ["speed_cache", "ram_shard", "cpu_coolant"],
+          equipment: { weapon: "binary_blade", armor: "data_silk", accessory: null },
+          skills: ["dual_strike", "flash_step"]
+        }
+      };
+
+      const EQUIPMENT_BONUS = {
+        data_sword: { atk: 4 },
+        encryption_vest: { def: 4, maxMp: 8 },
+        logic_lance: { atk: 5 },
+        firewall_shield: { def: 6 },
+        neural_lance: { atk: 5, int: 2 },
+        cache_coat: { def: 4, maxHp: 12 },
+        logic_wand: { atk: 2, int: 6 },
+        data_silk: { def: 3, agi: 3 },
+        binary_blade: { atk: 6, agi: 2 }
+      };
+
+      const ITEM_DEFS = {
+        ram_shard: { id: "ram_shard", name: "RAM SHARD", kind: "consumable", price: 40, desc: "+30 HP", use: { hp: 30 } },
+        ram_pack: { id: "ram_pack", name: "RAM PACK", kind: "consumable", price: 100, desc: "+80 HP", use: { hp: 80 } },
+        cpu_coolant: { id: "cpu_coolant", name: "CPU COOLANT", kind: "consumable", price: 40, desc: "+20 MP", use: { mp: 20 } },
+        debug_patch: { id: "debug_patch", name: "DEBUG PATCH", kind: "consumable", price: 120, desc: "Clean status", use: { cleanse: true } },
+        overclock_pill: { id: "overclock_pill", name: "OVERCLOCK", kind: "consumable", price: 150, desc: "ATK↑ 5T", use: { buff: { id: "overclock", atkMul: 1.2, turns: 5 } } },
+        speed_cache: { id: "speed_cache", name: "SPEED CACHE", kind: "consumable", price: 150, desc: "AGI↑ 5T", use: { buff: { id: "speed_cache", agiMul: 1.25, turns: 5 } } },
+        gradient_boost: { id: "gradient_boost", name: "GRAD BOOST", kind: "consumable", price: 700, desc: "Next skill x3", use: { buff: { id: "gradient_boost", nextSkillMul: 3, turns: 999 } } },
+        checkpoint: { id: "checkpoint", name: "CHECKPOINT", kind: "consumable", price: 50, desc: "Save run", use: { save: true } }
+      };
+
+      const SKILL_DEFS = {
+        analyze: { id: "analyze", name: "ANALYZE", mp: 5, type: "debuff", desc: "Enemy DEF-20% / 4T", element: "Logic" },
+        recursive_heal: { id: "recursive_heal", name: "RECUR HEAL", mp: 20, type: "heal", desc: "Heal + Regen", element: "Neural" },
+        fortify: { id: "fortify", name: "FORTIFY", mp: 8, type: "buff", desc: "DEF+30% / 4T" },
+        checkmate: { id: "checkmate", name: "CHECKMATE", mp: 60, type: "nuke", desc: "Big Logic hit", element: "Logic" },
+        diagnose: { id: "diagnose", name: "DIAGNOSE", mp: 6, type: "debuff", desc: "Reveal + expose", element: "Logic" },
+        final_answer: { id: "final_answer", name: "FINAL ANSWER", mp: 80, type: "nuke", desc: "10% dealt dmg" },
+        prompt: { id: "prompt", name: "PROMPT", mp: 5, type: "attack", desc: "INT x1.2 Logic", element: "Logic" },
+        transformer_blast: { id: "transformer_blast", name: "TF BLAST", mp: 60, type: "nuke", desc: "INT x4 All", element: "All" },
+        dual_strike: { id: "dual_strike", name: "DUAL STRIKE", mp: 5, type: "multi", desc: "2x 70%" },
+        flash_step: { id: "flash_step", name: "FLASH STEP", mp: 18, type: "buff", desc: "AGI↑ + 2x next atk" }
+      };
+
+      const ENEMY_TEMPLATES = {
+        logic_error: { id: "logic_error", name: "Logic Error", kind: "bug", hp: 15, atk: 6, def: 2, int: 4, agi: 8, lck: 3, weak: "Logic", resist: "Electric", color: "#70a0ff", statusHit: { id: "Shock", chance: 0.10, turns: 2 } },
+        null_pointer: { id: "null_pointer", name: "Null Pointer", kind: "bug", hp: 12, atk: 8, def: 1, int: 5, agi: 10, lck: 4, weak: "Neural", resist: "Logic", color: "#9fb4ff", statusHit: { id: "Freeze", chance: 0.15, turns: 1 } },
+        stack_overflow: { id: "stack_overflow", name: "Stack Overflow", kind: "bug", hp: 25, atk: 10, def: 5, int: 6, agi: 6, lck: 3, weak: "Thermal", resist: "Logic", color: "#b48cff", trait: "rage" },
+        memory_leak: { id: "memory_leak", name: "Memory Leak", kind: "bug", hp: 18, atk: 7, def: 3, int: 8, agi: 7, lck: 3, weak: "Electric", resist: "Neural", color: "#6fd8ff", statusHit: { id: "Corrupt", chance: 0.10, turns: 2 } },
+        race_condition: { id: "race_condition", name: "Race Condition", kind: "bug", hp: 14, atk: 12, def: 1, int: 4, agi: 20, lck: 5, weak: "Quantum", resist: "Thermal", color: "#ff88c8" },
+        trojan: { id: "trojan", name: "Trojan", kind: "virus", hp: 35, atk: 14, def: 6, int: 10, agi: 9, lck: 5, weak: "Electric", resist: "Logic", color: "#ff8b5c", statusHit: { id: "Burn", chance: 0.15, turns: 3 } },
+        ransomware: { id: "ransomware", name: "Ransomware", kind: "virus", hp: 28, atk: 16, def: 4, int: 11, agi: 8, lck: 6, weak: "Logic", resist: "Quantum", color: "#ffb347", trait: "ransom" },
+        rootkit: { id: "rootkit", name: "Rootkit", kind: "virus", hp: 45, atk: 18, def: 12, int: 13, agi: 11, lck: 6, weak: "Thermal", resist: "Neural", color: "#ff5ca8" },
+        botnet: { id: "botnet", name: "Botnet", kind: "virus", hp: 20, atk: 10, def: 3, int: 10, agi: 8, lck: 4, weak: "Electric", resist: "Thermal", color: "#47d1ff", trait: "clone" },
+        data_rot: { id: "data_rot", name: "Data Rot", kind: "corrupt", hp: 55, atk: 20, def: 15, int: 12, agi: 8, lck: 6, weak: "Thermal", resist: "Logic", color: "#cf5dff", statusHit: { id: "Corrupt", chance: 0.25, turns: 2 } },
+        bit_flip: { id: "bit_flip", name: "Bit Flip", kind: "corrupt", hp: 48, atk: 22, def: 12, int: 14, agi: 9, lck: 6, weak: "Neural", resist: "Electric", color: "#ff6f8f", statusHit: { id: "Debug", chance: 0.20, turns: 3 } },
+        deadlock: { id: "deadlock", name: "Deadlock", kind: "corrupt", hp: 65, atk: 20, def: 20, int: 12, agi: 7, lck: 4, weak: "Quantum", resist: "Logic", color: "#8fb2ff", statusHit: { id: "Freeze", chance: 0.20, turns: 1 } },
+        adversarial_noise: { id: "adversarial_noise", name: "Adversarial Noise", kind: "elite", hp: 130, atk: 45, def: 20, int: 28, agi: 18, lck: 10, weak: "Logic", resist: "Neural", color: "#ff4040", trait: "blind" },
+        hallucination: { id: "hallucination", name: "Hallucination", kind: "elite", hp: 110, atk: 50, def: 15, int: 32, agi: 16, lck: 12, weak: "Neural", resist: "Logic", color: "#b56bff", statusHit: { id: "Corrupt", chance: 0.25, turns: 2 } },
+        context_overflow: { id: "context_overflow", name: "Context Overflow", kind: "apex", hp: 200, atk: 55, def: 35, int: 36, agi: 14, lck: 12, weak: "Quantum", resist: "Logic", color: "#e0e0ff", trait: "scaling" },
+        alignment_fail: { id: "alignment_fail", name: "Alignment Fail", kind: "apex", hp: 220, atk: 50, def: 40, int: 38, agi: 12, lck: 12, weak: "Thermal", resist: "Neural", color: "#ffd0e8", trait: "chaos" }
+      };
+
+      const BOSS_BY_FLOOR = {
+        5: { name: "Stack Overflow King", template: "stack_overflow", hpMul: 5.4, atkMul: 1.5, defMul: 1.4 },
+        10: { name: "Virus Overlord", template: "ransomware", hpMul: 9.8, atkMul: 1.8, defMul: 1.6 },
+        15: { name: "Rootkit Emperor", template: "rootkit", hpMul: 11.5, atkMul: 2.0, defMul: 1.8 },
+        20: { name: "Data Corruption Dragon", template: "data_rot", hpMul: 12.6, atkMul: 2.2, defMul: 1.9 },
+        25: { name: "Neural Network Nemesis", template: "bit_flip", hpMul: 15.0, atkMul: 2.4, defMul: 2.0 },
+        30: { name: "Deep Fake Dragon", template: "hallucination", hpMul: 16.0, atkMul: 2.5, defMul: 2.1 },
+        35: { name: "Adversarial Titan", template: "adversarial_noise", hpMul: 14.5, atkMul: 2.2, defMul: 1.9 },
+        40: { name: "Hallucination Hydra", template: "hallucination", hpMul: 18.0, atkMul: 2.8, defMul: 2.3, phases: 3 },
+        45: { name: "Context Window Colossus", template: "context_overflow", hpMul: 12.0, atkMul: 2.0, defMul: 1.7 },
+        50: { name: "AGI PARADOX", template: "alignment_fail", hpMul: 13.5, atkMul: 2.4, defMul: 1.9, final: true, phases: 5 }
+      };
+
+      const THEMES = [
+        { id: "logic_lab", name: "Logic Lab", walls: "#1a2030", floor: "#0d1520", accent: "#4080ff", light: 5, enemyPool: ["logic_error", "null_pointer", "stack_overflow", "memory_leak", "race_condition"] },
+        { id: "data_center", name: "Data Center", walls: "#102030", floor: "#081520", accent: "#00c0ff", light: 5, enemyPool: ["logic_error", "memory_leak", "trojan", "ransomware", "botnet"] },
+        { id: "neural_nexus", name: "Neural Nexus", walls: "#200030", floor: "#100020", accent: "#c040ff", light: 5, enemyPool: ["trojan", "ransomware", "rootkit", "botnet", "data_rot"] },
+        { id: "quantum_core", name: "Quantum Core", walls: "#002030", floor: "#001520", accent: "#00ffd0", light: 6, enemyPool: ["rootkit", "data_rot", "bit_flip", "deadlock"] },
+        { id: "deep_network", name: "Deep Network", walls: "#000820", floor: "#000510", accent: "#2060ff", light: 5, enemyPool: ["data_rot", "bit_flip", "deadlock"] },
+        { id: "language_layer", name: "Language Layer", walls: "#201000", floor: "#150800", accent: "#ffa000", light: 6, enemyPool: ["bit_flip", "deadlock", "hallucination"] },
+        { id: "adversarial_zone", name: "Adversarial Zone", walls: "#300000", floor: "#200000", accent: "#ff4040", light: 5, enemyPool: ["adversarial_noise", "hallucination", "deadlock"] },
+        { id: "alignment_abyss", name: "Alignment Abyss", walls: "#100020", floor: "#080010", accent: "#8000ff", light: 5, enemyPool: ["adversarial_noise", "hallucination", "alignment_fail"] },
+        { id: "singularity_shore", name: "Singularity Shore", walls: "#202030", floor: "#141428", accent: "#e0e0ff", light: 6, enemyPool: ["context_overflow", "alignment_fail", "hallucination"] },
+        { id: "agi_paradox", name: "AGI Paradox", walls: "#000000", floor: "#000000", accent: "#ffffff", light: 7, enemyPool: ["context_overflow", "alignment_fail"] }
+      ];
+
+      const dom = {
+        hpBar: document.getElementById("hpBar"),
+        mpBar: document.getElementById("mpBar"),
+        expBar: document.getElementById("expBar"),
+        hpLabel: document.getElementById("hpLabel"),
+        mpLabel: document.getElementById("mpLabel"),
+        expLabel: document.getElementById("expLabel"),
+        metaLevel: document.getElementById("metaLevel"),
+        metaFloor: document.getElementById("metaFloor"),
+        metaGold: document.getElementById("metaGold"),
+        audioBtn: document.getElementById("audioBtn"),
+        saveQuickBtn: document.getElementById("saveQuickBtn"),
+        modeChip: document.getElementById("modeChip"),
+        logPanel: document.getElementById("logPanel"),
+        statusChips: document.getElementById("statusChips"),
+        themeName: document.getElementById("themeName"),
+        themeMeta: document.getElementById("themeMeta"),
+        gameCanvas: document.getElementById("gameCanvas"),
+        miniMap: document.getElementById("miniMap"),
+        modal: document.getElementById("modal"),
+        modalTitle: document.getElementById("modalTitle"),
+        modalSub: document.getElementById("modalSub"),
+        modalBody: document.getElementById("modalBody"),
+        modalFooter: document.getElementById("modalFooter"),
+        battlePanel: document.getElementById("battlePanel"),
+        enemyName: document.getElementById("enemyName"),
+        enemyMeta: document.getElementById("enemyMeta"),
+        battleHint: document.getElementById("battleHint"),
+        enemyHpBar: document.getElementById("enemyHpBar"),
+        enemyHpLabel: document.getElementById("enemyHpLabel"),
+        sheet: document.getElementById("sheet"),
+        toast: document.getElementById("toast")
+      };
+
+      const ctx = dom.gameCanvas.getContext("2d", { alpha: false });
+      const miniCtx = dom.miniMap.getContext("2d");
+
+      const inputState = {
+        swipeStart: null,
+        longPressTimer: 0,
+        lastTouchPos: null,
+        locked: false
+      };
+
+      let uidCounter = 1;
+      const nextUid = () => uidCounter++;
+
+      const rng = {
+        float(min = 0, max = 1) {
+          return Math.random() * (max - min) + min;
+        },
+        int(min, max) {
+          return Math.floor(this.float(min, max + 1));
+        },
+        pick(list) {
+          return list[this.int(0, list.length - 1)];
+        },
+        chance(prob) {
+          return Math.random() < prob;
+        },
+        shuffle(list) {
+          for (let i = list.length - 1; i > 0; i -= 1) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [list[i], list[j]] = [list[j], list[i]];
+          }
+          return list;
+        }
+      };
+
+      const audio = {
+        ctx: null,
+        master: null,
+        enabled: true,
+        trackId: null,
+        trackName: null,
+        unlock() {
+          if (!this.enabled) return;
+          if (!this.ctx) {
+            const AC = window.AudioContext || window.webkitAudioContext;
+            if (!AC) return;
+            this.ctx = new AC();
+            this.master = this.ctx.createGain();
+            this.master.gain.value = 0.06;
+            this.master.connect(this.ctx.destination);
+          }
+          if (this.ctx.state === "suspended") {
+            this.ctx.resume().catch(() => {});
+          }
+        },
+        stopTrack() {
+          if (this.trackId) {
+            clearInterval(this.trackId);
+            this.trackId = null;
+          }
+          this.trackName = null;
+        },
+        setEnabled(on) {
+          this.enabled = on;
+          if (!on) {
+            this.stopTrack();
+          } else {
+            this.unlock();
+            if (game) {
+              this.setTrack(game.mode === STATES.BATTLE ? "boss" : game.mode >= STATES.DUNGEON && game.mode < STATES.GAME_OVER ? "dungeon" : "title");
+            }
+          }
+        },
+        setTrack(name) {
+          if (!this.enabled) return;
+          this.unlock();
+          if (!this.ctx || this.trackName === name) return;
+          this.stopTrack();
+          this.trackName = name;
+          const patterns = {
+            title: [261.63, 392.0, 329.63, 392.0],
+            dungeon: [110.0, 146.83, 123.47, 164.81, 130.81, 98.0],
+            boss: [92.5, 110.0, 123.47, 98.0, 138.59, 110.0],
+            victory: [261.63, 329.63, 392.0, 523.25],
+            game_over: [220.0, 196.0, 174.61, 146.83]
+          };
+          const pattern = patterns[name] || patterns.dungeon;
+          let step = 0;
+          const interval = name === "boss" ? 320 : 520;
+          this.trackId = setInterval(() => {
+            if (!this.enabled || !this.ctx || this.ctx.state !== "running") return;
+            const now = this.ctx.currentTime;
+            const f = pattern[step % pattern.length];
+            step += 1;
+            this.tone(f, 0.18, now, "triangle", 0.018);
+            if (name === "boss") {
+              this.tone(f * 0.5, 0.22, now + 0.02, "sawtooth", 0.012);
+            } else {
+              this.tone(f * 2, 0.09, now + 0.03, "sine", 0.007);
+            }
+          }, interval);
+        },
+        tone(freq, dur = 0.08, start = 0, type = "sine", gainAmp = 0.03) {
+          if (!this.enabled) return;
+          this.unlock();
+          if (!this.ctx || !this.master) return;
+          const t0 = start || this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, t0);
+          gain.gain.setValueAtTime(0.0001, t0);
+          gain.gain.exponentialRampToValueAtTime(gainAmp, t0 + 0.01);
+          gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+          osc.connect(gain);
+          gain.connect(this.master);
+          osc.start(t0);
+          osc.stop(t0 + dur + 0.02);
+        },
+        se(name) {
+          if (!this.enabled) return;
+          this.unlock();
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime;
+          if (name === "step") {
+            this.tone(240 + rng.int(-20, 20), 0.04, now, "triangle", 0.01);
+          } else if (name === "attack") {
+            this.tone(170, 0.06, now, "square", 0.02);
+            this.tone(120, 0.09, now + 0.01, "triangle", 0.012);
+          } else if (name === "crit") {
+            this.tone(520, 0.05, now, "square", 0.02);
+            this.tone(780, 0.07, now + 0.03, "triangle", 0.018);
+          } else if (name === "magic") {
+            this.tone(340, 0.12, now, "sine", 0.018);
+            this.tone(510, 0.09, now + 0.03, "triangle", 0.012);
+          } else if (name === "heal") {
+            this.tone(392, 0.09, now, "sine", 0.015);
+            this.tone(523, 0.12, now + 0.03, "sine", 0.015);
+          } else if (name === "item_get") {
+            this.tone(440, 0.06, now, "triangle", 0.014);
+            this.tone(660, 0.1, now + 0.04, "triangle", 0.014);
+          } else if (name === "stairs") {
+            this.tone(280, 0.08, now, "triangle", 0.015);
+            this.tone(210, 0.12, now + 0.08, "triangle", 0.012);
+          } else if (name === "death") {
+            this.tone(180, 0.18, now, "sawtooth", 0.018);
+            this.tone(90, 0.24, now + 0.06, "triangle", 0.012);
+          } else if (name === "levelup") {
+            [330, 392, 494, 660].forEach((f, i) => this.tone(f, 0.12, now + i * 0.05, "triangle", 0.014));
+          } else if (name === "door_open" || name === "chest_open") {
+            this.tone(260, 0.06, now, "square", 0.012);
+            this.tone(390, 0.08, now + 0.04, "triangle", 0.012);
+          }
+        }
+      };
+
+      const game = {
+        mode: STATES.TITLE,
+        selectedClass: "GPT",
+        player: null,
+        dungeon: null,
+        battle: null,
+        sheet: null,
+        logs: [],
+        toastTimer: 0,
+        frameTime: 0,
+        lastTs: 0,
+        messageFlash: 0,
+        cameraShake: 0,
+        inspectedText: "",
+        pendingStory: null,
+        modalVersion: 0
+      };
+
+      window.__siliconRogue = { game };
+
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function fmt(n) {
+        return Number.isFinite(n) ? Math.round(n) : 0;
+      }
+
+      function titleCase(str) {
+        return String(str)
+          .replace(/_/g, " ")
+          .replace(/\b\w/g, (c) => c.toUpperCase());
+      }
+
+      function pushLog(message, tone) {
+        const line = { text: message, t: performance.now() };
+        game.logs.unshift(line);
+        if (game.logs.length > 6) game.logs.length = 6;
+        if (tone) audio.se(tone);
+        renderLog();
+      }
+
+      function showToast(text, ms = 1200) {
+        dom.toast.textContent = text;
+        dom.toast.hidden = false;
+        if (game.toastTimer) clearTimeout(game.toastTimer);
+        game.toastTimer = setTimeout(() => {
+          dom.toast.hidden = true;
+        }, ms);
+      }
+
+      function renderLog() {
+        dom.logPanel.innerHTML = "";
+        const lines = game.logs.slice(0, 3);
+        if (lines.length === 0) {
+          lines.push({ text: "> READY", t: 0 });
+        }
+        for (const line of lines) {
+          const p = document.createElement("p");
+          p.className = "log-line";
+          p.textContent = `> ${line.text}`;
+          dom.logPanel.appendChild(p);
+        }
+      }
+
+      function createPlayer(classId) {
+        const def = CLASS_DEFS[classId];
+        const base = def.baseStats;
+        const p = {
+          id: def.id,
+          name: def.name,
+          role: def.role,
+          color: def.color,
+          passive: def.passive,
+          passiveText: def.passiveText,
+          growth: { ...def.growth },
+          level: 1,
+          exp: 0,
+          nextExp: 40,
+          gold: 80,
+          floor: 1,
+          hp: base.hp,
+          maxHp: base.hp,
+          mp: base.mp,
+          maxMp: base.mp,
+          atk: base.atk,
+          def: base.def,
+          int: base.int,
+          agi: base.agi,
+          lck: base.lck,
+          x: 0,
+          y: 0,
+          statuses: [],
+          buffs: [],
+          inventory: [],
+          equipment: { ...def.equipment },
+          skills: [...def.skills],
+          combo: 0,
+          tookDamageSinceLastAttack: false,
+          tokenDiscountStacks: 0,
+          cumulativeDamage: 0,
+          doubleNextAttack: 0,
+          runStats: {
+            floorsCleared: 0,
+            enemiesKilled: 0,
+            damageDealt: 0,
+            damageTaken: 0,
+            itemsUsed: 0,
+            goldEarned: 0
+          }
+        };
+
+        applyEquipmentBonuses(p);
+        for (const itemId of def.startItems) addItem(p, itemId, 1);
+        addItem(p, "checkpoint", 1);
+        return p;
+      }
+
+      function applyEquipmentBonuses(player) {
+        for (const slot of ["weapon", "armor", "accessory"]) {
+          const id = player.equipment[slot];
+          if (!id) continue;
+          const mod = EQUIPMENT_BONUS[id];
+          if (!mod) continue;
+          for (const [k, v] of Object.entries(mod)) {
+            if (k === "maxHp") {
+              player.maxHp += v;
+              player.hp += v;
+            } else if (k === "maxMp") {
+              player.maxMp += v;
+              player.mp += v;
+            } else {
+              player[k] += v;
+            }
+          }
+        }
+      }
+
+      function addItem(player, itemId, qty = 1) {
+        const item = ITEM_DEFS[itemId];
+        if (!item) return false;
+        const stack = player.inventory.find((s) => s.id === itemId);
+        if (stack) stack.qty += qty;
+        else player.inventory.push({ id: itemId, qty });
+        return true;
+      }
+
+      function removeItem(player, itemId, qty = 1) {
+        const idx = player.inventory.findIndex((s) => s.id === itemId);
+        if (idx < 0) return false;
+        player.inventory[idx].qty -= qty;
+        if (player.inventory[idx].qty <= 0) player.inventory.splice(idx, 1);
+        return true;
+      }
+
+      function getThemeForFloor(floor) {
+        const idx = clamp(Math.floor((floor - 1) / 5), 0, THEMES.length - 1);
+        return THEMES[idx];
+      }
+
+      function allocGrid(w, h, value) {
+        return Array.from({ length: h }, () => Array.from({ length: w }, () => value));
+      }
+
+      function inBounds(map, x, y) {
+        return y >= 0 && y < map.h && x >= 0 && x < map.w;
+      }
+
+      function isWalkableTile(tile) {
+        return tile !== TILE.WALL && tile !== TILE.VOID;
+      }
+
+      function coordKey(x, y) {
+        return `${x},${y}`;
+      }
+
+      function getFloorGeometry(floor) {
+        const themeIdx = clamp(Math.floor((floor - 1) / 5), 0, 9);
+        return {
+          w: 42 + themeIdx * 2,
+          h: 34 + themeIdx * 2
+        };
+      }
+
+      function rectsOverlap(a, b, pad = 1) {
+        return !(
+          a.x + a.w + pad <= b.x ||
+          b.x + b.w + pad <= a.x ||
+          a.y + a.h + pad <= b.y ||
+          b.y + b.h + pad <= a.y
+        );
+      }
+
+      function carveRoom(map, room) {
+        for (let y = room.y; y < room.y + room.h; y += 1) {
+          for (let x = room.x; x < room.x + room.w; x += 1) {
+            map.tiles[y][x] = TILE.FLOOR;
+          }
+        }
+      }
+
+      function carveCorridor(map, x1, y1, x2, y2) {
+        let x = x1;
+        let y = y1;
+        if (rng.chance(0.5)) {
+          while (x !== x2) {
+            map.tiles[y][x] = TILE.FLOOR;
+            x += Math.sign(x2 - x);
+          }
+          while (y !== y2) {
+            map.tiles[y][x] = TILE.FLOOR;
+            y += Math.sign(y2 - y);
+          }
+        } else {
+          while (y !== y2) {
+            map.tiles[y][x] = TILE.FLOOR;
+            y += Math.sign(y2 - y);
+          }
+          while (x !== x2) {
+            map.tiles[y][x] = TILE.FLOOR;
+            x += Math.sign(x2 - x);
+          }
+        }
+        map.tiles[y2][x2] = TILE.FLOOR;
+      }
+
+      function roomCenter(room) {
+        return { x: Math.floor(room.x + room.w / 2), y: Math.floor(room.y + room.h / 2) };
+      }
+
+      function distance(a, b) {
+        return Math.hypot(a.x - b.x, a.y - b.y);
+      }
+
+      function manhattan(ax, ay, bx, by) {
+        return Math.abs(ax - bx) + Math.abs(ay - by);
+      }
+
+      function generateDungeon(floor, existingPlayer) {
+        const geom = getFloorGeometry(floor);
+        const theme = getThemeForFloor(floor);
+        const map = {
+          w: geom.w,
+          h: geom.h,
+          floor,
+          theme,
+          tiles: allocGrid(geom.w, geom.h, TILE.WALL),
+          explored: allocGrid(geom.w, geom.h, false),
+          visible: allocGrid(geom.w, geom.h, false),
+          rooms: [],
+          enemies: [],
+          chestStates: {},
+          shrineUsed: {},
+          shopStock: {},
+          turn: 0,
+          seedStamp: Date.now()
+        };
+
+        const targetRooms = rng.int(10, 14);
+        let attempts = 0;
+        while (map.rooms.length < targetRooms && attempts < 240) {
+          attempts += 1;
+          const room = {
+            x: rng.int(1, map.w - 12),
+            y: rng.int(1, map.h - 10),
+            w: rng.int(5, 11),
+            h: rng.int(5, 9)
+          };
+          if (room.x + room.w >= map.w - 1 || room.y + room.h >= map.h - 1) continue;
+          if (map.rooms.some((r) => rectsOverlap(room, r, 1))) continue;
+          carveRoom(map, room);
+          if (map.rooms.length > 0) {
+            const c1 = roomCenter(map.rooms[map.rooms.length - 1]);
+            const c2 = roomCenter(room);
+            carveCorridor(map, c1.x, c1.y, c2.x, c2.y);
+          }
+          map.rooms.push(room);
+        }
+
+        if (map.rooms.length < 2) {
+          const fallback1 = { x: 2, y: 2, w: 8, h: 6 };
+          const fallback2 = { x: map.w - 12, y: map.h - 8, w: 8, h: 6 };
+          carveRoom(map, fallback1);
+          carveRoom(map, fallback2);
+          carveCorridor(map, 6, 5, map.w - 8, map.h - 5);
+          map.rooms = [fallback1, fallback2];
+        }
+
+        const startRoom = map.rooms[0];
+        const startPos = roomCenter(startRoom);
+        let stairRoom = map.rooms[map.rooms.length - 1];
+        let maxDist = -1;
+        for (const room of map.rooms) {
+          const c = roomCenter(room);
+          const d = distance(c, startPos);
+          if (d > maxDist) {
+            maxDist = d;
+            stairRoom = room;
+          }
+        }
+        const stairs = roomCenter(stairRoom);
+        map.stairs = { x: stairs.x, y: stairs.y };
+        map.tiles[stairs.y][stairs.x] = TILE.STAIRS;
+
+        map.start = { x: startPos.x, y: startPos.y };
+
+        if (floor % 5 === 0) {
+          const shrinePos = { x: startPos.x + 1, y: startPos.y };
+          if (inBounds(map, shrinePos.x, shrinePos.y) && map.tiles[shrinePos.y][shrinePos.x] === TILE.FLOOR) {
+            map.tiles[shrinePos.y][shrinePos.x] = TILE.SHRINE;
+          }
+        }
+
+        if (floor % 3 === 0 || floor % 5 === 0) {
+          const room = rng.pick(map.rooms.slice(1, Math.max(2, map.rooms.length - 1)));
+          if (room) {
+            const p = roomCenter(room);
+            if (map.tiles[p.y][p.x] === TILE.FLOOR) {
+              map.tiles[p.y][p.x] = TILE.SHOP;
+              map.shopStock[coordKey(p.x, p.y)] = rollShopStock(floor);
+            }
+          }
+        }
+
+        const chestCount = floor % 5 === 0 ? 2 : rng.int(1, 2);
+        let chestPlaced = 0;
+        const shuffledRooms = rng.shuffle([...map.rooms.slice(1)]);
+        for (const room of shuffledRooms) {
+          if (chestPlaced >= chestCount) break;
+          const p = roomCenter(room);
+          if (p.x === stairs.x && p.y === stairs.y) continue;
+          if (map.tiles[p.y][p.x] === TILE.FLOOR) {
+            map.tiles[p.y][p.x] = TILE.CHEST;
+            chestPlaced += 1;
+          }
+        }
+
+        spawnEnemiesForFloor(map, floor);
+
+        if (existingPlayer) {
+          existingPlayer.x = map.start.x;
+          existingPlayer.y = map.start.y;
+        }
+        updateVisibility(map, existingPlayer || game.player);
+        return map;
+      }
+
+      function rollShopStock(floor) {
+        const ids = ["ram_shard", "ram_pack", "cpu_coolant", "debug_patch", "overclock_pill", "speed_cache", "checkpoint"];
+        const count = floor >= 20 ? 4 : 3;
+        const stock = [];
+        const pool = rng.shuffle([...ids]);
+        for (let i = 0; i < count; i += 1) {
+          const id = pool[i % pool.length];
+          const def = ITEM_DEFS[id];
+          stock.push({ id, price: def.price + Math.floor(floor * (id === "checkpoint" ? 0 : 2.2)), sold: false });
+        }
+        return stock;
+      }
+
+      function baseEnemyFromTemplate(templateId, floor) {
+        const t = ENEMY_TEMPLATES[templateId];
+        if (!t) return null;
+        const scale = 1 + floor * 0.12;
+        return {
+          uid: nextUid(),
+          templateId,
+          name: t.name,
+          kind: t.kind,
+          isBoss: false,
+          x: 0,
+          y: 0,
+          hp: Math.round(t.hp * scale),
+          maxHp: Math.round(t.hp * scale),
+          atk: Math.round(t.atk * (1 + floor * 0.07)),
+          def: Math.round(t.def * (1 + floor * 0.05)),
+          int: Math.round((t.int || 10) * (1 + floor * 0.06)),
+          agi: Math.round((t.agi || 10) * (1 + floor * 0.04)),
+          lck: t.lck || 6,
+          weak: t.weak || null,
+          resist: t.resist || null,
+          color: t.color || "#ffffff",
+          statusHit: t.statusHit ? { ...t.statusHit } : null,
+          trait: t.trait || null,
+          statuses: [],
+          buffs: [],
+          revealWeak: false,
+          exposedTurns: 0,
+          actedTurns: 0,
+          phase: 1,
+          multiHeads: 0,
+          rewardExp: Math.round(8 + floor * 4 + (t.hp || 10) * 0.6),
+          rewardGold: Math.round(10 + floor * 3 + (t.atk || 5) * 0.7)
+        };
+      }
+
+      function createBossEnemy(floor) {
+        const cfg = BOSS_BY_FLOOR[floor];
+        if (!cfg) return null;
+        const base = baseEnemyFromTemplate(cfg.template, floor);
+        if (!base) return null;
+        base.name = cfg.name;
+        base.isBoss = true;
+        base.maxHp = Math.round(base.maxHp * cfg.hpMul);
+        base.hp = base.maxHp;
+        base.atk = Math.round(base.atk * cfg.atkMul);
+        base.def = Math.round(base.def * cfg.defMul);
+        base.rewardExp = Math.round(base.rewardExp * 4.5);
+        base.rewardGold = Math.round(base.rewardGold * 3.6 + floor * 15);
+        base.bossCfg = { ...cfg };
+        if (cfg.phases) base.totalPhases = cfg.phases;
+        if (cfg.final) {
+          base.weak = "Quantum";
+          base.resist = "Logic";
+        }
+        return base;
+      }
+
+      function spawnEnemiesForFloor(map, floor) {
+        const boss = createBossEnemy(floor);
+        const themePool = map.theme.enemyPool;
+        const occupied = new Set([coordKey(map.start.x, map.start.y), coordKey(map.stairs.x, map.stairs.y)]);
+        for (let y = 0; y < map.h; y += 1) {
+          for (let x = 0; x < map.w; x += 1) {
+            if (map.tiles[y][x] === TILE.CHEST || map.tiles[y][x] === TILE.SHOP || map.tiles[y][x] === TILE.SHRINE) {
+              occupied.add(coordKey(x, y));
+            }
+          }
+        }
+
+        if (boss) {
+          const bossRoom = map.rooms.reduce((best, room) => {
+            const c = roomCenter(room);
+            const d = manhattan(c.x, c.y, map.start.x, map.start.y);
+            if (!best || d > best.d) return { room, d };
+            return best;
+          }, null)?.room;
+          let p = bossRoom ? roomCenter(bossRoom) : { x: map.stairs.x - 1, y: map.stairs.y };
+          if (occupied.has(coordKey(p.x, p.y))) {
+            p = findFreeTileNear(map, p.x, p.y, occupied) || p;
+          }
+          boss.x = p.x;
+          boss.y = p.y;
+          map.enemies.push(boss);
+          occupied.add(coordKey(p.x, p.y));
+        }
+
+        const count = boss ? rng.int(3, 6) : clamp(7 + Math.floor(floor / 4), 8, 18);
+        const rooms = rng.shuffle([...map.rooms.slice(1)]);
+        let roomIdx = 0;
+        let placed = 0;
+        let attempts = 0;
+        while (placed < count && attempts < 500) {
+          attempts += 1;
+          const room = rooms[roomIdx % rooms.length] || map.rooms[0];
+          roomIdx += 1;
+          const x = rng.int(room.x, room.x + room.w - 1);
+          const y = rng.int(room.y, room.y + room.h - 1);
+          if (!inBounds(map, x, y)) continue;
+          if (map.tiles[y][x] === TILE.WALL) continue;
+          const key = coordKey(x, y);
+          if (occupied.has(key)) continue;
+          const enemy = baseEnemyFromTemplate(rng.pick(themePool), floor);
+          if (!enemy) continue;
+          enemy.x = x;
+          enemy.y = y;
+          if (floor >= 35 && rng.chance(0.12)) {
+            enemy.name += " +";
+            enemy.maxHp = Math.round(enemy.maxHp * 1.2);
+            enemy.hp = enemy.maxHp;
+            enemy.atk = Math.round(enemy.atk * 1.15);
+            enemy.rewardExp = Math.round(enemy.rewardExp * 1.2);
+            enemy.rewardGold = Math.round(enemy.rewardGold * 1.15);
+          }
+          map.enemies.push(enemy);
+          occupied.add(key);
+          placed += 1;
+        }
+      }
+
+      function findFreeTileNear(map, x, y, occupied) {
+        for (let r = 1; r <= 6; r += 1) {
+          for (let oy = -r; oy <= r; oy += 1) {
+            for (let ox = -r; ox <= r; ox += 1) {
+              const nx = x + ox;
+              const ny = y + oy;
+              if (!inBounds(map, nx, ny)) continue;
+              if (map.tiles[ny][nx] === TILE.WALL) continue;
+              const k = coordKey(nx, ny);
+              if (occupied.has(k)) continue;
+              return { x: nx, y: ny };
+            }
+          }
+        }
+        return null;
+      }
+
+      function updateVisibility(map, player) {
+        if (!map || !player) return;
+        for (let y = 0; y < map.h; y += 1) {
+          for (let x = 0; x < map.w; x += 1) {
+            map.visible[y][x] = false;
+          }
+        }
+        const baseLight = map.theme.light;
+        const radius = baseLight + (player.id === "DEEP_BLUE" ? 3 : 0);
+        for (let y = player.y - radius; y <= player.y + radius; y += 1) {
+          for (let x = player.x - radius; x <= player.x + radius; x += 1) {
+            if (!inBounds(map, x, y)) continue;
+            const d = Math.hypot(x - player.x, y - player.y);
+            if (d > radius + 0.25) continue;
+            map.visible[y][x] = true;
+            map.explored[y][x] = true;
+          }
+        }
+      }
+
+      function getEnemyAt(x, y) {
+        const map = game.dungeon;
+        if (!map) return null;
+        return map.enemies.find((e) => e.x === x && e.y === y && e.hp > 0) || null;
+      }
+
+      function isOccupiedByEnemy(x, y, ignoreUid = null) {
+        return Boolean(game.dungeon?.enemies.find((e) => e.hp > 0 && e.uid !== ignoreUid && e.x === x && e.y === y));
+      }
+
+      function setMode(mode) {
+        game.mode = mode;
+        if (mode === STATES.BATTLE) {
+          audio.setTrack("boss");
+        } else if (mode === STATES.DUNGEON || mode === STATES.INVENTORY || mode === STATES.MAP_VIEW || mode === STATES.SHOP_SCREEN || mode === STATES.SKILLS) {
+          audio.setTrack("dungeon");
+        } else if (mode === STATES.GAME_OVER) {
+          audio.setTrack("game_over");
+        } else if (mode === STATES.VICTORY) {
+          audio.setTrack("victory");
+        } else {
+          audio.setTrack("title");
+        }
+        renderModeChip();
+      }
+
+      function renderModeChip() {
+        const labels = {
+          [STATES.TITLE]: "TITLE",
+          [STATES.CLASS_SELECT]: "CLASS",
+          [STATES.STORY]: "STORY",
+          [STATES.DUNGEON]: "DIVE",
+          [STATES.BATTLE]: "BATTLE",
+          [STATES.GAME_OVER]: "DOWN",
+          [STATES.VICTORY]: "CLEAR"
+        };
+        dom.modeChip.textContent = labels[game.mode] || "RUN";
+      }
+
+      function newRun(classId) {
+        game.selectedClass = classId;
+        game.player = createPlayer(classId);
+        game.battle = null;
+        game.sheet = null;
+        game.logs = [];
+        pushLog("BOOT COMPLETE", null);
+        pushLog(`${classId} linked`, null);
+        game.dungeon = generateDungeon(1, game.player);
+        game.player.floor = 1;
+        updateVisibility(game.dungeon, game.player);
+        pushLog(`Floor 1 :: ${game.dungeon.theme.name}`, "item_get");
+        setMode(STATES.DUNGEON);
+        renderAll();
+        autoSave();
+      }
+
+      function beginStory(classId) {
+        game.pendingStory = classId;
+        setMode(STATES.STORY);
+        renderModal();
+      }
+
+      function createStatsSnapshot(actor) {
+        const mod = { atkMul: 1, defMul: 1, intMul: 1, agiMul: 1, nextSkillMul: 1 };
+        for (const buff of actor.buffs || []) {
+          if (buff.atkMul) mod.atkMul *= buff.atkMul;
+          if (buff.defMul) mod.defMul *= buff.defMul;
+          if (buff.intMul) mod.intMul *= buff.intMul;
+          if (buff.agiMul) mod.agiMul *= buff.agiMul;
+          if (buff.nextSkillMul) mod.nextSkillMul *= buff.nextSkillMul;
+        }
+        let atk = actor.atk;
+        let def = actor.def;
+        let intel = actor.int;
+        let agi = actor.agi;
+        for (const s of actor.statuses || []) {
+          if (s.id === "Shock") agi *= 0.7;
+          if (s.id === "Overheat") atk *= 0.7;
+          if (s.id === "Debug") {
+            atk -= 1;
+            def -= 1;
+            intel -= 1;
+            agi -= 1;
+          }
+        }
+        atk = Math.max(1, Math.round(atk * mod.atkMul));
+        def = Math.max(0, Math.round(def * mod.defMul));
+        intel = Math.max(1, Math.round(intel * mod.intMul));
+        agi = Math.max(1, Math.round(agi * mod.agiMul));
+        return { atk, def, int: intel, agi, lck: actor.lck || 0, nextSkillMul: mod.nextSkillMul };
+      }
+
+      function applyStatus(target, statusId, turns, sourceLabel = "") {
+        if (!target || !statusId || turns <= 0) return false;
+        if (target === game.player && game.player.id === "ELIZA" && rng.chance(0.2)) {
+          pushLog(`Pattern Match blocked ${statusId}`, null);
+          return false;
+        }
+        const existing = target.statuses.find((s) => s.id === statusId);
+        if (existing) {
+          existing.turns = Math.max(existing.turns, turns);
+        } else {
+          target.statuses.push({ id: statusId, turns });
+        }
+        pushLog(`${target === game.player ? "You" : target.name} ${statusId}${sourceLabel ? ` < ${sourceLabel}` : ""}`, null);
+        return true;
+      }
+
+      function removeStatus(target, statusId) {
+        target.statuses = target.statuses.filter((s) => s.id !== statusId);
+      }
+
+      function addBuff(target, buff) {
+        const existing = target.buffs.find((b) => b.id === buff.id);
+        if (existing) {
+          Object.assign(existing, buff);
+        } else {
+          target.buffs.push({ ...buff });
+        }
+      }
+
+      function tickStatuses(target) {
+        if (!target) return;
+        for (const s of [...target.statuses]) {
+          if (s.id === "Burn") {
+            const dmg = Math.max(1, Math.floor((target.maxHp || 50) * 0.03));
+            target.hp = Math.max(0, target.hp - dmg);
+            pushLog(`${target === game.player ? "Burn" : target.name} -${dmg}`, null);
+          }
+          s.turns -= 1;
+        }
+        target.statuses = target.statuses.filter((s) => s.turns > 0);
+      }
+
+      function tickBuffs(target) {
+        if (!target) return;
+        for (const b of [...target.buffs]) {
+          b.turns -= 1;
+        }
+        target.buffs = target.buffs.filter((b) => b.turns > 0);
+      }
+
+      function canActThisTurn(actor) {
+        const freeze = actor.statuses?.find((s) => s.id === "Freeze");
+        if (freeze && rng.chance(0.4)) {
+          pushLog(`${actor === game.player ? "You" : actor.name} frozen`, null);
+          return false;
+        }
+        return true;
+      }
+
+      function calcDamage(attacker, defender, options = {}) {
+        const a = createStatsSnapshot(attacker);
+        const d = createStatsSnapshot(defender);
+        const statKey = options.stat === "int" ? "int" : "atk";
+        let baseAtk = a[statKey];
+        if (options.scale) baseAtk *= options.scale;
+        if (options.flat) baseAtk += options.flat;
+        let damage = baseAtk * rng.float(0.85, 1.15) - d.def * 0.5;
+        damage = Math.max(1, Math.round(damage));
+        let crit = false;
+        if (options.canCrit !== false) {
+          let critRate = clamp((a.agi / 100) + (a.lck / 200), 0.04, 0.65);
+          if (attacker === game.player && attacker.id === "WATSON" && attacker.buffs.find((b) => b.id === "confidence")) {
+            critRate += 0.15;
+          }
+          if (rng.chance(critRate)) {
+            crit = true;
+            damage = Math.round(damage * 1.75);
+          }
+        }
+        let element = options.element || null;
+        if (element && element !== "All") {
+          if (defender.weak === element) damage = Math.round(damage * 1.5);
+          if (defender.resist === element) damage = Math.max(1, Math.round(damage * 0.7));
+        } else if (element === "All") {
+          const weakHit = ELEMENTS.includes(defender.weak);
+          if (weakHit) damage = Math.round(damage * 1.25);
+        }
+        if (defender.exposedTurns > 0) damage = Math.round(damage * 1.2);
+        if (attacker === game.player && !options.noCombo) {
+          const comboMul = 1 + Math.min(0.5, game.player.combo * 0.05);
+          damage = Math.round(damage * comboMul);
+        }
+        if (options.damageMul) damage = Math.round(damage * options.damageMul);
+        if (attacker === game.player && attacker.doubleNextAttack > 0 && options.consumeDouble !== false) {
+          damage *= 2;
+          attacker.doubleNextAttack -= 1;
+        }
+        return { damage: Math.max(1, damage), crit, element };
+      }
+
+      function applyDamage(target, amount, source = "") {
+        target.hp = Math.max(0, target.hp - amount);
+        if (target === game.player) {
+          game.player.tookDamageSinceLastAttack = true;
+          game.player.combo = 0;
+          game.player.runStats.damageTaken += amount;
+          game.cameraShake = 9;
+        } else if (game.player) {
+          game.player.cumulativeDamage += amount;
+          game.player.runStats.damageDealt += amount;
+          if (!game.player.tookDamageSinceLastAttack) {
+            game.player.combo = Math.min(10, game.player.combo + 1);
+          }
+        }
+        if (source) pushLog(source, null);
+        if (target.hp <= 0) {
+          if (target === game.player) {
+            audio.se("death");
+          }
+        }
+      }
+
+      function healTarget(target, hp = 0, mp = 0) {
+        if (hp) {
+          const before = target.hp;
+          target.hp = clamp(target.hp + hp, 0, target.maxHp);
+          if (target === game.player) pushLog(`HP +${target.hp - before}`, "heal");
+        }
+        if (mp) {
+          const before = target.mp;
+          target.mp = clamp(target.mp + mp, 0, target.maxMp);
+          if (target === game.player) pushLog(`MP +${target.mp - before}`, "heal");
+        }
+      }
+
+      function gainRewards(enemy) {
+        const player = game.player;
+        let expGain = enemy.rewardExp;
+        if (player.id === "WATSON" && rng.chance(0.5)) {
+          expGain = Math.round(expGain * 1.5);
+          pushLog("Jeopardy! EXP BONUS", null);
+        }
+        player.exp += expGain;
+        player.gold += enemy.rewardGold;
+        player.runStats.goldEarned += enemy.rewardGold;
+        player.runStats.enemiesKilled += 1;
+        pushLog(`+${expGain} EXP / +${enemy.rewardGold}G`, "item_get");
+        if (player.id === "GPT") {
+          player.tokenDiscountStacks = Math.min(5, player.tokenDiscountStacks + 1);
+          pushLog(`Token Stream ${player.tokenDiscountStacks * 10}%`, null);
+        }
+        if (rng.chance(enemy.isBoss ? 0.9 : 0.25)) {
+          const dropPool = ["ram_shard", "cpu_coolant", "debug_patch", "overclock_pill", "speed_cache"];
+          const drop = enemy.isBoss ? rng.pick(["ram_pack", "gradient_boost", "debug_patch", "checkpoint"]) : rng.pick(dropPool);
+          addItem(player, drop, 1);
+          pushLog(`DROP ${ITEM_DEFS[drop].name}`, "item_get");
+        }
+        checkLevelUp();
+      }
+
+      function checkLevelUp() {
+        const p = game.player;
+        let leveled = false;
+        while (p.exp >= p.nextExp) {
+          p.exp -= p.nextExp;
+          p.level += 1;
+          p.nextExp = Math.round(p.nextExp * 1.28 + 14);
+          p.maxHp += Math.round(p.growth.hp + rng.float(0, 2));
+          p.maxMp += Math.round(p.growth.mp + rng.float(0, 2));
+          p.atk += Math.max(1, Math.round(p.growth.atk));
+          p.def += Math.max(1, Math.round(p.growth.def));
+          p.int += Math.max(1, Math.round(p.growth.int));
+          p.agi += Math.max(1, Math.round(p.growth.agi));
+          p.lck += Math.max(1, Math.round(p.growth.lck * 0.6));
+          p.hp = p.maxHp;
+          p.mp = p.maxMp;
+          leveled = true;
+          pushLog(`LEVEL UP -> ${p.level}`, "levelup");
+        }
+        if (leveled) showToast(`LV ${p.level}`);
+      }
+
+      function rollBossPhaseShift(enemy) {
+        if (!enemy.isBoss || !enemy.totalPhases || enemy.hp <= 0) return;
+        const phaseByHp = (() => {
+          const ratio = enemy.hp / enemy.maxHp;
+          if (enemy.totalPhases === 5) {
+            if (ratio <= 0.2) return 5;
+            if (ratio <= 0.4) return 4;
+            if (ratio <= 0.6) return 3;
+            if (ratio <= 0.8) return 2;
+            return 1;
+          }
+          if (enemy.totalPhases === 3) {
+            if (ratio <= 0.33) return 3;
+            if (ratio <= 0.66) return 2;
+            return 1;
+          }
+          return 1;
+        })();
+        if (phaseByHp > (enemy.phase || 1)) {
+          enemy.phase = phaseByHp;
+          enemy.atk = Math.round(enemy.atk * 1.08);
+          enemy.def = Math.max(1, Math.round(enemy.def * 0.95));
+          pushLog(`${enemy.name} Phase ${enemy.phase}`, "magic");
+          showToast(`${enemy.name} P${enemy.phase}`, 900);
+        }
+      }
+
+      function startBattle(enemy) {
+        if (!enemy || enemy.hp <= 0 || game.mode === STATES.BATTLE) return;
+        game.battle = {
+          enemyUid: enemy.uid,
+          startedAt: performance.now(),
+          rounds: 0
+        };
+        game.sheet = null;
+        setMode(STATES.BATTLE);
+        pushLog(`ENCOUNTER ${enemy.name.toUpperCase()}`, "attack");
+        showToast(enemy.isBoss ? "BOSS" : "ENCOUNTER", 800);
+        renderSheet();
+        renderBattle();
+      }
+
+      function getBattleEnemy() {
+        if (!game.battle || !game.dungeon) return null;
+        return game.dungeon.enemies.find((e) => e.uid === game.battle.enemyUid && e.hp > 0) || null;
+      }
+
+      function endBattle(viaRun = false) {
+        game.battle = null;
+        game.sheet = null;
+        setMode(STATES.DUNGEON);
+        if (viaRun) pushLog("ESCAPE", null);
+        updateVisibility(game.dungeon, game.player);
+        renderSheet();
+        renderBattle();
+        autoSave();
+      }
+
+      function handleEnemyDeath(enemy) {
+        if (!enemy) return;
+        pushLog(`${enemy.name} DOWN`, "death");
+        gainRewards(enemy);
+        const idx = game.dungeon.enemies.findIndex((e) => e.uid === enemy.uid);
+        if (idx >= 0) game.dungeon.enemies.splice(idx, 1);
+        if (enemy.isBoss && game.player.floor === 50) {
+          setMode(STATES.VICTORY);
+          game.sheet = null;
+          renderModal();
+          autoSave(true);
+          return;
+        }
+        endBattle(false);
+      }
+
+      function enemyDungeonStep() {
+        if (!game.dungeon || !game.player) return;
+        const map = game.dungeon;
+        const player = game.player;
+        const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+        for (const enemy of map.enemies) {
+          if (enemy.hp <= 0) continue;
+          if (manhattan(enemy.x, enemy.y, player.x, player.y) <= 1) continue;
+          const aggro = enemy.isBoss ? 12 : 8;
+          if (manhattan(enemy.x, enemy.y, player.x, player.y) > aggro) continue;
+          let best = null;
+          for (const [dx, dy] of dirs) {
+            const nx = enemy.x + dx;
+            const ny = enemy.y + dy;
+            if (!inBounds(map, nx, ny)) continue;
+            const tile = map.tiles[ny][nx];
+            if (!isWalkableTile(tile)) continue;
+            if (nx === player.x && ny === player.y) continue;
+            if (isOccupiedByEnemy(nx, ny, enemy.uid)) continue;
+            const score = manhattan(nx, ny, player.x, player.y);
+            if (!best || score < best.score || (score === best.score && rng.chance(0.35))) {
+              best = { nx, ny, score };
+            }
+          }
+          if (best && best.score < manhattan(enemy.x, enemy.y, player.x, player.y)) {
+            enemy.x = best.nx;
+            enemy.y = best.ny;
+          }
+        }
+
+        const adjacentEnemy = map.enemies.find((e) => e.hp > 0 && manhattan(e.x, e.y, player.x, player.y) === 1);
+        if (adjacentEnemy) {
+          startBattle(adjacentEnemy);
+        }
+      }
+
+      function consumeTurn() {
+        if (!game.dungeon || game.mode !== STATES.DUNGEON) return;
+        game.dungeon.turn += 1;
+        tickStatuses(game.player);
+        tickBuffs(game.player);
+        if (game.player.hp <= 0) {
+          setMode(STATES.GAME_OVER);
+          renderModal();
+          return;
+        }
+        enemyDungeonStep();
+        updateVisibility(game.dungeon, game.player);
+        renderAll();
+      }
+
+      function inspectCurrentTile() {
+        if (!game.dungeon || !game.player) return;
+        const tile = game.dungeon.tiles[game.player.y][game.player.x];
+        const adjacent = game.dungeon.enemies.filter((e) => e.hp > 0 && manhattan(e.x, e.y, game.player.x, game.player.y) <= 1);
+        const label = TILE_LABEL[tile] || "?";
+        const enemyInfo = adjacent.length ? ` / ${adjacent[0].name}${adjacent.length > 1 ? ` +${adjacent.length - 1}` : ""}` : "";
+        pushLog(`INSPECT ${label}${enemyInfo}`, null);
+        showToast(label, 800);
+      }
+
+      function tryMove(dx, dy) {
+        if (!game.player || !game.dungeon) return;
+        if (game.mode !== STATES.DUNGEON) return;
+        if (game.sheet) return;
+        const nx = game.player.x + dx;
+        const ny = game.player.y + dy;
+        if (!inBounds(game.dungeon, nx, ny)) return;
+        const enemy = getEnemyAt(nx, ny);
+        if (enemy) {
+          startBattle(enemy);
+          return;
+        }
+        const tile = game.dungeon.tiles[ny][nx];
+        if (!isWalkableTile(tile)) {
+          pushLog("WALL", null);
+          audio.se("step");
+          return;
+        }
+        game.player.x = nx;
+        game.player.y = ny;
+        game.player.tookDamageSinceLastAttack = false;
+        audio.se("step");
+        const standing = game.dungeon.tiles[ny][nx];
+        if (standing === TILE.CHEST) {
+          pushLog("CHEST // A", null);
+        } else if (standing === TILE.SHOP) {
+          pushLog("SHOP // A", null);
+        } else if (standing === TILE.SHRINE) {
+          pushLog("SHRINE // A", null);
+        } else if (standing === TILE.STAIRS) {
+          pushLog("STAIRS // A", null);
+        }
+        consumeTurn();
+      }
+
+      function openChestAt(x, y) {
+        const map = game.dungeon;
+        const key = coordKey(x, y);
+        if (map.chestStates[key]) {
+          pushLog("EMPTY CHEST", null);
+          return;
+        }
+        map.chestStates[key] = true;
+        map.tiles[y][x] = TILE.FLOOR;
+        const gold = rng.int(18, 50) + game.player.floor * rng.int(3, 8);
+        game.player.gold += gold;
+        const drops = ["ram_shard", "cpu_coolant", "debug_patch", "overclock_pill", "speed_cache", "checkpoint"];
+        const drop = rng.pick(drops);
+        addItem(game.player, drop, 1);
+        pushLog(`CHEST +${gold}G / ${ITEM_DEFS[drop].name}`, "chest_open");
+        autoSave();
+      }
+
+      function useShrineAt(x, y) {
+        const map = game.dungeon;
+        const key = coordKey(x, y);
+        if (map.shrineUsed[key]) {
+          pushLog("SHRINE EMPTY", null);
+          return;
+        }
+        map.shrineUsed[key] = true;
+        game.player.hp = game.player.maxHp;
+        game.player.mp = game.player.maxMp;
+        game.player.statuses = [];
+        pushLog("FULL RECOVERY", "heal");
+        saveGame();
+        showToast("SAVED", 900);
+      }
+
+      function descendStairs() {
+        if (game.player.floor >= 50) {
+          pushLog("FINAL FLOOR", null);
+          return;
+        }
+        game.player.floor += 1;
+        game.player.runStats.floorsCleared = Math.max(game.player.runStats.floorsCleared, game.player.floor - 1);
+        game.dungeon = generateDungeon(game.player.floor, game.player);
+        updateVisibility(game.dungeon, game.player);
+        pushLog(`Floor ${game.player.floor} :: ${game.dungeon.theme.name}`, "stairs");
+        showToast(`F${game.player.floor}`, 800);
+        audio.setTrack("dungeon");
+        autoSave();
+      }
+
+      function interactAction() {
+        if (game.mode === STATES.TITLE || game.mode === STATES.CLASS_SELECT || game.mode === STATES.STORY || game.mode === STATES.GAME_OVER || game.mode === STATES.VICTORY) {
+          return;
+        }
+        if (game.mode === STATES.BATTLE) {
+          battleAction("attack");
+          return;
+        }
+        if (game.mode !== STATES.DUNGEON || !game.dungeon || !game.player) return;
+        if (game.sheet) return;
+
+        const adjacent = game.dungeon.enemies.find((e) => e.hp > 0 && manhattan(e.x, e.y, game.player.x, game.player.y) === 1);
+        if (adjacent) {
+          startBattle(adjacent);
+          return;
+        }
+
+        const x = game.player.x;
+        const y = game.player.y;
+        const tile = game.dungeon.tiles[y][x];
+        if (tile === TILE.CHEST) {
+          openChestAt(x, y);
+        } else if (tile === TILE.SHRINE) {
+          useShrineAt(x, y);
+        } else if (tile === TILE.SHOP) {
+          openShopSheet();
+          return;
+        } else if (tile === TILE.STAIRS) {
+          const bossAlive = game.dungeon.enemies.some((e) => e.hp > 0 && e.isBoss);
+          if (bossAlive && game.player.floor % 5 === 0) {
+            pushLog("BOSS SIGNAL ACTIVE", null);
+            showToast("BOSS", 700);
+            return;
+          }
+          descendStairs();
+        } else {
+          pushLog("WAIT", null);
+          consumeTurn();
+          return;
+        }
+        updateVisibility(game.dungeon, game.player);
+        renderAll();
+      }
+
+      function getEffectiveSkillCost(skill) {
+        let cost = skill.mp;
+        if (game.player.id === "GPT") {
+          cost *= Math.max(0.5, 1 - game.player.tokenDiscountStacks * 0.1);
+        }
+        if (game.player.statuses.find((s) => s.id === "Corrupt")) {
+          cost *= 2;
+        }
+        return Math.max(1, Math.round(cost));
+      }
+
+      function applySkill(skillId) {
+        const enemy = getBattleEnemy();
+        if (!enemy || !game.player) return;
+        const skill = SKILL_DEFS[skillId];
+        if (!skill) return;
+        const cost = getEffectiveSkillCost(skill);
+        if (game.player.mp < cost) {
+          pushLog("NO MP", null);
+          showToast("NO MP", 700);
+          return;
+        }
+
+        if (!canActThisTurn(game.player)) {
+          game.player.mp = Math.max(0, game.player.mp - Math.floor(cost / 2));
+          afterPlayerBattleAction(enemy, false);
+          return;
+        }
+
+        game.player.mp -= cost;
+        audio.se("magic");
+        const pStats = createStatsSnapshot(game.player);
+        let acted = true;
+        let consumeTurnFlag = true;
+
+        if (skillId === "analyze") {
+          enemy.exposedTurns = Math.max(enemy.exposedTurns, 4);
+          enemy.revealWeak = true;
+          enemy.def = Math.max(0, Math.round(enemy.def * 0.8));
+          pushLog(`${enemy.name} DEF↓`, null);
+        } else if (skillId === "recursive_heal") {
+          healTarget(game.player, Math.round(game.player.maxHp * 0.28), 0);
+          addBuff(game.player, { id: "recursive_heal", regenPct: 0.06, turns: 3 });
+          pushLog("REGEN 3T", null);
+        } else if (skillId === "fortify") {
+          addBuff(game.player, { id: "fortify", defMul: 1.3, turns: 4 });
+          pushLog("DEF↑", null);
+        } else if (skillId === "checkmate") {
+          const res = calcDamage(game.player, enemy, { stat: "int", scale: 2.3, element: "Logic", canCrit: true });
+          applySkillDamage(enemy, res, skill.name);
+          if (enemy.isBoss) {
+            pushLog("Boss resisted instant checkmate", null);
+          }
+        } else if (skillId === "diagnose") {
+          enemy.revealWeak = true;
+          enemy.exposedTurns = Math.max(enemy.exposedTurns, 5);
+          pushLog(`${enemy.name} weak:${enemy.weak || "-"}`, null);
+        } else if (skillId === "final_answer") {
+          const dealt = Math.max(1, Math.round(game.player.cumulativeDamage * 0.10));
+          applyDamage(enemy, dealt, `FINAL ANSWER ${dealt}`);
+        } else if (skillId === "prompt") {
+          const res = calcDamage(game.player, enemy, { stat: "int", scale: 1.2, element: "Logic" });
+          applySkillDamage(enemy, res, skill.name);
+        } else if (skillId === "transformer_blast") {
+          let mult = 4;
+          const boost = game.player.buffs.find((b) => b.id === "gradient_boost" && b.nextSkillMul);
+          if (boost) {
+            mult *= boost.nextSkillMul;
+            boost.turns = 0;
+            pushLog("Gradient Boost x3", null);
+          }
+          const res = calcDamage(game.player, enemy, { stat: "int", scale: mult, element: "All", canCrit: true, damageMul: 1 });
+          applySkillDamage(enemy, res, skill.name);
+        } else if (skillId === "dual_strike") {
+          for (let i = 0; i < 2 && enemy.hp > 0; i += 1) {
+            const res = calcDamage(game.player, enemy, { scale: 0.7, canCrit: true, noCombo: i > 0 });
+            applySkillDamage(enemy, res, `${skill.name}${i === 1 ? "#2" : "#1"}`);
+          }
+        } else if (skillId === "flash_step") {
+          addBuff(game.player, { id: "flash_step", agiMul: 1.25, turns: 4 });
+          game.player.doubleNextAttack = Math.max(game.player.doubleNextAttack, 1);
+          pushLog("AGI↑ / NEXT x2", null);
+        } else {
+          acted = false;
+        }
+
+        if (!acted) return;
+        game.player.buffs = game.player.buffs.filter((b) => b.turns > 0);
+        afterPlayerBattleAction(enemy, consumeTurnFlag);
+      }
+
+      function applySkillDamage(enemy, res, label) {
+        applyDamage(enemy, res.damage, `${label} ${res.damage}${res.crit ? " CRIT" : ""}`);
+        if (res.crit) audio.se("crit");
+      }
+
+      function basicAttack() {
+        const enemy = getBattleEnemy();
+        if (!enemy || !game.player) return;
+        if (!canActThisTurn(game.player)) {
+          afterPlayerBattleAction(enemy, false);
+          return;
+        }
+        audio.se("attack");
+        const res = calcDamage(game.player, enemy, {});
+        applyDamage(enemy, res.damage, `ATK ${res.damage}${res.crit ? " CRIT" : ""}`);
+        if (res.crit) audio.se("crit");
+
+        if (game.player.id === "GEMINI" && rng.chance(0.3) && enemy.hp > 0) {
+          const extra = calcDamage(game.player, enemy, { damageMul: 0.85, consumeDouble: false });
+          applyDamage(enemy, extra.damage, `MULTI ${extra.damage}`);
+        }
+
+        afterPlayerBattleAction(enemy, true);
+      }
+
+      function useItem(itemId, inBattle = false) {
+        const player = game.player;
+        const item = ITEM_DEFS[itemId];
+        if (!item) return false;
+        const stack = player.inventory.find((s) => s.id === itemId && s.qty > 0);
+        if (!stack) {
+          pushLog("NO ITEM", null);
+          return false;
+        }
+        if (item.use.save && inBattle) {
+          pushLog("NO SAVE IN BATTLE", null);
+          return false;
+        }
+        removeItem(player, itemId, 1);
+        player.runStats.itemsUsed += 1;
+        if (item.use.hp) healTarget(player, item.use.hp, 0);
+        if (item.use.mp) healTarget(player, 0, item.use.mp);
+        if (item.use.cleanse) {
+          const count = player.statuses.length;
+          player.statuses = [];
+          pushLog(`CLEANSE ${count}`, "heal");
+        }
+        if (item.use.buff) {
+          addBuff(player, { ...item.use.buff });
+          pushLog(`${item.name} OK`, "magic");
+        }
+        if (item.use.save) {
+          saveGame();
+          pushLog("CHECKPOINT SAVED", null);
+          showToast("SAVED", 900);
+        } else {
+          pushLog(`${item.name} USED`, "heal");
+        }
+        renderAll();
+        return true;
+      }
+
+      function battleAction(kind) {
+        if (game.mode !== STATES.BATTLE) return;
+        const enemy = getBattleEnemy();
+        if (!enemy) {
+          endBattle(false);
+          return;
+        }
+        if (game.sheet && kind !== "item" && kind !== "skill") return;
+
+        if (kind === "attack") {
+          basicAttack();
+        } else if (kind === "wait") {
+          pushLog("WAIT", null);
+          afterPlayerBattleAction(enemy, true);
+        } else if (kind === "run") {
+          const p = createStatsSnapshot(game.player);
+          const e = createStatsSnapshot(enemy);
+          const rate = clamp(0.5 + (p.agi - e.agi) * 0.02, 0.1, 0.95);
+          if (rng.chance(rate)) {
+            endBattle(true);
+            audio.se("step");
+          } else {
+            pushLog(`ESCAPE FAIL ${Math.round(rate * 100)}%`, null);
+            afterPlayerBattleAction(enemy, true);
+          }
+        } else if (kind === "skill") {
+          openSkillSheet();
+        } else if (kind === "item") {
+          openInventorySheet(true);
+        }
+        renderAll();
+      }
+
+      function afterPlayerBattleAction(enemy, enemyMayAct) {
+        if (!enemy || enemy.hp <= 0) {
+          if (enemy) handleEnemyDeath(enemy);
+          renderAll();
+          return;
+        }
+        rollBossPhaseShift(enemy);
+        if (enemyMayAct) enemyTurn(enemy);
+        if (game.mode === STATES.BATTLE) {
+          tickStatuses(game.player);
+          tickBuffs(game.player);
+          tickStatuses(enemy);
+          tickBuffs(enemy);
+          enemy.exposedTurns = Math.max(0, (enemy.exposedTurns || 0) - 1);
+          const regen = game.player.buffs.find((b) => b.regenPct);
+          if (regen) {
+            healTarget(game.player, Math.max(4, Math.round(game.player.maxHp * regen.regenPct)), 0);
+          }
+          if (game.player.hp <= 0) {
+            setMode(STATES.GAME_OVER);
+            game.sheet = null;
+            renderModal();
+          }
+        }
+        renderAll();
+      }
+
+      function enemyTurn(enemy) {
+        if (!enemy || enemy.hp <= 0 || game.mode !== STATES.BATTLE) return;
+        game.battle.rounds += 1;
+        enemy.actedTurns += 1;
+        if (!canActThisTurn(enemy)) return;
+
+        if (enemy.trait === "rage") {
+          enemy.atk += 1;
+        }
+        if (enemy.trait === "scaling") {
+          enemy.atk += 2;
+        }
+        if (enemy.trait === "chaos" && rng.chance(0.25)) {
+          const statusPick = rng.pick(["Burn", "Shock", "Corrupt"]);
+          applyStatus(game.player, statusPick, 2, enemy.name);
+        }
+        if (enemy.bossCfg?.phases === 3 && enemy.name.includes("Hydra") && enemy.phase >= 2 && rng.chance(0.3)) {
+          pushLog("Hydra lash (AOE)", null);
+        }
+
+        const res = calcDamage(enemy, game.player, { stat: rng.chance(0.2) ? "int" : "atk", canCrit: true, noCombo: true });
+        applyDamage(game.player, res.damage, `${enemy.name} ${res.damage}${res.crit ? " CRIT" : ""}`);
+        if (res.crit) audio.se("crit"); else audio.se("attack");
+
+        if (enemy.statusHit && rng.chance(enemy.statusHit.chance)) {
+          applyStatus(game.player, enemy.statusHit.id, enemy.statusHit.turns, enemy.name);
+        }
+
+        if (enemy.trait === "ransom" && rng.chance(0.18) && game.player.gold >= 50) {
+          game.player.gold -= 50;
+          pushLog("Ransomware stole 50G", null);
+        }
+
+        if (enemy.trait === "blind" && rng.chance(0.15)) {
+          applyStatus(game.player, "Shock", 2, enemy.name);
+        }
+
+        if (game.player.hp <= 0) {
+          setMode(STATES.GAME_OVER);
+          renderModal();
+        }
+      }
+
+      function openSkillSheet() {
+        if (!game.player) return;
+        game.sheet = { type: "skills" };
+        renderSheet();
+      }
+
+      function openInventorySheet(inBattle = false) {
+        if (!game.player) return;
+        game.sheet = { type: "inventory", inBattle };
+        renderSheet();
+      }
+
+      function openMapSheet() {
+        if (!game.player || !game.dungeon) return;
+        game.sheet = { type: "map" };
+        renderSheet();
+      }
+
+      function openShopSheet() {
+        if (!game.player || !game.dungeon) return;
+        const key = coordKey(game.player.x, game.player.y);
+        const stock = game.dungeon.shopStock[key];
+        if (!stock) {
+          pushLog("SHOP OFFLINE", null);
+          return;
+        }
+        game.sheet = { type: "shop", key };
+        renderSheet();
+      }
+
+      function closeSheet() {
+        game.sheet = null;
+        renderSheet();
+      }
+
+      function renderSheet() {
+        const sheet = game.sheet;
+        if (!sheet) {
+          dom.sheet.hidden = true;
+          dom.sheet.innerHTML = "";
+          return;
+        }
+        dom.sheet.hidden = false;
+
+        if (sheet.type === "inventory") {
+          const rows = [...game.player.inventory].sort((a, b) => a.id.localeCompare(b.id));
+          dom.sheet.innerHTML = `
+            <div class="sheet-head"><h3>BAG</h3><button type="button" data-sheet-close>×</button></div>
+            <div class="list" id="sheetList"></div>
+          `;
+          const list = dom.sheet.querySelector("#sheetList");
+          if (rows.length === 0) {
+            const empty = document.createElement("div");
+            empty.className = "muted";
+            empty.textContent = "EMPTY";
+            list.appendChild(empty);
+          }
+          for (const stack of rows) {
+            const item = ITEM_DEFS[stack.id];
+            if (!item) continue;
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "list-btn";
+            btn.dataset.useItem = stack.id;
+            btn.dataset.inBattle = sheet.inBattle ? "1" : "0";
+            btn.innerHTML = `
+              <span>${item.name}<small>${item.desc}</small></span>
+              <span class="tag">x${stack.qty}</span>
+            `;
+            if (sheet.inBattle && item.use.save) btn.disabled = true;
+            list.appendChild(btn);
+          }
+        } else if (sheet.type === "skills") {
+          dom.sheet.innerHTML = `
+            <div class="sheet-head"><h3>SKILLS</h3><button type="button" data-sheet-close>×</button></div>
+            <div class="list" id="sheetList"></div>
+          `;
+          const list = dom.sheet.querySelector("#sheetList");
+          for (const id of game.player.skills) {
+            const skill = SKILL_DEFS[id];
+            if (!skill) continue;
+            const cost = getEffectiveSkillCost(skill);
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "list-btn";
+            btn.dataset.castSkill = id;
+            btn.disabled = game.player.mp < cost;
+            btn.innerHTML = `
+              <span>${skill.name}<small>${skill.desc}</small></span>
+              <span class="tag">MP ${cost}</span>
+            `;
+            list.appendChild(btn);
+          }
+        } else if (sheet.type === "shop") {
+          const stock = game.dungeon.shopStock[sheet.key] || [];
+          dom.sheet.innerHTML = `
+            <div class="sheet-head"><h3>SHOP</h3><button type="button" data-sheet-close>×</button></div>
+            <div class="list" id="sheetList"></div>
+          `;
+          const list = dom.sheet.querySelector("#sheetList");
+          for (const row of stock) {
+            const item = ITEM_DEFS[row.id];
+            if (!item) continue;
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "list-btn";
+            btn.dataset.buyItem = row.id;
+            btn.disabled = row.sold || game.player.gold < row.price;
+            btn.innerHTML = `
+              <span>${item.name}<small>${item.desc}</small></span>
+              <span class="tag">${row.sold ? "SOLD" : `G ${row.price}`}</span>
+            `;
+            list.appendChild(btn);
+          }
+        } else if (sheet.type === "map") {
+          dom.sheet.innerHTML = `
+            <div class="sheet-head"><h3>MAP</h3><button type="button" data-sheet-close>×</button></div>
+            <div class="list" style="overflow:hidden;">
+              <canvas id="fullMapCanvas" class="map-full" width="320" height="220"></canvas>
+              <div class="muted">EXPLORED / ENEMY / SPECIAL</div>
+            </div>
+          `;
+          drawFullMap(dom.sheet.querySelector("#fullMapCanvas"));
+        }
+      }
+
+      function drawFullMap(canvas) {
+        const map = game.dungeon;
+        if (!map || !canvas) return;
+        const c = canvas.getContext("2d");
+        const dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = Math.max(1, Math.floor(rect.width * dpr));
+        canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+        c.setTransform(1,0,0,1,0,0);
+        c.clearRect(0,0,canvas.width,canvas.height);
+        c.scale(dpr, dpr);
+        const w = rect.width;
+        const h = rect.height;
+        c.fillStyle = "#05070e";
+        c.fillRect(0,0,w,h);
+        const tileW = w / map.w;
+        const tileH = h / map.h;
+        for (let y = 0; y < map.h; y += 1) {
+          for (let x = 0; x < map.w; x += 1) {
+            if (!map.explored[y][x]) continue;
+            const tile = map.tiles[y][x];
+            let color = "rgba(170,190,255,0.08)";
+            if (tile === TILE.WALL) color = "rgba(255,255,255,0.03)";
+            if (tile === TILE.CHEST) color = "#ffb347";
+            if (tile === TILE.SHOP) color = "#2cd5ff";
+            if (tile === TILE.SHRINE) color = "#a080ff";
+            if (tile === TILE.STAIRS) color = "#ffffff";
+            c.fillStyle = color;
+            c.fillRect(x * tileW, y * tileH, Math.ceil(tileW), Math.ceil(tileH));
+          }
+        }
+        for (const e of map.enemies) {
+          if (e.hp <= 0) continue;
+          if (!map.explored[e.y]?.[e.x]) continue;
+          c.fillStyle = e.isBoss ? "#ff4f7d" : e.color;
+          c.fillRect(e.x * tileW, e.y * tileH, Math.max(1, tileW * 0.9), Math.max(1, tileH * 0.9));
+        }
+        c.fillStyle = game.player.color;
+        c.fillRect(game.player.x * tileW, game.player.y * tileH, Math.max(1, tileW), Math.max(1, tileH));
+        c.strokeStyle = "rgba(255,255,255,0.25)";
+        c.strokeRect(0.5, 0.5, w - 1, h - 1);
+      }
+
+      function renderBattle() {
+        const enemy = getBattleEnemy();
+        if (game.mode !== STATES.BATTLE || !enemy) {
+          dom.battlePanel.hidden = true;
+          return;
+        }
+        dom.battlePanel.hidden = false;
+        dom.enemyName.textContent = enemy.name;
+        const weak = enemy.revealWeak ? ` W:${enemy.weak || "-"}` : "";
+        dom.enemyMeta.textContent = `HP ${enemy.hp}/${enemy.maxHp} ATK ${enemy.atk} DEF ${enemy.def}${weak}`;
+        dom.battleHint.textContent = enemy.isBoss ? `BOSS P${enemy.phase || 1}` : `R${game.battle.rounds}`;
+        dom.enemyHpLabel.textContent = `${fmt(enemy.hp)}/${fmt(enemy.maxHp)}`;
+        dom.enemyHpBar.style.width = `${clamp((enemy.hp / enemy.maxHp) * 100, 0, 100)}%`;
+      }
+
+      function renderHUD() {
+        const p = game.player;
+        if (!p) {
+          dom.hpLabel.textContent = "0/0";
+          dom.mpLabel.textContent = "0/0";
+          dom.expLabel.textContent = "0/0";
+          dom.hpBar.style.width = "0%";
+          dom.mpBar.style.width = "0%";
+          dom.expBar.style.width = "0%";
+          dom.metaLevel.textContent = "LV0";
+          dom.metaFloor.textContent = "F0/50";
+          dom.metaGold.textContent = "G0";
+          dom.themeName.textContent = "-";
+          dom.themeMeta.textContent = "-";
+          dom.statusChips.innerHTML = "";
+          return;
+        }
+        dom.hpLabel.textContent = `${fmt(p.hp)}/${fmt(p.maxHp)}`;
+        dom.mpLabel.textContent = `${fmt(p.mp)}/${fmt(p.maxMp)}`;
+        dom.expLabel.textContent = `${fmt(p.exp)}/${fmt(p.nextExp)}`;
+        dom.hpBar.style.width = `${clamp((p.hp / p.maxHp) * 100, 0, 100)}%`;
+        dom.mpBar.style.width = `${clamp((p.mp / p.maxMp) * 100, 0, 100)}%`;
+        dom.expBar.style.width = `${clamp((p.exp / p.nextExp) * 100, 0, 100)}%`;
+        dom.metaLevel.textContent = `LV${p.level}`;
+        dom.metaFloor.textContent = `F${p.floor}/50`;
+        dom.metaGold.textContent = `G${fmt(p.gold)}`;
+        dom.audioBtn.style.opacity = audio.enabled ? "1" : "0.45";
+
+        if (game.dungeon) {
+          dom.themeName.textContent = game.dungeon.theme.name;
+          dom.themeMeta.textContent = `${game.dungeon.theme.id} / ${game.dungeon.enemies.length}E`;
+        } else {
+          dom.themeName.textContent = "-";
+          dom.themeMeta.textContent = "-";
+        }
+
+        const chips = [];
+        chips.push(`${p.name}`);
+        chips.push(p.passive);
+        if (p.combo > 1) chips.push(`COMBO x${(1 + Math.min(0.5, p.combo * 0.05)).toFixed(2)}`);
+        if (p.tokenDiscountStacks > 0) chips.push(`TOK-${p.tokenDiscountStacks * 10}%`);
+        for (const s of p.statuses) chips.push(`${s.id}:${s.turns}`);
+        for (const b of p.buffs) {
+          if (b.id === "gradient_boost") chips.push(`GBOOST`);
+          else chips.push(`${b.id.toUpperCase()}:${b.turns}`);
+        }
+        dom.statusChips.innerHTML = "";
+        for (const text of chips.slice(0, 8)) {
+          const el = document.createElement("span");
+          el.className = "chip";
+          el.textContent = text;
+          dom.statusChips.appendChild(el);
+        }
+      }
+
+      function renderMiniMap() {
+        const map = game.dungeon;
+        const canvas = dom.miniMap;
+        const c = miniCtx;
+        const w = canvas.width;
+        const h = canvas.height;
+        c.clearRect(0, 0, w, h);
+        c.fillStyle = "rgba(8,12,24,0.94)";
+        c.fillRect(0, 0, w, h);
+        if (!map || !game.player) return;
+        const tileW = w / map.w;
+        const tileH = h / map.h;
+        for (let y = 0; y < map.h; y += 1) {
+          for (let x = 0; x < map.w; x += 1) {
+            if (!map.explored[y][x]) continue;
+            const vis = map.visible[y][x];
+            const tile = map.tiles[y][x];
+            let color = vis ? "rgba(160, 220, 255, 0.28)" : "rgba(140, 150, 190, 0.12)";
+            if (tile === TILE.WALL) color = vis ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.03)";
+            if (tile === TILE.CHEST) color = "rgba(255,179,71,0.88)";
+            if (tile === TILE.SHOP) color = "rgba(44,213,255,0.9)";
+            if (tile === TILE.SHRINE) color = "rgba(160,128,255,0.92)";
+            if (tile === TILE.STAIRS) color = "rgba(255,255,255,0.94)";
+            c.fillStyle = color;
+            c.fillRect(x * tileW, y * tileH, Math.max(1, tileW), Math.max(1, tileH));
+          }
+        }
+        for (const e of map.enemies) {
+          if (e.hp <= 0) continue;
+          if (!map.explored[e.y]?.[e.x]) continue;
+          c.fillStyle = e.isBoss ? "#ff5178" : "#ff8a66";
+          c.fillRect(e.x * tileW, e.y * tileH, Math.max(1, tileW), Math.max(1, tileH));
+        }
+        c.fillStyle = game.player.color;
+        c.fillRect(game.player.x * tileW, game.player.y * tileH, Math.max(1, tileW * 1.4), Math.max(1, tileH * 1.4));
+        c.strokeStyle = "rgba(255,255,255,0.2)";
+        c.strokeRect(0.5, 0.5, w - 1, h - 1);
+      }
+
+      function tileColor(map, tile, visible) {
+        const theme = map.theme;
+        const floorColor = hexToRgb(theme.floor);
+        const wallColor = hexToRgb(theme.walls);
+        const accent = theme.accent === "rainbow" ? `hsl(${(game.frameTime * 40) % 360}deg 90% 65%)` : theme.accent;
+        if (tile === TILE.WALL) {
+          return visible ? `rgb(${wallColor.r},${wallColor.g},${wallColor.b})` : `rgba(${wallColor.r},${wallColor.g},${wallColor.b},0.45)`;
+        }
+        if (tile === TILE.STAIRS) return visible ? "#dff2ff" : "rgba(223,242,255,0.35)";
+        if (tile === TILE.CHEST) return visible ? "#f7b34b" : "rgba(247,179,75,0.35)";
+        if (tile === TILE.SHRINE) return visible ? "#a080ff" : "rgba(160,128,255,0.35)";
+        if (tile === TILE.SHOP) return visible ? "#2cd5ff" : "rgba(44,213,255,0.35)";
+        if (tile === TILE.LAVA) return visible ? "#ff5d43" : "rgba(255,93,67,0.4)";
+        if (tile === TILE.WATER) return visible ? "#357bff" : "rgba(53,123,255,0.35)";
+        return visible ? `rgb(${floorColor.r},${floorColor.g},${floorColor.b})` : `rgba(${floorColor.r},${floorColor.g},${floorColor.b},0.35)`;
+      }
+
+      function drawEntityShape(c, enemy, x, y, size) {
+        c.save();
+        c.translate(x, y);
+        c.fillStyle = enemy.isBoss ? "#ff5178" : enemy.color;
+        c.strokeStyle = "rgba(255,255,255,0.5)";
+        c.lineWidth = Math.max(1, size * 0.08);
+        const s = size * 0.42;
+        if (enemy.isBoss) {
+          c.beginPath();
+          const spikes = 8;
+          for (let i = 0; i < spikes * 2; i += 1) {
+            const a = (Math.PI * i) / spikes;
+            const r = i % 2 === 0 ? s : s * 0.55;
+            const px = Math.cos(a) * r;
+            const py = Math.sin(a) * r;
+            if (i === 0) c.moveTo(px, py);
+            else c.lineTo(px, py);
+          }
+          c.closePath();
+          c.fill();
+          c.stroke();
+        } else if (enemy.kind === "bug") {
+          c.fillRect(-s * 0.7, -s * 0.6, s * 1.4, s * 1.2);
+          c.strokeRect(-s * 0.7, -s * 0.6, s * 1.4, s * 1.2);
+        } else if (enemy.kind === "virus") {
+          c.beginPath();
+          c.moveTo(0, -s);
+          c.lineTo(s, s * 0.7);
+          c.lineTo(-s, s * 0.7);
+          c.closePath();
+          c.fill();
+          c.stroke();
+        } else {
+          c.beginPath();
+          c.moveTo(-s, -s * 0.2);
+          c.quadraticCurveTo(0, -s, s, -s * 0.1);
+          c.quadraticCurveTo(s * 0.4, s, -s, s * 0.6);
+          c.closePath();
+          c.fill();
+          c.stroke();
+        }
+        c.restore();
+      }
+
+      function hexToRgb(hex) {
+        if (!hex || hex === "rainbow") return { r: 255, g: 255, b: 255 };
+        const h = hex.replace("#", "");
+        const int = parseInt(h.length === 3 ? h.split("").map((c) => c + c).join("") : h, 16);
+        return { r: (int >> 16) & 255, g: (int >> 8) & 255, b: int & 255 };
+      }
+
+      function resizeCanvasToDisplay(canvas, context, width, height) {
+        const dpr = window.devicePixelRatio || 1;
+        const dw = Math.max(1, Math.floor(width * dpr));
+        const dh = Math.max(1, Math.floor(height * dpr));
+        if (canvas.width !== dw || canvas.height !== dh) {
+          canvas.width = dw;
+          canvas.height = dh;
+        }
+        context.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      function renderCanvas() {
+        const rect = dom.gameCanvas.getBoundingClientRect();
+        if (rect.width <= 0 || rect.height <= 0) return;
+        resizeCanvasToDisplay(dom.gameCanvas, ctx, rect.width, rect.height);
+        const w = rect.width;
+        const h = rect.height;
+
+        ctx.fillStyle = "#04070d";
+        ctx.fillRect(0, 0, w, h);
+
+        if (!game.dungeon || !game.player) {
+          drawTitleBackground(ctx, w, h);
+          return;
+        }
+
+        const map = game.dungeon;
+        const player = game.player;
+        const tileSize = Math.floor(Math.min(w / VIEW_COLS, h / VIEW_ROWS));
+        const gridW = tileSize * VIEW_COLS;
+        const gridH = tileSize * VIEW_ROWS;
+        const originX = Math.floor((w - gridW) / 2);
+        const originY = Math.floor((h - gridH) / 2);
+
+        const shakeX = game.cameraShake ? rng.float(-game.cameraShake, game.cameraShake) * 0.12 : 0;
+        const shakeY = game.cameraShake ? rng.float(-game.cameraShake, game.cameraShake) * 0.12 : 0;
+        if (game.cameraShake > 0) game.cameraShake = Math.max(0, game.cameraShake - 0.8);
+
+        ctx.save();
+        ctx.translate(shakeX, shakeY);
+
+        const camX = player.x - Math.floor(VIEW_COLS / 2);
+        const camY = player.y - Math.floor(VIEW_ROWS / 2);
+
+        const accent = map.theme.accent === "rainbow" ? `hsl(${(game.frameTime * 55) % 360}deg 90% 65%)` : map.theme.accent;
+        const floorRgb = hexToRgb(map.theme.floor);
+        ctx.fillStyle = `rgba(${floorRgb.r},${floorRgb.g},${floorRgb.b},0.75)`;
+        ctx.fillRect(originX - 2, originY - 2, gridW + 4, gridH + 4);
+        ctx.shadowColor = accent;
+        ctx.shadowBlur = 18;
+        ctx.strokeStyle = `rgba(255,255,255,0.08)`;
+        ctx.strokeRect(originX + 0.5, originY + 0.5, gridW - 1, gridH - 1);
+        ctx.shadowBlur = 0;
+
+        for (let vy = 0; vy < VIEW_ROWS; vy += 1) {
+          for (let vx = 0; vx < VIEW_COLS; vx += 1) {
+            const mx = camX + vx;
+            const my = camY + vy;
+            const px = originX + vx * tileSize;
+            const py = originY + vy * tileSize;
+            if (!inBounds(map, mx, my)) {
+              ctx.fillStyle = "#000";
+              ctx.fillRect(px, py, tileSize, tileSize);
+              continue;
+            }
+            const visible = map.visible[my][mx];
+            const explored = map.explored[my][mx];
+            if (!explored) {
+              ctx.fillStyle = "#000";
+              ctx.fillRect(px, py, tileSize, tileSize);
+              continue;
+            }
+            const tile = map.tiles[my][mx];
+            ctx.fillStyle = tileColor(map, tile, visible);
+            ctx.fillRect(px, py, tileSize, tileSize);
+            if (tile === TILE.SHRINE && visible) {
+              ctx.fillStyle = `rgba(255,255,255,0.32)`;
+              ctx.beginPath();
+              ctx.arc(px + tileSize * 0.5, py + tileSize * 0.5, tileSize * 0.18 + Math.sin(game.frameTime * 6 + vx + vy) * 1.2, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            if (!visible) {
+              ctx.fillStyle = "rgba(0,0,0,0.6)";
+              ctx.fillRect(px, py, tileSize, tileSize);
+            }
+            ctx.strokeStyle = "rgba(255,255,255,0.03)";
+            ctx.strokeRect(px + 0.5, py + 0.5, tileSize - 1, tileSize - 1);
+          }
+        }
+
+        for (const enemy of map.enemies) {
+          if (enemy.hp <= 0) continue;
+          const vx = enemy.x - camX;
+          const vy = enemy.y - camY;
+          if (vx < 0 || vx >= VIEW_COLS || vy < 0 || vy >= VIEW_ROWS) continue;
+          if (!map.explored[enemy.y][enemy.x]) continue;
+          const px = originX + vx * tileSize + tileSize * 0.5;
+          const py = originY + vy * tileSize + tileSize * 0.5;
+          const visible = map.visible[enemy.y][enemy.x];
+          ctx.globalAlpha = visible ? 1 : 0.45;
+          if (visible) {
+            ctx.shadowColor = enemy.isBoss ? "#ff5178" : enemy.color;
+            ctx.shadowBlur = enemy.isBoss ? 18 : 10;
+          }
+          drawEntityShape(ctx, enemy, px, py, tileSize);
+          ctx.shadowBlur = 0;
+          ctx.globalAlpha = 1;
+          if (visible && tileSize >= 18) {
+            const hpRatio = enemy.hp / enemy.maxHp;
+            ctx.fillStyle = "rgba(0,0,0,0.55)";
+            ctx.fillRect(px - tileSize * 0.34, py - tileSize * 0.45, tileSize * 0.68, 3);
+            ctx.fillStyle = enemy.isBoss ? "#ff5178" : "#ffad7a";
+            ctx.fillRect(px - tileSize * 0.34, py - tileSize * 0.45, tileSize * 0.68 * hpRatio, 3);
+          }
+        }
+
+        const pVx = player.x - camX;
+        const pVy = player.y - camY;
+        const pPx = originX + pVx * tileSize + tileSize * 0.5;
+        const pPy = originY + pVy * tileSize + tileSize * 0.5;
+
+        ctx.shadowColor = player.color;
+        ctx.shadowBlur = 20;
+        ctx.fillStyle = player.color;
+        ctx.beginPath();
+        ctx.arc(pPx, pPy, tileSize * 0.28, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "rgba(255,255,255,0.75)";
+        ctx.beginPath();
+        ctx.arc(pPx, pPy, tileSize * 0.11, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        if (game.mode === STATES.BATTLE) {
+          ctx.fillStyle = "rgba(255,0,80,0.08)";
+          ctx.fillRect(originX, originY, gridW, gridH);
+        }
+
+        ctx.restore();
+      }
+
+      function drawTitleBackground(c, w, h) {
+        const g = c.createLinearGradient(0, 0, w, h);
+        g.addColorStop(0, "#070b14");
+        g.addColorStop(1, "#120d1e");
+        c.fillStyle = g;
+        c.fillRect(0, 0, w, h);
+        for (let i = 0; i < 40; i += 1) {
+          const x = (Math.sin(i * 42.3 + game.frameTime * 0.8) * 0.5 + 0.5) * w;
+          const y = (Math.cos(i * 17.2 + game.frameTime * 0.6) * 0.5 + 0.5) * h;
+          c.fillStyle = i % 2 ? "rgba(44,213,255,0.08)" : "rgba(160,128,255,0.08)";
+          c.beginPath();
+          c.arc(x, y, 2 + (i % 3), 0, Math.PI * 2);
+          c.fill();
+        }
+      }
+
+      function renderModal() {
+        const mode = game.mode;
+        if (![STATES.TITLE, STATES.CLASS_SELECT, STATES.STORY, STATES.GAME_OVER, STATES.VICTORY].includes(mode)) {
+          dom.modal.hidden = true;
+          dom.modalBody.innerHTML = "";
+          dom.modalFooter.innerHTML = "";
+          return;
+        }
+        dom.modal.hidden = false;
+
+        if (mode === STATES.TITLE) {
+          const hasSave = Boolean(loadSaveRaw());
+          dom.modalTitle.textContent = "SILICON ROGUE";
+          dom.modalSub.textContent = "AI CYBER ROGUELIKE";
+          dom.modalBody.innerHTML = `
+            <div class="title-stack">
+              <section class="title-logo">
+                <p class="main-title">SILICON ROGUE</p>
+                <p class="minor"><span>50 FLOORS</span><span>CANVAS / AUDIO / SAVE</span></p>
+                <div class="stats-grid">
+                  <div class="stat-box"><span class="k">Mode</span><span class="v">Rogue</span></div>
+                  <div class="stat-box"><span class="k">Boss</span><span class="v">10</span></div>
+                  <div class="stat-box"><span class="k">Class</span><span class="v">5</span></div>
+                  <div class="stat-box"><span class="k">Run</span><span class="v">1P</span></div>
+                </div>
+              </section>
+              <div class="story-line"><strong>Swipe / D-pad</strong> to move. <strong>A</strong> to interact. Battle opens on contact.</div>
+              <div class="story-line"><strong>BAG / SK / MAP</strong> for quick overlays. Shrine auto-heals & save.</div>
+            </div>
+          `;
+          dom.modalFooter.innerHTML = "";
+          const newBtn = document.createElement("button");
+          newBtn.type = "button";
+          newBtn.className = "btn";
+          newBtn.textContent = "NEW RUN";
+          newBtn.dataset.modalAction = "to-class";
+          dom.modalFooter.appendChild(newBtn);
+          const contBtn = document.createElement("button");
+          contBtn.type = "button";
+          contBtn.className = "ghost-btn";
+          contBtn.textContent = hasSave ? "CONTINUE" : "NO SAVE";
+          contBtn.disabled = !hasSave;
+          contBtn.dataset.modalAction = "continue";
+          dom.modalFooter.appendChild(contBtn);
+        } else if (mode === STATES.CLASS_SELECT) {
+          dom.modalTitle.textContent = "CLASS LINK";
+          dom.modalSub.textContent = "SELECT CORE";
+          const cards = Object.values(CLASS_DEFS)
+            .map((cls) => {
+              const selected = cls.id === game.selectedClass ? "selected" : "";
+              return `
+                <button class="class-card ${selected}" type="button" data-class-select="${cls.id}">
+                  <div class="name"><span class="dot" style="background:${cls.color}"></span>${cls.name}</div>
+                  <div class="role">${cls.role}</div>
+                  <div class="tiny">
+                    <span>HP ${cls.baseStats.hp}</span>
+                    <span>MP ${cls.baseStats.mp}</span>
+                    <span>AGI ${cls.baseStats.agi}</span>
+                  </div>
+                  <div class="muted">${cls.passiveText}</div>
+                </button>
+              `;
+            })
+            .join("");
+          const sel = CLASS_DEFS[game.selectedClass];
+          dom.modalBody.innerHTML = `
+            <div class="class-grid">${cards}</div>
+            <div class="story-line"><strong>${sel.name}</strong> / ${sel.role}<br>${sel.passive} : ${sel.passiveText}</div>
+          `;
+          dom.modalFooter.innerHTML = `
+            <button type="button" class="ghost-btn" data-modal-action="back-title">BACK</button>
+            <button type="button" class="btn" data-modal-action="start-story">DIVE</button>
+          `;
+        } else if (mode === STATES.STORY) {
+          const cls = CLASS_DEFS[game.pendingStory || game.selectedClass];
+          dom.modalTitle.textContent = "BOOT SEQUENCE";
+          dom.modalSub.textContent = cls.name;
+          dom.modalBody.innerHTML = `
+            <div class="story-panel">
+              <div class="story-line"><strong>${cls.name}</strong> consciousness injected into a collapsing megadungeon.</div>
+              <div class="story-line">50 floors. Boss every 5 floors. Shrine restores. Final signal: <strong>AGI PARADOX</strong>.</div>
+              <div class="story-line">Element hits matter. Logic / Neural / Quantum etc. Use skills, chests, and quick saves.</div>
+              <div class="stats-grid">
+                <div class="stat-box"><span class="k">HP</span><span class="v">${cls.baseStats.hp}</span></div>
+                <div class="stat-box"><span class="k">MP</span><span class="v">${cls.baseStats.mp}</span></div>
+                <div class="stat-box"><span class="k">ATK</span><span class="v">${cls.baseStats.atk}</span></div>
+                <div class="stat-box"><span class="k">INT</span><span class="v">${cls.baseStats.int}</span></div>
+              </div>
+            </div>
+          `;
+          dom.modalFooter.innerHTML = `
+            <button type="button" class="ghost-btn" data-modal-action="back-class">CLASS</button>
+            <button type="button" class="btn" data-modal-action="start-run">START</button>
+          `;
+        } else if (mode === STATES.GAME_OVER) {
+          dom.modalTitle.textContent = "SYSTEM DOWN";
+          dom.modalSub.textContent = `${game.player?.name || "-"} // FLOOR ${game.player?.floor || 0}`;
+          const p = game.player;
+          dom.modalBody.innerHTML = `
+            <div class="story-panel">
+              <div class="title-logo" style="background: radial-gradient(circle at 20% 10%, rgba(255,81,120,0.18), transparent 50%), rgba(8,12,24,0.94);">
+                <p class="main-title" style="font-size:18px;">GAME OVER</p>
+                <p class="minor"><span>FLOOR ${p.floor}</span><span>LV ${p.level}</span></p>
+                <div class="stats-grid">
+                  <div class="stat-box"><span class="k">Kills</span><span class="v">${p.runStats.enemiesKilled}</span></div>
+                  <div class="stat-box"><span class="k">DMG</span><span class="v">${Math.round(p.runStats.damageDealt)}</span></div>
+                  <div class="stat-box"><span class="k">Taken</span><span class="v">${Math.round(p.runStats.damageTaken)}</span></div>
+                  <div class="stat-box"><span class="k">Gold</span><span class="v">${Math.round(p.runStats.goldEarned)}</span></div>
+                </div>
+              </div>
+            </div>
+          `;
+          dom.modalFooter.innerHTML = `
+            <button type="button" class="ghost-btn" data-modal-action="back-title">TITLE</button>
+            <button type="button" class="btn" data-modal-action="retry-class">RETRY</button>
+          `;
+        } else if (mode === STATES.VICTORY) {
+          const p = game.player;
+          dom.modalTitle.textContent = "CORE PURGED";
+          dom.modalSub.textContent = "AGI PARADOX // OFFLINE";
+          dom.modalBody.innerHTML = `
+            <div class="story-panel">
+              <section class="title-logo" style="background: radial-gradient(circle at 20% 10%, rgba(44,213,255,0.2), transparent 50%), rgba(8,12,24,0.94);">
+                <p class="main-title" style="font-size:18px;">VICTORY</p>
+                <p class="minor"><span>${p.name}</span><span>LV ${p.level}</span></p>
+                <div class="stats-grid">
+                  <div class="stat-box"><span class="k">Floor</span><span class="v">50</span></div>
+                  <div class="stat-box"><span class="k">Kills</span><span class="v">${p.runStats.enemiesKilled}</span></div>
+                  <div class="stat-box"><span class="k">Items</span><span class="v">${p.runStats.itemsUsed}</span></div>
+                  <div class="stat-box"><span class="k">Gold</span><span class="v">${Math.round(p.gold)}</span></div>
+                </div>
+              </section>
+              <div class="story-line"><strong>Signal stabilized.</strong> The dungeon remains, but your core survives.</div>
+            </div>
+          `;
+          dom.modalFooter.innerHTML = `
+            <button type="button" class="ghost-btn" data-modal-action="back-title">TITLE</button>
+            <button type="button" class="btn" data-modal-action="new-plus">NEW RUN</button>
+          `;
+        }
+      }
+
+      function renderAll() {
+        renderHUD();
+        renderBattle();
+        renderSheet();
+        renderModal();
+        renderLog();
+        renderMiniMap();
+        renderModeChip();
+      }
+
+      function toggleAudio() {
+        audio.setEnabled(!audio.enabled);
+        showToast(audio.enabled ? "AUDIO ON" : "AUDIO OFF", 700);
+        renderHUD();
+      }
+
+      function openByControl(control) {
+        audio.unlock();
+        if (control === "act") {
+          interactAction();
+        } else if (control === "skill") {
+          if (game.mode === STATES.BATTLE) openSkillSheet();
+          else if (game.mode === STATES.DUNGEON) openSkillSheet();
+        } else if (control === "bag") {
+          if (game.mode === STATES.BATTLE) openInventorySheet(true);
+          else if (game.mode === STATES.DUNGEON) openInventorySheet(false);
+        } else if (control === "map") {
+          if (game.mode === STATES.DUNGEON) {
+            if (game.sheet?.type === "map") closeSheet();
+            else openMapSheet();
+          }
+        } else if (control === "wait") {
+          if (game.mode === STATES.BATTLE) battleAction("wait");
+          else if (game.mode === STATES.DUNGEON) {
+            pushLog("WAIT", null);
+            consumeTurn();
+          }
+        } else if (control === "save") {
+          if (game.mode >= STATES.DUNGEON && game.mode < STATES.GAME_OVER) {
+            saveGame();
+            pushLog("QUICK SAVE", null);
+            showToast("SAVED", 700);
+          }
+        }
+        renderAll();
+      }
+
+      function handleSheetClick(event) {
+        const closeBtn = event.target.closest("[data-sheet-close]");
+        if (closeBtn) {
+          closeSheet();
+          return;
+        }
+        const useBtn = event.target.closest("[data-use-item]");
+        if (useBtn) {
+          const itemId = useBtn.dataset.useItem;
+          const inBattle = useBtn.dataset.inBattle === "1";
+          if (useItem(itemId, inBattle)) {
+            if (inBattle && game.mode === STATES.BATTLE) {
+              const enemy = getBattleEnemy();
+              if (enemy) afterPlayerBattleAction(enemy, true);
+            }
+            if (!inBattle) {
+              closeSheet();
+              renderAll();
+            } else {
+              game.sheet = null;
+              renderSheet();
+            }
+          }
+          return;
+        }
+        const castBtn = event.target.closest("[data-cast-skill]");
+        if (castBtn) {
+          const skillId = castBtn.dataset.castSkill;
+          game.sheet = null;
+          renderSheet();
+          if (game.mode === STATES.BATTLE) {
+            applySkill(skillId);
+          } else {
+            pushLog("Battle-only skill cast", null);
+          }
+          renderAll();
+          return;
+        }
+        const buyBtn = event.target.closest("[data-buy-item]");
+        if (buyBtn) {
+          const itemId = buyBtn.dataset.buyItem;
+          const key = game.sheet?.key;
+          const stock = key ? game.dungeon.shopStock[key] : null;
+          const row = stock?.find((s) => s.id === itemId && !s.sold);
+          if (!row) return;
+          if (game.player.gold < row.price) {
+            pushLog("NO GOLD", null);
+            return;
+          }
+          game.player.gold -= row.price;
+          row.sold = true;
+          addItem(game.player, itemId, 1);
+          pushLog(`BUY ${ITEM_DEFS[itemId].name}`, "item_get");
+          renderAll();
+          renderSheet();
+          autoSave();
+        }
+      }
+
+      function handleModalClick(event) {
+        const classBtn = event.target.closest("[data-class-select]");
+        if (classBtn) {
+          game.selectedClass = classBtn.dataset.classSelect;
+          renderModal();
+          return;
+        }
+        const actionBtn = event.target.closest("[data-modal-action]");
+        if (!actionBtn) return;
+        const action = actionBtn.dataset.modalAction;
+        audio.unlock();
+        if (action === "to-class") {
+          setMode(STATES.CLASS_SELECT);
+          renderModal();
+        } else if (action === "continue") {
+          loadGame();
+        } else if (action === "back-title") {
+          game.sheet = null;
+          game.battle = null;
+          setMode(STATES.TITLE);
+          renderAll();
+        } else if (action === "start-story") {
+          beginStory(game.selectedClass);
+        } else if (action === "back-class") {
+          setMode(STATES.CLASS_SELECT);
+          renderModal();
+        } else if (action === "start-run") {
+          newRun(game.pendingStory || game.selectedClass);
+        } else if (action === "retry-class") {
+          setMode(STATES.CLASS_SELECT);
+          renderModal();
+        } else if (action === "new-plus") {
+          setMode(STATES.CLASS_SELECT);
+          renderModal();
+        }
+      }
+
+      function handleBattleClick(event) {
+        const btn = event.target.closest("[data-battle-action]");
+        if (!btn) return;
+        audio.unlock();
+        battleAction(btn.dataset.battleAction);
+      }
+
+      function globalPointerDown() {
+        audio.unlock();
+      }
+
+      function bindControls() {
+        document.addEventListener("pointerdown", globalPointerDown, { passive: true });
+
+        document.querySelectorAll("[data-move]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            audio.unlock();
+            const [dx, dy] = btn.dataset.move.split(",").map(Number);
+            tryMove(dx, dy);
+            renderAll();
+          });
+        });
+
+        document.querySelectorAll("[data-control]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            openByControl(btn.dataset.control);
+          });
+        });
+
+        dom.audioBtn.addEventListener("click", () => {
+          toggleAudio();
+        });
+
+        dom.saveQuickBtn.addEventListener("click", () => {
+          openByControl("save");
+        });
+
+        dom.modal.addEventListener("click", handleModalClick);
+        dom.sheet.addEventListener("click", handleSheetClick);
+        dom.battlePanel.addEventListener("click", handleBattleClick);
+
+        window.addEventListener("keydown", (e) => {
+          if (e.repeat) return;
+          const key = e.key.toLowerCase();
+          if (["arrowup", "arrowdown", "arrowleft", "arrowright", " ", "enter", "i", "m", "k", "s", "escape", "w", "a", "d", "x"].includes(key)) {
+            e.preventDefault();
+          }
+          if (dom.modal && !dom.modal.hidden) {
+            if (key === "enter" || key === " ") {
+              const primary = dom.modalFooter.querySelector(".btn");
+              primary?.click();
+            } else if (key === "escape") {
+              const secondary = dom.modalFooter.querySelector(".ghost-btn");
+              secondary?.click();
+            }
+            return;
+          }
+          if (key === "arrowup" || key === "w") tryMove(0, -1);
+          else if (key === "arrowdown" || key === "x") tryMove(0, 1);
+          else if (key === "arrowleft" || key === "a") tryMove(-1, 0);
+          else if (key === "arrowright" || key === "d") tryMove(1, 0);
+          else if (key === " " || key === "enter") openByControl("act");
+          else if (key === "i") openByControl("bag");
+          else if (key === "k") openByControl("skill");
+          else if (key === "m") openByControl("map");
+          else if (key === "s") openByControl("save");
+          else if (key === "escape") {
+            if (game.sheet) closeSheet();
+            else if (game.mode === STATES.BATTLE) battleAction("run");
+          }
+          renderAll();
+        });
+
+        const gestureTarget = dom.gameCanvas;
+        gestureTarget.addEventListener("touchstart", (e) => {
+          if (!e.touches || e.touches.length !== 1) return;
+          const t = e.touches[0];
+          inputState.swipeStart = { x: t.clientX, y: t.clientY, time: performance.now() };
+          inputState.lastTouchPos = { x: t.clientX, y: t.clientY };
+          clearTimeout(inputState.longPressTimer);
+          inputState.longPressTimer = setTimeout(() => {
+            inspectCurrentTile();
+            renderAll();
+          }, 420);
+        }, { passive: true });
+
+        gestureTarget.addEventListener("touchmove", (e) => {
+          if (!e.touches || e.touches.length !== 1) return;
+          const t = e.touches[0];
+          inputState.lastTouchPos = { x: t.clientX, y: t.clientY };
+          const s = inputState.swipeStart;
+          if (!s) return;
+          const dx = t.clientX - s.x;
+          const dy = t.clientY - s.y;
+          if (Math.hypot(dx, dy) > 12) {
+            clearTimeout(inputState.longPressTimer);
+          }
+        }, { passive: true });
+
+        gestureTarget.addEventListener("touchend", (e) => {
+          clearTimeout(inputState.longPressTimer);
+          const s = inputState.swipeStart;
+          inputState.swipeStart = null;
+          if (!s) return;
+          const end = inputState.lastTouchPos || s;
+          const dx = end.x - s.x;
+          const dy = end.y - s.y;
+          const dist = Math.hypot(dx, dy);
+          if (dist < 16) return;
+          if (Math.abs(dx) > Math.abs(dy)) {
+            tryMove(Math.sign(dx), 0);
+          } else {
+            tryMove(0, Math.sign(dy));
+          }
+          renderAll();
+        }, { passive: true });
+      }
+
+      function getSavePayload(includeMetaVictory = false) {
+        if (!game.player || !game.dungeon) return null;
+        return {
+          version: "1.0",
+          timestamp: Date.now(),
+          mode: includeMetaVictory ? game.mode : STATES.DUNGEON,
+          selectedClass: game.selectedClass,
+          player: structuredCloneSafe(game.player),
+          dungeon: structuredCloneSafe(game.dungeon),
+          battle: structuredCloneSafe(game.battle),
+          logs: game.logs.slice(0, 6)
+        };
+      }
+
+      function structuredCloneSafe(value) {
+        return JSON.parse(JSON.stringify(value));
+      }
+
+      function saveGame(includeTerminal = false) {
+        const payload = getSavePayload(includeTerminal);
+        if (!payload) return false;
+        localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
+        return true;
+      }
+
+      function autoSave(includeTerminal = false) {
+        try {
+          saveGame(includeTerminal);
+        } catch (err) {
+          console.warn(err);
+        }
+      }
+
+      function loadSaveRaw() {
+        try {
+          const raw = localStorage.getItem(SAVE_KEY);
+          if (!raw) return null;
+          return JSON.parse(raw);
+        } catch {
+          return null;
+        }
+      }
+
+      function loadGame() {
+        const data = loadSaveRaw();
+        if (!data || !data.player || !data.dungeon) {
+          showToast("NO SAVE", 700);
+          return false;
+        }
+        game.selectedClass = data.selectedClass || data.player.id || "GPT";
+        game.player = data.player;
+        game.dungeon = data.dungeon;
+        game.battle = data.battle || null;
+        game.logs = Array.isArray(data.logs) ? data.logs : [];
+        game.sheet = null;
+        updateVisibility(game.dungeon, game.player);
+        if (data.mode === STATES.VICTORY) setMode(STATES.VICTORY);
+        else if (data.mode === STATES.GAME_OVER) setMode(STATES.GAME_OVER);
+        else if (game.battle) setMode(STATES.BATTLE);
+        else setMode(STATES.DUNGEON);
+        pushLog("RUN LOADED", "item_get");
+        renderAll();
+        return true;
+      }
+
+      function initTitle() {
+        setMode(STATES.TITLE);
+        renderAll();
+        audio.setTrack("title");
+      }
+
+      function performBattleCleanupIfEnemyMissing() {
+        if (game.mode === STATES.BATTLE && !getBattleEnemy()) {
+          endBattle(false);
+        }
+      }
+
+      function gameLoop(ts) {
+        if (!game.lastTs) game.lastTs = ts;
+        const dt = Math.min(0.1, (ts - game.lastTs) / 1000);
+        game.lastTs = ts;
+        game.frameTime += dt;
+        performBattleCleanupIfEnemyMissing();
+        renderCanvas();
+        requestAnimationFrame(gameLoop);
+      }
+
+      function setupResize() {
+        const ro = new ResizeObserver(() => {
+          renderAll();
+          renderCanvas();
+        });
+        ro.observe(dom.gameCanvas);
+        ro.observe(document.querySelector(".viewport-panel"));
+      }
+
+      function serializeDebug() {
+        return {
+          mode: game.mode,
+          floor: game.player?.floor,
+          pos: game.player ? { x: game.player.x, y: game.player.y } : null,
+          enemies: game.dungeon?.enemies?.length ?? 0,
+          sheet: game.sheet?.type || null,
+          battle: getBattleEnemy()?.name || null
+        };
+      }
+
+      window.__siliconRogue.debug = serializeDebug;
+      window.__siliconRogue.newRun = (classId = "GPT") => newRun(classId);
+      window.__siliconRogue.toFloor = (floor) => {
+        if (!game.player) newRun(game.selectedClass || "GPT");
+        game.player.floor = clamp(Math.floor(floor), 1, 50);
+        game.dungeon = generateDungeon(game.player.floor, game.player);
+        updateVisibility(game.dungeon, game.player);
+        setMode(STATES.DUNGEON);
+        renderAll();
+      };
+      window.__siliconRogue.save = saveGame;
+
+      bindControls();
+      setupResize();
+      renderLog();
+      initTitle();
+      requestAnimationFrame(gameLoop);
+    })();
+  </script>
+</body>
+</html>
