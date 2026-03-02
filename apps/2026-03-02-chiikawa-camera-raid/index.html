@@ -142,6 +142,22 @@
       animation: pulseRing 0.2s ease-out;
     }
 
+    #target.face-lock {
+      border-color: rgba(130, 248, 186, 0.94);
+      box-shadow:
+        0 0 0 1px rgba(0, 0, 0, 0.54),
+        0 0 26px rgba(113, 255, 194, 0.5),
+        inset 0 0 20px rgba(104, 250, 187, 0.3);
+    }
+
+    #target.face-miss {
+      border-color: rgba(255, 209, 124, 0.86);
+      box-shadow:
+        0 0 0 1px rgba(0, 0, 0, 0.54),
+        0 0 20px rgba(255, 189, 95, 0.35),
+        inset 0 0 14px rgba(255, 215, 136, 0.2);
+    }
+
     .fighter {
       position: absolute;
       left: 0;
@@ -638,11 +654,18 @@
       speed: 0.00115 + index * 0.00024,
       attackStart: -1,
       attackDuration: 360,
-      hitDone: false,
+      attackPattern: null,
+      nextHitIndex: 0,
       lean: index === 0 ? -11 : 10,
       radiusX: 112 + index * 30,
       radiusY: 76 + index * 22
     }));
+
+    const detectCanvas = document.createElement("canvas");
+    const detectCtx = detectCanvas.getContext("2d", { willReadFrequently: true });
+    const FACE_DETECT_WIDTH = 256;
+    const FACE_SAMPLE_MS = 110;
+    const FACE_LOST_MS = 880;
 
     const palette = [
       {
@@ -687,6 +710,45 @@
       }
     ];
 
+    const attackPatterns = [
+      {
+        label: "SLASH",
+        hitTimes: [0.54],
+        spreadX: 20,
+        spreadY: 16,
+        critChance: 0.22
+      },
+      {
+        label: "DOUBLE",
+        hitTimes: [0.45, 0.62],
+        spreadX: 24,
+        spreadY: 18,
+        critChance: 0.26
+      },
+      {
+        label: "TRIPLE",
+        hitTimes: [0.38, 0.53, 0.68],
+        spreadX: 28,
+        spreadY: 20,
+        critChance: 0.24
+      },
+      {
+        label: "SPIN",
+        hitTimes: [0.32, 0.45, 0.58, 0.71],
+        spreadX: 34,
+        spreadY: 24,
+        critChance: 0.3
+      },
+      {
+        label: "PIERCE",
+        hitTimes: [0.5, 0.64],
+        spreadX: 16,
+        spreadY: 12,
+        critChance: 0.48,
+        forceFirstCrit: true
+      }
+    ];
+
     let stream = null;
     let running = false;
     let animationId = 0;
@@ -704,6 +766,19 @@
     let cameraAttemptId = 0;
     let shakeUntil = 0;
     let shakePower = 0;
+    let desiredLockX = 0;
+    let desiredLockY = 0;
+    const faceState = {
+      detector: null,
+      mode: "init",
+      inFlight: false,
+      lastDetectAt: 0,
+      lastSeenAt: 0,
+      hasFace: false,
+      errorCount: 0,
+      x: 0,
+      y: 0
+    };
 
     function rand(min, max) {
       return Math.random() * (max - min) + min;
@@ -761,14 +836,204 @@
       const rect = battlefield.getBoundingClientRect();
       arenaWidth = rect.width;
       arenaHeight = rect.height;
-      centerX = rect.width * 0.5;
-      centerY = rect.height * 0.5;
+
+      if (!centerX && !centerY) {
+        centerX = rect.width * 0.5;
+        centerY = rect.height * 0.5;
+      }
+
+      if (!desiredLockX && !desiredLockY) {
+        desiredLockX = rect.width * 0.5;
+        desiredLockY = rect.height * 0.5;
+      }
 
       const base = Math.min(arenaWidth, arenaHeight);
       fighters.forEach((fighter, index) => {
         fighter.radiusX = clamp(base * (0.25 + index * 0.065), 84, 170);
         fighter.radiusY = clamp(base * (0.17 + index * 0.055), 58, 130);
       });
+
+      const bounds = getLockBounds();
+      centerX = clamp(centerX, bounds.minX, bounds.maxX);
+      centerY = clamp(centerY, bounds.minY, bounds.maxY);
+      desiredLockX = clamp(desiredLockX, bounds.minX, bounds.maxX);
+      desiredLockY = clamp(desiredLockY, bounds.minY, bounds.maxY);
+      target.style.left = `${centerX}px`;
+      target.style.top = `${centerY}px`;
+    }
+
+    function getLockBounds() {
+      const marginX = Math.min(74, arenaWidth * 0.28);
+      const marginTop = Math.min(92, arenaHeight * 0.26);
+      const marginBottom = Math.min(122, arenaHeight * 0.32);
+      return {
+        minX: marginX,
+        maxX: Math.max(marginX, arenaWidth - marginX),
+        minY: marginTop,
+        maxY: Math.max(marginTop, arenaHeight - marginBottom)
+      };
+    }
+
+    function updateTargetLockVisual(locked) {
+      target.classList.toggle("face-lock", locked);
+      target.classList.toggle("face-miss", !locked);
+    }
+
+    function largestFace(faces) {
+      let best = null;
+      let bestArea = 0;
+      for (const face of faces) {
+        const box = face?.boundingBox;
+        if (!box) {
+          continue;
+        }
+        const area = box.width * box.height;
+        if (area > bestArea) {
+          best = face;
+          bestArea = area;
+        }
+      }
+      return best;
+    }
+
+    function mapVideoPointToViewport(videoX, videoY) {
+      const sourceWidth = camera.videoWidth;
+      const sourceHeight = camera.videoHeight;
+      if (!sourceWidth || !sourceHeight || !arenaWidth || !arenaHeight) {
+        return null;
+      }
+
+      const scale = Math.max(arenaWidth / sourceWidth, arenaHeight / sourceHeight);
+      const renderWidth = sourceWidth * scale;
+      const renderHeight = sourceHeight * scale;
+      const offsetX = (arenaWidth - renderWidth) * 0.5;
+      const offsetY = (arenaHeight - renderHeight) * 0.5;
+
+      const displayX = videoX * scale + offsetX;
+      const displayY = videoY * scale + offsetY;
+
+      return {
+        x: arenaWidth - displayX,
+        y: displayY
+      };
+    }
+
+    function ensureFaceDetector() {
+      if (faceState.detector || faceState.mode === "sim") {
+        return;
+      }
+
+      if ("FaceDetector" in window) {
+        try {
+          faceState.detector = new window.FaceDetector({
+            maxDetectedFaces: 2,
+            fastMode: true
+          });
+          faceState.mode = "fd";
+          scanText.textContent = "FACE LOCK";
+          return;
+        } catch (error) {
+          console.error(error);
+          faceState.mode = "sim";
+        }
+      } else {
+        faceState.mode = "sim";
+      }
+
+      scanText.textContent = "FACE SIM";
+    }
+
+    async function detectFaceTarget(now) {
+      if (!running || !stream || camera.readyState < 2 || faceState.inFlight) {
+        return;
+      }
+
+      if (now - faceState.lastDetectAt < FACE_SAMPLE_MS) {
+        return;
+      }
+
+      faceState.lastDetectAt = now;
+      ensureFaceDetector();
+
+      if (!faceState.detector || !detectCtx) {
+        return;
+      }
+
+      faceState.inFlight = true;
+
+      try {
+        const sourceWidth = camera.videoWidth;
+        const sourceHeight = camera.videoHeight;
+        if (!sourceWidth || !sourceHeight) {
+          return;
+        }
+
+        const detectHeight = Math.max(1, Math.round((sourceHeight / sourceWidth) * FACE_DETECT_WIDTH));
+        if (detectCanvas.width !== FACE_DETECT_WIDTH || detectCanvas.height !== detectHeight) {
+          detectCanvas.width = FACE_DETECT_WIDTH;
+          detectCanvas.height = detectHeight;
+        }
+
+        detectCtx.drawImage(camera, 0, 0, detectCanvas.width, detectCanvas.height);
+        const faces = await faceState.detector.detect(detectCanvas);
+        const face = largestFace(faces);
+
+        if (!face?.boundingBox) {
+          if (now - faceState.lastSeenAt > FACE_LOST_MS) {
+            faceState.hasFace = false;
+          }
+          return;
+        }
+
+        const box = face.boundingBox;
+        const ratioX = sourceWidth / detectCanvas.width;
+        const ratioY = sourceHeight / detectCanvas.height;
+        const faceCenterX = (box.x + box.width * 0.5) * ratioX;
+        const faceCenterY = (box.y + box.height * 0.45) * ratioY;
+        const mapped = mapVideoPointToViewport(faceCenterX, faceCenterY);
+        if (!mapped) {
+          return;
+        }
+
+        const bounds = getLockBounds();
+        faceState.x = clamp(mapped.x, bounds.minX, bounds.maxX);
+        faceState.y = clamp(mapped.y, bounds.minY, bounds.maxY);
+        faceState.hasFace = true;
+        faceState.lastSeenAt = now;
+      } catch (error) {
+        console.error(error);
+        faceState.errorCount += 1;
+        if (faceState.errorCount >= 3) {
+          scanText.textContent = "FACE ERR";
+        }
+      } finally {
+        faceState.inFlight = false;
+      }
+    }
+
+    function syncLockTarget(now) {
+      const faceLocked = faceState.hasFace && now - faceState.lastSeenAt <= FACE_LOST_MS;
+      if (faceLocked) {
+        desiredLockX = faceState.x;
+        desiredLockY = faceState.y;
+      } else {
+        desiredLockX = arenaWidth * 0.5;
+        desiredLockY = arenaHeight * 0.5;
+      }
+
+      const follow = faceLocked ? 0.24 : 0.1;
+      centerX += (desiredLockX - centerX) * follow;
+      centerY += (desiredLockY - centerY) * follow;
+
+      target.style.left = `${centerX}px`;
+      target.style.top = `${centerY}px`;
+      updateTargetLockVisual(faceLocked);
+
+      if (faceState.mode === "sim") {
+        scanText.textContent = "FACE SIM";
+      } else if (faceState.mode === "fd") {
+        scanText.textContent = faceLocked ? "FACE LOCK" : "FACE MISS";
+      }
     }
 
     function formatCompact(value) {
@@ -903,9 +1168,11 @@
     function launchAttack(now) {
       const fighter = fighters[attackCursor % fighters.length];
       attackCursor += 1;
+      const pattern = attackPatterns[Math.floor(Math.random() * attackPatterns.length)];
       fighter.attackStart = now;
-      fighter.hitDone = false;
-      modeText.textContent = fighter === fighters[0] ? "PINK RAID" : "BLUE RAID";
+      fighter.attackPattern = pattern;
+      fighter.nextHitIndex = 0;
+      modeText.textContent = pattern.label;
     }
 
     function updateFighter(fighter, now) {
@@ -918,20 +1185,31 @@
       let scale = 1;
       let rot = fighter.lean + Math.sin(angle * 2.2) * 8;
 
-      if (fighter.attackStart > 0) {
+      if (fighter.attackStart > 0 && fighter.attackPattern) {
         const progress = (now - fighter.attackStart) / fighter.attackDuration;
         if (progress >= 1) {
           fighter.attackStart = -1;
-          fighter.hitDone = false;
+          fighter.attackPattern = null;
+          fighter.nextHitIndex = 0;
         } else {
           const lunge = Math.sin(progress * Math.PI);
           x = orbitX + (centerX - orbitX) * lunge * 0.9;
           y = orbitY + (centerY - orbitY) * lunge * 0.9;
           scale = 1 + lunge * 0.2;
           rot += (centerX >= orbitX ? 1 : -1) * lunge * 12;
-          if (!fighter.hitDone && progress > 0.53) {
-            fighter.hitDone = true;
-            impact(centerX + rand(-20, 20), centerY + rand(-16, 16));
+          while (
+            fighter.nextHitIndex < fighter.attackPattern.hitTimes.length
+            && progress >= fighter.attackPattern.hitTimes[fighter.nextHitIndex]
+          ) {
+            const hitIndex = fighter.nextHitIndex;
+            fighter.nextHitIndex += 1;
+            const forcedCrit = Boolean(fighter.attackPattern.forceFirstCrit && hitIndex === 0);
+            const crit = forcedCrit || Math.random() < fighter.attackPattern.critChance;
+            impact(
+              centerX + rand(-fighter.attackPattern.spreadX, fighter.attackPattern.spreadX),
+              centerY + rand(-fighter.attackPattern.spreadY, fighter.attackPattern.spreadY),
+              crit
+            );
           }
         }
       }
@@ -944,11 +1222,13 @@
         return;
       }
 
+      void detectFaceTarget(now);
+      syncLockTarget(now);
       applyShake(now);
 
       if (now >= nextAttackAt) {
         launchAttack(now);
-        nextAttackAt = now + rand(160, 236);
+        nextAttackAt = now + rand(90, 280);
       }
 
       fighters.forEach((fighter) => updateFighter(fighter, now));
@@ -966,6 +1246,15 @@
       nextAttackAt = battleStart + 160;
       updateMetrics();
       refreshArenaMetrics();
+      faceState.lastDetectAt = 0;
+      faceState.lastSeenAt = 0;
+      faceState.hasFace = false;
+      faceState.errorCount = 0;
+      faceState.x = centerX;
+      faceState.y = centerY;
+      desiredLockX = centerX;
+      desiredLockY = centerY;
+      updateTargetLockVisual(false);
       animationId = window.requestAnimationFrame(render);
 
       for (let i = 0; i < 5; i += 1) {
@@ -998,9 +1287,14 @@
       clearCameraWaitTimer();
       clearQueued();
       stopStream();
+      faceState.hasFace = false;
+      faceState.inFlight = false;
+      faceState.lastSeenAt = 0;
       damageLayer.replaceChildren();
       effectLayer.replaceChildren();
       modeText.textContent = "CENTER LOCK";
+      scanText.textContent = "FACE OFF";
+      updateTargetLockVisual(false);
       setCamState("OFF");
       setStatus("READY");
       updateMetrics();
@@ -1015,9 +1309,10 @@
       cameraAttemptId = attemptId;
       setCamState("WAIT");
       setStatus("CAM WAIT");
-      scanText.textContent = "FACE OFF";
+      scanText.textContent = "FACE INIT";
 
       bootBattle();
+      ensureFaceDetector();
 
       clearCameraWaitTimer();
       cameraWaitTimer = window.setTimeout(() => {
@@ -1055,7 +1350,7 @@
         await camera.play();
         clearCameraWaitTimer();
         setCamState("ON");
-        setStatus("CENTER LOCK");
+        setStatus(faceState.mode === "fd" ? "FACE TRACK" : "FACE SIM");
       } catch (error) {
         console.error(error);
         clearCameraWaitTimer();
@@ -1097,6 +1392,8 @@
     window.addEventListener("beforeunload", stopStream);
 
     refreshArenaMetrics();
+    updateTargetLockVisual(false);
+    scanText.textContent = "FACE OFF";
     setCamState("OFF");
     updateMetrics();
   </script>
