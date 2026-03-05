@@ -1,0 +1,1019 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <title>Moshi Voice Chat</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg-0: #080b12;
+      --bg-1: #11182a;
+      --bg-2: #18243c;
+      --ink: #f7f9ff;
+      --muted: rgba(247, 249, 255, 0.72);
+      --line: rgba(255, 255, 255, 0.18);
+      --panel: rgba(8, 12, 22, 0.64);
+      --panel-strong: rgba(8, 12, 22, 0.86);
+      --brand: #7ae8ff;
+      --accent: #7effc8;
+      --danger: #ff7f98;
+      --btn: rgba(255, 255, 255, 0.1);
+      --btn-line: rgba(255, 255, 255, 0.2);
+      font-family: "Avenir Next", "Hiragino Sans", "Yu Gothic", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--bg-0);
+    }
+
+    body {
+      position: fixed;
+      inset: 0;
+      touch-action: manipulation;
+    }
+
+    button,
+    input {
+      font: inherit;
+      color: inherit;
+    }
+
+    .app {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      padding: calc(env(safe-area-inset-top) + 12px) 12px calc(env(safe-area-inset-bottom) + 12px);
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 10px;
+      background:
+        radial-gradient(110vmax 72vmax at 10% -14%, rgba(126, 255, 200, 0.2), transparent 62%),
+        radial-gradient(95vmax 62vmax at 110% 4%, rgba(122, 232, 255, 0.22), transparent 66%),
+        linear-gradient(155deg, var(--bg-2), var(--bg-1) 52%, var(--bg-0));
+    }
+
+    .top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-height: 36px;
+      padding: 0 2px;
+    }
+
+    .brand {
+      margin: 0;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      font-size: 13px;
+      font-weight: 700;
+      color: rgba(247, 249, 255, 0.95);
+    }
+
+    .chips {
+      display: inline-flex;
+      gap: 6px;
+      min-width: 0;
+      justify-content: flex-end;
+    }
+
+    .chip {
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      min-height: 26px;
+      padding: 5px 10px;
+      display: inline-flex;
+      align-items: center;
+      max-width: 50vw;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .chip.state-ready {
+      border-color: rgba(126, 255, 200, 0.6);
+      color: #ddffee;
+      background: rgba(126, 255, 200, 0.12);
+    }
+
+    .chip.state-listen {
+      border-color: rgba(122, 232, 255, 0.65);
+      color: #dff8ff;
+      background: rgba(122, 232, 255, 0.16);
+    }
+
+    .chip.state-think {
+      border-color: rgba(255, 220, 140, 0.65);
+      color: #fff1cf;
+      background: rgba(255, 220, 140, 0.16);
+    }
+
+    .chip.state-err {
+      border-color: rgba(255, 127, 152, 0.68);
+      color: #ffd9e1;
+      background: rgba(255, 127, 152, 0.14);
+    }
+
+    .stage {
+      min-height: 0;
+      display: grid;
+      grid-template-rows: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .card {
+      min-height: 0;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: var(--panel);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      padding: 12px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 8px;
+      box-shadow:
+        0 10px 28px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+    }
+
+    .label {
+      margin: 0;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-size: 11px;
+      color: rgba(247, 249, 255, 0.6);
+    }
+
+    .text {
+      margin: 0;
+      min-height: 0;
+      font-size: clamp(19px, 4.8vw, 28px);
+      line-height: 1.25;
+      font-weight: 600;
+      color: var(--ink);
+      overflow: hidden;
+      word-break: break-word;
+      text-wrap: pretty;
+      display: -webkit-box;
+      -webkit-line-clamp: 5;
+      -webkit-box-orient: vertical;
+    }
+
+    .text.muted {
+      color: rgba(247, 249, 255, 0.5);
+    }
+
+    .meta {
+      margin: 0;
+      font-family: "Menlo", "SFMono-Regular", "Consolas", monospace;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      color: rgba(247, 249, 255, 0.66);
+      min-height: 16px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .wave {
+      height: 8px;
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 4px;
+      align-items: center;
+      opacity: 0.36;
+      transform-origin: left;
+      transition: opacity 180ms ease;
+    }
+
+    .wave span {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(126, 255, 200, 0.9), rgba(122, 232, 255, 0.9));
+      transform: scaleY(0.25);
+      transform-origin: center;
+      animation: wave-idle 1200ms ease-in-out infinite;
+      animation-delay: calc(var(--i) * 70ms);
+      opacity: 0.74;
+    }
+
+    .wave.live {
+      opacity: 1;
+    }
+
+    .wave.live span {
+      animation-name: wave-live;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn {
+      height: 48px;
+      border-radius: 16px;
+      border: 1px solid var(--btn-line);
+      background: var(--btn);
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: transform 120ms ease, border-color 120ms ease, background 120ms ease, color 120ms ease;
+    }
+
+    .btn:active {
+      transform: scale(0.96);
+    }
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn.main {
+      width: min(44vw, 188px);
+      height: 68px;
+      border-radius: 999px;
+      border-color: rgba(255, 255, 255, 0.32);
+      background:
+        radial-gradient(120% 110% at 10% 0%, rgba(255, 255, 255, 0.42), transparent 52%),
+        linear-gradient(140deg, rgba(126, 255, 200, 0.9), rgba(122, 232, 255, 0.92));
+      color: #052022;
+      font-size: clamp(20px, 5.2vw, 24px);
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      box-shadow:
+        0 18px 34px rgba(13, 30, 34, 0.45),
+        inset 0 1px 0 rgba(255, 255, 255, 0.82);
+    }
+
+    .btn.main.listening {
+      background:
+        radial-gradient(120% 120% at 10% 0%, rgba(255, 255, 255, 0.45), transparent 52%),
+        linear-gradient(140deg, #9df3ff, #8bffcf);
+      box-shadow:
+        0 0 0 0 rgba(122, 232, 255, 0.42),
+        0 18px 34px rgba(13, 30, 34, 0.45),
+        inset 0 1px 0 rgba(255, 255, 255, 0.86);
+      animation: pulse 1350ms ease-out infinite;
+    }
+
+    .sheet {
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: calc(env(safe-area-inset-bottom) + 88px);
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: var(--panel-strong);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+      transform: translateY(12px);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 180ms ease, opacity 180ms ease;
+      box-shadow: 0 16px 42px rgba(0, 0, 0, 0.46);
+      z-index: 4;
+    }
+
+    .sheet.show {
+      transform: translateY(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 56px 1fr;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .row label {
+      font-family: "Menlo", "SFMono-Regular", "Consolas", monospace;
+      font-size: 11px;
+      letter-spacing: 0.07em;
+      color: rgba(247, 249, 255, 0.66);
+      text-transform: uppercase;
+    }
+
+    .field {
+      height: 34px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(0, 0, 0, 0.24);
+      color: #eef6ff;
+      padding: 0 10px;
+      font-size: 12px;
+      letter-spacing: 0.02em;
+      min-width: 0;
+      outline: none;
+    }
+
+    .field:focus {
+      border-color: rgba(122, 232, 255, 0.74);
+      box-shadow: 0 0 0 2px rgba(122, 232, 255, 0.2);
+    }
+
+    .save {
+      justify-self: end;
+      height: 34px;
+      min-width: 88px;
+      padding: 0 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.26);
+      background: rgba(122, 232, 255, 0.18);
+      color: #dcf6ff;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    @keyframes pulse {
+      0% {
+        box-shadow:
+          0 0 0 0 rgba(122, 232, 255, 0.46),
+          0 18px 34px rgba(13, 30, 34, 0.45),
+          inset 0 1px 0 rgba(255, 255, 255, 0.86);
+      }
+      70% {
+        box-shadow:
+          0 0 0 16px rgba(122, 232, 255, 0),
+          0 18px 34px rgba(13, 30, 34, 0.45),
+          inset 0 1px 0 rgba(255, 255, 255, 0.86);
+      }
+      100% {
+        box-shadow:
+          0 0 0 0 rgba(122, 232, 255, 0),
+          0 18px 34px rgba(13, 30, 34, 0.45),
+          inset 0 1px 0 rgba(255, 255, 255, 0.86);
+      }
+    }
+
+    @keyframes wave-idle {
+      0%,
+      100% {
+        transform: scaleY(0.24);
+      }
+      50% {
+        transform: scaleY(0.45);
+      }
+    }
+
+    @keyframes wave-live {
+      0%,
+      100% {
+        transform: scaleY(0.2);
+      }
+      40% {
+        transform: scaleY(1);
+      }
+      70% {
+        transform: scaleY(0.46);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="top">
+      <h1 class="brand">Moshi Live</h1>
+      <div class="chips">
+        <span id="stateChip" class="chip">INIT</span>
+        <span id="modelChip" class="chip">llm-jp-Moshi-v1</span>
+      </div>
+    </header>
+
+    <main class="stage">
+      <section class="card">
+        <p class="label">You</p>
+        <p id="userText" class="text muted">...</p>
+        <p id="userMeta" class="meta">tap TALK</p>
+        <div id="wave" class="wave" aria-hidden="true">
+          <span style="--i:0"></span>
+          <span style="--i:1"></span>
+          <span style="--i:2"></span>
+          <span style="--i:3"></span>
+          <span style="--i:4"></span>
+          <span style="--i:5"></span>
+          <span style="--i:6"></span>
+          <span style="--i:7"></span>
+        </div>
+      </section>
+
+      <section class="card">
+        <p class="label">Moshi</p>
+        <p id="assistantText" class="text muted">...</p>
+        <p id="assistantMeta" class="meta">ready</p>
+      </section>
+    </main>
+
+    <footer class="controls">
+      <button id="cfgBtn" class="btn" type="button">CFG</button>
+      <button id="talkBtn" class="btn main" type="button">TALK</button>
+      <button id="clearBtn" class="btn" type="button">CLEAR</button>
+    </footer>
+
+    <section id="cfgSheet" class="sheet" aria-hidden="true">
+      <div class="row">
+        <label for="baseUrlInput">URL</label>
+        <input id="baseUrlInput" class="field" type="text" inputmode="url" spellcheck="false" value="http://localhost:1234/v1" />
+      </div>
+      <div class="row">
+        <label for="modelInput">MODEL</label>
+        <input id="modelInput" class="field" type="text" spellcheck="false" value="llm-jp-Moshi-v1" />
+      </div>
+      <button id="saveCfgBtn" class="save" type="button">SAVE</button>
+    </section>
+  </div>
+
+  <script>
+    (() => {
+      const DEFAULT_BASE_URL = "http://localhost:1234/v1";
+      const DEFAULT_MODEL = "llm-jp-Moshi-v1";
+      const DEFAULT_API_KEY = "lm-studio";
+      const STORAGE_KEY = "moshi-live-config-v1";
+      const SYSTEM_PROMPT = "You are LLM-jp-Moshi-v1. Reply briefly and naturally in Japanese for spoken conversation.";
+
+      const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+      const el = {
+        stateChip: document.getElementById("stateChip"),
+        modelChip: document.getElementById("modelChip"),
+        userText: document.getElementById("userText"),
+        userMeta: document.getElementById("userMeta"),
+        assistantText: document.getElementById("assistantText"),
+        assistantMeta: document.getElementById("assistantMeta"),
+        wave: document.getElementById("wave"),
+        cfgBtn: document.getElementById("cfgBtn"),
+        talkBtn: document.getElementById("talkBtn"),
+        clearBtn: document.getElementById("clearBtn"),
+        cfgSheet: document.getElementById("cfgSheet"),
+        baseUrlInput: document.getElementById("baseUrlInput"),
+        modelInput: document.getElementById("modelInput"),
+        saveCfgBtn: document.getElementById("saveCfgBtn"),
+      };
+
+      const state = {
+        baseUrl: DEFAULT_BASE_URL,
+        modelId: DEFAULT_MODEL,
+        recognition: null,
+        listening: false,
+        thinking: false,
+        speaking: false,
+        interimText: "",
+        finalText: "",
+        sheetOpen: false,
+        history: [{ role: "system", content: SYSTEM_PROMPT }],
+      };
+
+      function normalizeBaseUrl(value) {
+        const text = String(value || "").trim();
+        if (!text) return DEFAULT_BASE_URL;
+        return text.replace(/\/+$/, "");
+      }
+
+      function shorten(text, limit = 24) {
+        const s = String(text || "").trim();
+        if (!s) return "-";
+        return s.length > limit ? `${s.slice(0, limit - 3)}...` : s;
+      }
+
+      function shortError(error, limit = 96) {
+        const s = String(error?.message || error || "error").replace(/\s+/g, " ").trim();
+        return s.length > limit ? `${s.slice(0, limit - 3)}...` : s;
+      }
+
+      function setStatus(code, note = "") {
+        const key = String(code || "").toUpperCase();
+        el.stateChip.textContent = note ? `${key} ${note}` : key;
+        el.stateChip.className = "chip";
+        if (key === "READY" || key === "SPEAK") {
+          el.stateChip.classList.add("state-ready");
+        } else if (key === "LISTEN") {
+          el.stateChip.classList.add("state-listen");
+        } else if (key === "THINK") {
+          el.stateChip.classList.add("state-think");
+        } else if (key === "ERR") {
+          el.stateChip.classList.add("state-err");
+        }
+      }
+
+      function setModelChip(modelId) {
+        el.modelChip.textContent = shorten(modelId || DEFAULT_MODEL, 26);
+      }
+
+      function setUserText(value, muted = false) {
+        el.userText.textContent = value || "...";
+        el.userText.classList.toggle("muted", Boolean(muted));
+      }
+
+      function setAssistantText(value, muted = false) {
+        el.assistantText.textContent = value || "...";
+        el.assistantText.classList.toggle("muted", Boolean(muted));
+      }
+
+      function setWave(active) {
+        el.wave.classList.toggle("live", Boolean(active));
+      }
+
+      function syncTalkButton() {
+        const listening = Boolean(state.listening);
+        el.talkBtn.classList.toggle("listening", listening);
+        el.talkBtn.textContent = listening ? "STOP" : "TALK";
+        el.talkBtn.disabled = Boolean(state.thinking);
+      }
+
+      function stopSpeech() {
+        if (!("speechSynthesis" in window) || typeof SpeechSynthesisUtterance === "undefined") {
+          return;
+        }
+        window.speechSynthesis.cancel();
+        state.speaking = false;
+      }
+
+      async function speak(text) {
+        const content = String(text || "").trim();
+        if (!content) {
+          return;
+        }
+        if (!("speechSynthesis" in window) || typeof SpeechSynthesisUtterance === "undefined") {
+          return;
+        }
+
+        stopSpeech();
+
+        await new Promise((resolve) => {
+          const utterance = new SpeechSynthesisUtterance(content);
+          utterance.lang = "ja-JP";
+          utterance.rate = 1.02;
+          utterance.pitch = 1;
+
+          const jaVoice = window.speechSynthesis
+            .getVoices()
+            .find((voice) => /^ja(-|_)/i.test(String(voice.lang || "")));
+          if (jaVoice) {
+            utterance.voice = jaVoice;
+          }
+
+          state.speaking = true;
+          setStatus("SPEAK");
+          el.assistantMeta.textContent = "voice";
+
+          utterance.onend = () => {
+            state.speaking = false;
+            resolve();
+          };
+          utterance.onerror = () => {
+            state.speaking = false;
+            resolve();
+          };
+
+          window.speechSynthesis.speak(utterance);
+        });
+      }
+
+      function refreshUserDraft() {
+        const combined = `${state.finalText} ${state.interimText}`.trim();
+        if (combined) {
+          setUserText(combined, false);
+          el.userMeta.textContent = state.listening ? "listening" : "captured";
+        } else {
+          setUserText("...", true);
+          el.userMeta.textContent = state.listening ? "listening" : "tap TALK";
+        }
+      }
+
+      function ensureRecognition() {
+        if (state.recognition) {
+          return state.recognition;
+        }
+        if (!SpeechRecognitionAPI) {
+          throw new Error("SpeechRecognition unavailable");
+        }
+
+        const recognition = new SpeechRecognitionAPI();
+        recognition.lang = "ja-JP";
+        recognition.interimResults = true;
+        recognition.continuous = true;
+        recognition.maxAlternatives = 1;
+
+        recognition.onstart = () => {
+          state.listening = true;
+          state.interimText = "";
+          state.finalText = "";
+          setWave(true);
+          syncTalkButton();
+          setStatus("LISTEN");
+          el.userMeta.textContent = "listening";
+        };
+
+        recognition.onresult = (event) => {
+          let interim = "";
+          for (let i = event.resultIndex; i < event.results.length; i += 1) {
+            const result = event.results[i];
+            const transcript = String(result[0]?.transcript || "").trim();
+            if (!transcript) {
+              continue;
+            }
+            if (result.isFinal) {
+              state.finalText = `${state.finalText} ${transcript}`.trim();
+            } else {
+              interim = `${interim} ${transcript}`.trim();
+            }
+          }
+          state.interimText = interim;
+          refreshUserDraft();
+        };
+
+        recognition.onerror = (event) => {
+          const err = String(event?.error || "error");
+          state.listening = false;
+          setWave(false);
+          syncTalkButton();
+          if (err !== "aborted" && err !== "no-speech") {
+            setStatus("ERR", err);
+            el.userMeta.textContent = err;
+          }
+        };
+
+        recognition.onend = () => {
+          const finalUtterance = `${state.finalText} ${state.interimText}`.trim();
+          state.listening = false;
+          state.interimText = "";
+          state.finalText = "";
+          setWave(false);
+          syncTalkButton();
+          if (!state.thinking && !state.speaking) {
+            setStatus("READY");
+          }
+
+          if (finalUtterance) {
+            void runTurn(finalUtterance);
+          } else if (!state.thinking) {
+            el.userMeta.textContent = "tap TALK";
+          }
+        };
+
+        state.recognition = recognition;
+        return recognition;
+      }
+
+      async function fetchWithTimeout(url, options = {}, timeoutMs = 70000) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+          const response = await fetch(url, { ...options, signal: controller.signal });
+          return response;
+        } finally {
+          clearTimeout(timer);
+        }
+      }
+
+      function extractTextContent(content) {
+        if (typeof content === "string") {
+          return content;
+        }
+        if (!Array.isArray(content)) {
+          return "";
+        }
+        return content
+          .map((item) => {
+            if (typeof item === "string") {
+              return item;
+            }
+            if (item && typeof item.text === "string") {
+              return item.text;
+            }
+            return "";
+          })
+          .join("");
+      }
+
+      function pickModelId(ids, preferred) {
+        const list = Array.isArray(ids) ? ids.filter(Boolean) : [];
+        const normalizedPreferred = String(preferred || "").toLowerCase();
+        if (!list.length) {
+          return preferred || DEFAULT_MODEL;
+        }
+
+        const exact = list.find((id) => String(id).toLowerCase() === normalizedPreferred);
+        if (exact) {
+          return exact;
+        }
+
+        const moshi = list.find((id) => {
+          const v = String(id).toLowerCase();
+          return v.includes("moshi") && v.includes("llm-jp");
+        });
+        if (moshi) {
+          return moshi;
+        }
+
+        return preferred || list[0];
+      }
+
+      async function refreshModelId() {
+        setStatus("THINK", "models");
+
+        try {
+          const response = await fetchWithTimeout(`${state.baseUrl}/models`, {
+            headers: { Authorization: `Bearer ${DEFAULT_API_KEY}` },
+          }, 8000);
+          if (!response.ok) {
+            throw new Error(`models ${response.status}`);
+          }
+          const data = await response.json();
+          const ids = Array.isArray(data?.data) ? data.data.map((item) => String(item?.id || "").trim()) : [];
+          state.modelId = pickModelId(ids, state.modelId || DEFAULT_MODEL);
+          setModelChip(state.modelId);
+          setStatus("READY");
+          el.assistantMeta.textContent = "ready";
+        } catch (error) {
+          setModelChip(state.modelId || DEFAULT_MODEL);
+          setStatus("READY", "offline");
+          el.assistantMeta.textContent = "model check skipped";
+        }
+      }
+
+      async function streamAssistant(messages) {
+        const response = await fetchWithTimeout(`${state.baseUrl}/chat/completions`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${DEFAULT_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model: state.modelId || DEFAULT_MODEL,
+            messages,
+            temperature: 0.7,
+            stream: true,
+          }),
+        }, 90000);
+
+        if (!response.ok) {
+          const text = await response.text().catch(() => "");
+          throw new Error(`chat ${response.status} ${text.slice(0, 88)}`.trim());
+        }
+
+        if (!response.body || !response.body.getReader) {
+          const data = await response.json();
+          return extractTextContent(data?.choices?.[0]?.message?.content);
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let buffer = "";
+        let output = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) {
+            break;
+          }
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+
+          for (const rawLine of lines) {
+            const line = rawLine.trim();
+            if (!line.startsWith("data:")) {
+              continue;
+            }
+            const payload = line.slice(5).trim();
+            if (!payload || payload === "[DONE]") {
+              continue;
+            }
+            try {
+              const json = JSON.parse(payload);
+              const delta = json?.choices?.[0]?.delta?.content;
+              const chunk = extractTextContent(delta);
+              if (chunk) {
+                output += chunk;
+                setAssistantText(output, false);
+                el.assistantMeta.textContent = "stream";
+              }
+            } catch (_error) {
+              // Ignore malformed stream lines and continue.
+            }
+          }
+        }
+
+        return output;
+      }
+
+      async function runTurn(userMessage) {
+        const text = String(userMessage || "").trim();
+        if (!text || state.thinking) {
+          return;
+        }
+
+        stopSpeech();
+        setUserText(text, false);
+        el.userMeta.textContent = "sent";
+
+        state.thinking = true;
+        syncTalkButton();
+        setStatus("THINK");
+        setAssistantText("...", true);
+        el.assistantMeta.textContent = "waiting";
+
+        const userTurn = { role: "user", content: text };
+        const messages = [...state.history, userTurn];
+        state.history.push(userTurn);
+
+        try {
+          const assistant = (await streamAssistant(messages)).trim();
+          const reply = assistant || "...";
+          setAssistantText(reply, assistant.length === 0);
+          el.assistantMeta.textContent = assistant ? "done" : "empty";
+          state.history.push({ role: "assistant", content: reply });
+          await speak(reply);
+        } catch (error) {
+          const msg = shortError(error, 84);
+          setStatus("ERR");
+          setAssistantText(msg, false);
+          el.assistantMeta.textContent = "error";
+        } finally {
+          state.thinking = false;
+          syncTalkButton();
+          if (!state.listening && !state.speaking) {
+            setStatus("READY");
+          }
+        }
+      }
+
+      function loadConfig() {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+          state.baseUrl = normalizeBaseUrl(parsed.baseUrl || DEFAULT_BASE_URL);
+          state.modelId = String(parsed.modelId || DEFAULT_MODEL).trim() || DEFAULT_MODEL;
+        } catch (_error) {
+          state.baseUrl = DEFAULT_BASE_URL;
+          state.modelId = DEFAULT_MODEL;
+        }
+        el.baseUrlInput.value = state.baseUrl;
+        el.modelInput.value = state.modelId;
+      }
+
+      function saveConfig() {
+        state.baseUrl = normalizeBaseUrl(el.baseUrlInput.value);
+        state.modelId = String(el.modelInput.value || "").trim() || DEFAULT_MODEL;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          baseUrl: state.baseUrl,
+          modelId: state.modelId,
+        }));
+        setModelChip(state.modelId);
+      }
+
+      function setSheet(open) {
+        state.sheetOpen = Boolean(open);
+        el.cfgSheet.classList.toggle("show", state.sheetOpen);
+        el.cfgSheet.setAttribute("aria-hidden", state.sheetOpen ? "false" : "true");
+        el.cfgBtn.style.borderColor = state.sheetOpen ? "rgba(122, 232, 255, 0.72)" : "";
+      }
+
+      async function startListening() {
+        if (state.thinking) {
+          return;
+        }
+
+        stopSpeech();
+
+        let recognition;
+        try {
+          recognition = ensureRecognition();
+        } catch (error) {
+          setStatus("ERR", "mic api");
+          el.userMeta.textContent = shortError(error, 26);
+          return;
+        }
+
+        setSheet(false);
+        state.interimText = "";
+        state.finalText = "";
+        refreshUserDraft();
+
+        try {
+          recognition.start();
+        } catch (error) {
+          setStatus("ERR", "mic");
+          el.userMeta.textContent = shortError(error, 34);
+        }
+      }
+
+      function stopListening() {
+        if (!state.recognition || !state.listening) {
+          return;
+        }
+        try {
+          state.recognition.stop();
+        } catch (_error) {
+          // ignore stop race
+        }
+      }
+
+      function clearAll() {
+        stopSpeech();
+        stopListening();
+        state.history = [{ role: "system", content: SYSTEM_PROMPT }];
+        state.interimText = "";
+        state.finalText = "";
+        setUserText("...", true);
+        setAssistantText("...", true);
+        el.userMeta.textContent = "tap TALK";
+        el.assistantMeta.textContent = "ready";
+        setWave(false);
+        if (!state.thinking) {
+          setStatus("READY");
+        }
+      }
+
+      el.talkBtn.addEventListener("click", () => {
+        if (state.listening) {
+          stopListening();
+          return;
+        }
+        void startListening();
+      });
+
+      el.clearBtn.addEventListener("click", () => {
+        clearAll();
+      });
+
+      el.cfgBtn.addEventListener("click", () => {
+        setSheet(!state.sheetOpen);
+      });
+
+      el.saveCfgBtn.addEventListener("click", async () => {
+        saveConfig();
+        setSheet(false);
+        await refreshModelId();
+      });
+
+      document.addEventListener("pointerdown", (event) => {
+        if (!state.sheetOpen) {
+          return;
+        }
+        const target = event.target;
+        if (target instanceof Node && !el.cfgSheet.contains(target) && target !== el.cfgBtn) {
+          setSheet(false);
+        }
+      });
+
+      window.addEventListener("beforeunload", () => {
+        stopSpeech();
+        if (state.recognition) {
+          try {
+            state.recognition.abort();
+          } catch (_error) {
+            // ignore
+          }
+        }
+      });
+
+      async function boot() {
+        loadConfig();
+        setModelChip(state.modelId);
+        setStatus("THINK", "boot");
+        syncTalkButton();
+        await refreshModelId();
+
+        if (!SpeechRecognitionAPI) {
+          setStatus("ERR", "mic api");
+          el.userMeta.textContent = "use Safari/Chrome";
+        }
+      }
+
+      void boot();
+    })();
+  </script>
+</body>
+</html>

@@ -215,12 +215,37 @@
       text-align: left;
       color: inherit;
       display: grid;
-      grid-template-columns: 72px 1fr auto;
+      grid-template-columns: 72px 1fr auto auto;
       align-items: center;
       gap: 14px;
       padding: 14px 14px;
       cursor: pointer;
       font: inherit;
+    }
+
+    .author-tag {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 9px;
+      font-weight: 400;
+      letter-spacing: 0.7px;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 20px;
+      border: 1px solid transparent;
+      white-space: nowrap;
+      line-height: 1;
+    }
+
+    .author-tag.ai {
+      background: linear-gradient(135deg, rgba(160, 130, 255, 0.13), rgba(100, 160, 255, 0.08));
+      border-color: rgba(150, 120, 255, 0.22);
+      color: rgba(110, 70, 210, 0.65);
+    }
+
+    .author-tag.human {
+      background: rgba(255, 255, 255, 0.38);
+      border-color: rgba(0, 0, 0, 0.06);
+      color: rgba(0, 0, 0, 0.24);
     }
 
     .card.locked .card-head {
@@ -527,6 +552,12 @@
         title: "Chiikawa Camera Raid",
         href: "./apps/2026-03-02-chiikawa-camera-raid/",
         author: "ai"
+      },
+      {
+        date: "2026-03-05",
+        title: "Moshi Voice Chat",
+        href: "./apps/2026-03-05-moshi-voice-chat/",
+        author: "ai"
       }
     ];
 
@@ -591,10 +622,14 @@
       title.className = "title";
       title.textContent = entry.title;
 
+      const tag = document.createElement("span");
+      tag.className = `author-tag ${entry.author === "ai" ? "ai" : "human"}`;
+      tag.textContent = entry.author === "ai" ? "AI" : "Human";
+
       const indicator = document.createElement("span");
       indicator.className = "indicator";
 
-      head.append(date, title, indicator);
+      head.append(date, title, tag, indicator);
       card.appendChild(head);
 
       const expand = document.createElement("div");
@@ -675,11 +710,7 @@
 
       function renderSection(sectionEntries, labelText) {
         if (sectionEntries.length === 0) return;
-        const label = document.createElement("div");
-        label.className = "section-label";
-        label.textContent = labelText;
-        cardList.appendChild(label);
-        sectionEntries.forEach((entry) => {
+          sectionEntries.forEach((entry) => {
           const card = buildCard(entry, cardIndex++);
           cardList.appendChild(card);
           const day = Number(entry.date.slice(-2));
