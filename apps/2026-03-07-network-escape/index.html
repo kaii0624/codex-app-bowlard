@@ -1,0 +1,2939 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"
+  />
+  <title>Network & Escape</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=IBM+Plex+Sans+JP:wght@400;500;600&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg-0: #041015;
+      --bg-1: #071923;
+      --bg-2: #0e2935;
+      --panel: rgba(7, 22, 31, 0.74);
+      --panel-strong: rgba(11, 29, 39, 0.92);
+      --line: rgba(133, 201, 208, 0.22);
+      --line-strong: rgba(147, 235, 243, 0.44);
+      --text: #edfaff;
+      --muted: rgba(220, 245, 255, 0.74);
+      --faint: rgba(191, 225, 237, 0.4);
+      --good: #5bf0ba;
+      --warn: #ffd86f;
+      --bad: #ff7d8f;
+      --cyan: #68e8ff;
+      --blue: #7eb7ff;
+      --amber: #ffb857;
+      --purple: #9f9cff;
+      --shadow: 0 24px 52px rgba(0, 0, 0, 0.34);
+      font-family: "IBM Plex Sans JP", "Hiragino Sans", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg-0);
+    }
+
+    body {
+      position: fixed;
+      inset: 0;
+      color: var(--text);
+      touch-action: manipulation;
+      user-select: none;
+    }
+
+    button {
+      font: inherit;
+      color: inherit;
+    }
+
+    .app {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 10px;
+      padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+      background:
+        radial-gradient(70vmax 60vmax at 8% 10%, rgba(63, 164, 184, 0.24), transparent 64%),
+        radial-gradient(48vmax 40vmax at 88% 82%, rgba(76, 112, 220, 0.24), transparent 64%),
+        radial-gradient(58vmax 38vmax at 56% 0%, rgba(255, 127, 109, 0.12), transparent 64%),
+        linear-gradient(150deg, #07121a 0%, #03080c 62%, #07121b 100%);
+      overflow: hidden;
+    }
+
+    .app::before,
+    .app::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .app::before {
+      opacity: 0.2;
+      background:
+        linear-gradient(rgba(127, 204, 215, 0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(127, 204, 215, 0.08) 1px, transparent 1px);
+      background-size: 32px 32px;
+      mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.6), transparent 86%);
+    }
+
+    .app::after {
+      opacity: 0.28;
+      background:
+        radial-gradient(circle at 30% 25%, rgba(117, 236, 255, 0.18), transparent 34%),
+        radial-gradient(circle at 64% 44%, rgba(255, 204, 127, 0.09), transparent 22%),
+        radial-gradient(circle at 80% 18%, rgba(157, 160, 255, 0.12), transparent 26%);
+      filter: blur(24px);
+    }
+
+    .hud {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      min-height: 0;
+    }
+
+    .brand {
+      display: grid;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .brand-kicker,
+    .mini-label,
+    .objective-label,
+    .hint-label,
+    .system-label {
+      font-family: "Chakra Petch", sans-serif;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+    }
+
+    .brand-kicker {
+      color: rgba(140, 220, 226, 0.6);
+    }
+
+    h1 {
+      margin: 0;
+      font-family: "Chakra Petch", sans-serif;
+      font-size: clamp(18px, 2.6vw, 28px);
+      line-height: 0.95;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .phase-strip {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .phase-chip {
+      position: relative;
+      min-width: 0;
+      padding: 8px 10px 9px;
+      border-radius: 16px;
+      border: 1px solid rgba(126, 205, 218, 0.14);
+      background: rgba(6, 21, 29, 0.58);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+      overflow: hidden;
+    }
+
+    .phase-chip::after {
+      content: "";
+      position: absolute;
+      inset: auto 0 0 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(104, 232, 255, 0.5), transparent);
+      opacity: 0;
+      transition: opacity 180ms ease;
+    }
+
+    .phase-chip.active,
+    .phase-chip.done {
+      border-color: rgba(126, 205, 218, 0.28);
+      background: rgba(10, 28, 39, 0.9);
+    }
+
+    .phase-chip.active::after,
+    .phase-chip.done::after {
+      opacity: 1;
+    }
+
+    .phase-chip.done::after {
+      background: linear-gradient(90deg, transparent, rgba(91, 240, 186, 0.74), transparent);
+    }
+
+    .phase-name {
+      display: block;
+      font-family: "Chakra Petch", sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      color: var(--faint);
+      text-transform: uppercase;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .phase-chip.active .phase-name,
+    .phase-chip.done .phase-name {
+      color: rgba(231, 249, 255, 0.8);
+    }
+
+    .phase-step {
+      display: block;
+      margin-top: 3px;
+      font-size: 11px;
+      color: rgba(229, 248, 255, 0.96);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .top-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .ghost-btn,
+    .primary-btn,
+    .mini-btn,
+    .note-close,
+    .start-btn {
+      border: 1px solid transparent;
+      border-radius: 14px;
+      background: none;
+      cursor: pointer;
+      transition:
+        transform 180ms ease,
+        border-color 180ms ease,
+        background 180ms ease,
+        opacity 180ms ease;
+    }
+
+    .ghost-btn:hover,
+    .primary-btn:hover,
+    .mini-btn:hover,
+    .note-close:hover,
+    .start-btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .ghost-btn {
+      padding: 10px 12px;
+      min-width: 88px;
+      background: rgba(7, 24, 32, 0.78);
+      border-color: rgba(113, 205, 222, 0.18);
+      color: rgba(231, 249, 255, 0.86);
+      font-family: "Chakra Petch", sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .ghost-btn.danger {
+      color: rgba(255, 187, 197, 0.94);
+      border-color: rgba(255, 125, 143, 0.18);
+    }
+
+    .layout {
+      position: relative;
+      z-index: 2;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1.02fr) minmax(0, 1.1fr);
+      gap: 10px;
+    }
+
+    .room-panel,
+    .control-panel {
+      min-height: 0;
+      border-radius: 28px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .room-panel {
+      position: relative;
+      padding: 16px;
+    }
+
+    .room-panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(180deg, rgba(93, 215, 230, 0.05), transparent 28%),
+        radial-gradient(circle at 12% 16%, rgba(120, 238, 255, 0.12), transparent 22%),
+        linear-gradient(180deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.25));
+      pointer-events: none;
+    }
+
+    .room-frame {
+      position: relative;
+      height: 100%;
+      min-height: 0;
+      border-radius: 22px;
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, rgba(9, 25, 35, 0.32), rgba(2, 8, 12, 0.58)),
+        radial-gradient(circle at 20% 10%, rgba(82, 220, 238, 0.13), transparent 26%),
+        linear-gradient(180deg, rgba(71, 109, 126, 0.15) 0 45%, rgba(17, 30, 38, 0.14) 45% 46%, rgba(8, 14, 18, 0.8) 46% 100%);
+      border: 1px solid rgba(154, 232, 241, 0.12);
+    }
+
+    .room-backdrop {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(90deg, transparent 0 14%, rgba(255, 255, 255, 0.03) 14% 15%, transparent 15% 22%, rgba(255, 255, 255, 0.03) 22% 23%, transparent 23% 100%),
+        linear-gradient(180deg, transparent 0 12%, rgba(255, 255, 255, 0.03) 12% 13%, transparent 13% 52%, rgba(255, 255, 255, 0.03) 52% 53%, transparent 53% 100%);
+      opacity: 0.26;
+      pointer-events: none;
+    }
+
+    .server-stack,
+    .console-stack,
+    .door-frame,
+    .desk-frame {
+      position: absolute;
+      border-radius: 18px;
+      border: 1px solid rgba(117, 211, 224, 0.12);
+      background: linear-gradient(180deg, rgba(17, 42, 54, 0.86), rgba(7, 18, 24, 0.98));
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.04),
+        0 12px 24px rgba(0, 0, 0, 0.22);
+    }
+
+    .server-stack {
+      left: 8%;
+      top: 10%;
+      width: 24%;
+      height: 54%;
+      background:
+        linear-gradient(180deg, rgba(17, 42, 54, 0.9), rgba(7, 18, 24, 0.98)),
+        repeating-linear-gradient(
+          180deg,
+          transparent 0 16px,
+          rgba(255, 255, 255, 0.03) 16px 18px
+        );
+    }
+
+    .console-stack {
+      left: 38%;
+      top: 19%;
+      width: 23%;
+      height: 31%;
+      background:
+        linear-gradient(180deg, rgba(13, 30, 44, 0.9), rgba(8, 17, 26, 0.98)),
+        radial-gradient(circle at 52% 38%, rgba(132, 248, 255, 0.22), transparent 22%);
+    }
+
+    .door-frame {
+      right: 8%;
+      top: 11%;
+      width: 20%;
+      height: 64%;
+      background:
+        linear-gradient(180deg, rgba(20, 34, 42, 0.95), rgba(10, 18, 22, 0.98)),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.05), transparent 20% 80%, rgba(255, 255, 255, 0.05));
+    }
+
+    .door-frame.open {
+      transform: perspective(600px) rotateY(-24deg);
+      transform-origin: 0 50%;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.04),
+        -20px 12px 34px rgba(0, 0, 0, 0.38);
+    }
+
+    .door-frame::before {
+      content: "";
+      position: absolute;
+      inset: 10% 12%;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(0, 0, 0, 0.22));
+    }
+
+    .door-frame::after {
+      content: "";
+      position: absolute;
+      right: 18%;
+      top: 50%;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: rgba(255, 227, 170, 0.7);
+      box-shadow: 0 0 14px rgba(255, 199, 104, 0.42);
+      transform: translateY(-50%);
+    }
+
+    .desk-frame {
+      left: 26%;
+      right: 24%;
+      bottom: 7%;
+      height: 24%;
+      background:
+        linear-gradient(180deg, rgba(26, 42, 50, 0.94), rgba(11, 18, 24, 0.98)),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.04), transparent 16% 84%, rgba(255, 255, 255, 0.04));
+    }
+
+    .desk-frame::before,
+    .desk-frame::after {
+      content: "";
+      position: absolute;
+      bottom: -10%;
+      width: 11%;
+      height: 46%;
+      border-radius: 0 0 14px 14px;
+      background: linear-gradient(180deg, rgba(9, 18, 24, 0.82), rgba(4, 10, 14, 1));
+    }
+
+    .desk-frame::before {
+      left: 10%;
+    }
+
+    .desk-frame::after {
+      right: 10%;
+    }
+
+    .alarm-bar {
+      position: absolute;
+      left: 66%;
+      top: 12%;
+      width: 7%;
+      height: 7%;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 35%, rgba(255, 255, 255, 0.65), rgba(255, 72, 72, 0.92) 44%, rgba(120, 8, 16, 0.9));
+      box-shadow:
+        0 0 18px rgba(255, 88, 88, 0.46),
+        0 0 42px rgba(255, 88, 88, 0.2);
+      animation: pulseAlarm 1.4s ease-in-out infinite;
+    }
+
+    .room-node,
+    .status-pod,
+    .phase-pod,
+    .chip,
+    .key-btn,
+    .symbol-btn,
+    .port-btn,
+    .source-btn,
+    .toggle-btn,
+    .digit-btn {
+      border: 1px solid rgba(147, 235, 243, 0.16);
+      background: rgba(9, 26, 36, 0.82);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.03),
+        0 8px 18px rgba(0, 0, 0, 0.16);
+    }
+
+    .room-node {
+      position: absolute;
+      min-width: 90px;
+      padding: 10px 12px;
+      border-radius: 16px;
+      cursor: pointer;
+      text-align: left;
+      transition:
+        transform 180ms ease,
+        border-color 180ms ease,
+        background 180ms ease,
+        opacity 180ms ease;
+    }
+
+    .room-node:hover {
+      transform: translateY(-1px);
+    }
+
+    .room-node.active {
+      border-color: rgba(104, 232, 255, 0.46);
+      background: rgba(13, 39, 53, 0.96);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.05),
+        0 0 0 1px rgba(104, 232, 255, 0.18),
+        0 16px 32px rgba(0, 0, 0, 0.22);
+    }
+
+    .room-node.locked {
+      opacity: 0.34;
+      cursor: default;
+    }
+
+    .room-node.done .node-led {
+      background: var(--good);
+      box-shadow: 0 0 12px rgba(91, 240, 186, 0.54);
+    }
+
+    .node-led,
+    .tiny-led,
+    .lamp-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.16);
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05);
+      vertical-align: middle;
+      flex: 0 0 auto;
+    }
+
+    .node-head,
+    .status-pod,
+    .legend-chip,
+    .port-inner,
+    .signal-card,
+    .hint-card,
+    .summary-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .node-head {
+      margin-bottom: 2px;
+      justify-content: space-between;
+    }
+
+    .node-name {
+      font-family: "Chakra Petch", sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .node-sub {
+      display: block;
+      font-size: 11px;
+      color: var(--faint);
+    }
+
+    .node-desk {
+      left: 30%;
+      bottom: 18%;
+    }
+
+    .node-drawer {
+      left: 46%;
+      bottom: 24%;
+    }
+
+    .node-rack {
+      left: 11%;
+      top: 30%;
+    }
+
+    .node-pc {
+      left: 41%;
+      top: 26%;
+    }
+
+    .node-router {
+      left: 49%;
+      top: 10%;
+    }
+
+    .node-door {
+      right: 10%;
+      top: 38%;
+    }
+
+    .room-status {
+      position: absolute;
+      right: 12px;
+      bottom: 12px;
+      display: grid;
+      gap: 8px;
+      width: min(44%, 200px);
+    }
+
+    .status-pod {
+      justify-content: space-between;
+      padding: 10px 12px;
+      border-radius: 16px;
+      color: rgba(232, 249, 255, 0.82);
+      font-size: 11px;
+    }
+
+    .status-pod span:last-child {
+      font-family: "Chakra Petch", sans-serif;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(232, 249, 255, 0.64);
+    }
+
+    .control-panel {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 10px;
+      padding: 14px;
+    }
+
+    .panel-top {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: end;
+    }
+
+    .panel-top h2 {
+      margin: 4px 0 0;
+      font-family: "Chakra Petch", sans-serif;
+      font-size: clamp(22px, 2.7vw, 32px);
+      line-height: 0.96;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .mini-label {
+      color: rgba(134, 221, 230, 0.56);
+    }
+
+    .objective-card {
+      min-width: 180px;
+      padding: 10px 12px;
+      border-radius: 18px;
+      border: 1px solid rgba(147, 235, 243, 0.16);
+      background: rgba(11, 30, 39, 0.78);
+      text-align: right;
+    }
+
+    .objective-label {
+      color: rgba(132, 220, 229, 0.48);
+    }
+
+    .objective-text {
+      display: block;
+      margin-top: 4px;
+      font-size: 13px;
+      color: rgba(236, 250, 255, 0.92);
+      white-space: nowrap;
+    }
+
+    .panel-body {
+      min-height: 0;
+      display: grid;
+      align-items: stretch;
+    }
+
+    .panel-card {
+      min-height: 0;
+      border-radius: 24px;
+      border: 1px solid rgba(147, 235, 243, 0.14);
+      background:
+        linear-gradient(180deg, rgba(12, 35, 45, 0.92), rgba(8, 20, 28, 0.96)),
+        radial-gradient(circle at 10% 12%, rgba(104, 232, 255, 0.08), transparent 22%);
+      padding: 16px;
+      display: grid;
+      gap: 14px;
+      overflow: hidden;
+    }
+
+    .desk-card {
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+    }
+
+    .card-headline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .card-copy {
+      margin: 0;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .progress-track {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .progress-node {
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.07);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-node::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      transform: scaleX(0);
+      transform-origin: 0 50%;
+      background: linear-gradient(90deg, rgba(91, 240, 186, 0.96), rgba(104, 232, 255, 0.78));
+      transition: transform 180ms ease;
+    }
+
+    .progress-node.done::after {
+      transform: scaleX(1);
+    }
+
+    .layer-grid,
+    .key-grid,
+    .toggle-grid,
+    .door-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .layer-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      align-content: start;
+    }
+
+    .key-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .toggle-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .door-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .chip,
+    .key-btn,
+    .toggle-btn,
+    .digit-btn,
+    .source-btn,
+    .port-btn,
+    .mini-btn,
+    .primary-btn {
+      min-height: 0;
+      padding: 0;
+    }
+
+    .chip,
+    .key-btn,
+    .toggle-btn,
+    .digit-btn,
+    .source-btn,
+    .port-btn {
+      border-radius: 16px;
+      cursor: pointer;
+      color: rgba(235, 250, 255, 0.9);
+    }
+
+    .chip {
+      padding: 12px 12px;
+      text-align: left;
+      font-size: 12px;
+    }
+
+    .chip.done {
+      border-color: rgba(91, 240, 186, 0.3);
+      background: rgba(11, 38, 41, 0.94);
+      color: rgba(196, 255, 235, 0.96);
+    }
+
+    .chip.error {
+      border-color: rgba(255, 125, 143, 0.36);
+      background: rgba(60, 15, 26, 0.96);
+    }
+
+    .chip-title,
+    .key-main,
+    .digit-main,
+    .toggle-main,
+    .source-name,
+    .port-name {
+      display: block;
+      font-family: "Chakra Petch", sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      line-height: 1;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .chip-sub,
+    .key-sub,
+    .digit-sub,
+    .toggle-sub,
+    .source-sub,
+    .port-sub {
+      display: block;
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--faint);
+      line-height: 1.25;
+    }
+
+    .panel-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .inline-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .legend-chip,
+    .phase-pod {
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(147, 235, 243, 0.14);
+      background: rgba(8, 24, 33, 0.72);
+      font-size: 11px;
+      color: rgba(232, 249, 255, 0.8);
+    }
+
+    .legend-swatch {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      box-shadow: 0 0 10px currentColor;
+    }
+
+    .wire-shell {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 136px minmax(0, 1fr);
+      gap: 12px;
+      min-height: 0;
+      align-items: stretch;
+    }
+
+    .wire-column {
+      display: grid;
+      gap: 10px;
+      align-content: space-around;
+    }
+
+    .source-btn,
+    .port-btn,
+    .toggle-btn,
+    .key-btn,
+    .digit-btn {
+      padding: 12px 12px;
+      text-align: left;
+    }
+
+    .source-btn.active,
+    .port-btn.active,
+    .toggle-btn.active,
+    .digit-btn.active {
+      border-color: rgba(104, 232, 255, 0.46);
+      background: rgba(12, 36, 49, 0.96);
+    }
+
+    .source-btn.done,
+    .port-btn.done,
+    .toggle-btn.done,
+    .digit-btn.done {
+      border-color: rgba(91, 240, 186, 0.26);
+      background: rgba(11, 37, 39, 0.96);
+    }
+
+    .wire-canvas {
+      position: relative;
+      border-radius: 22px;
+      border: 1px solid rgba(147, 235, 243, 0.12);
+      background:
+        linear-gradient(180deg, rgba(6, 19, 27, 0.9), rgba(4, 12, 18, 0.95)),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02), transparent 30% 70%, rgba(255, 255, 255, 0.02));
+      overflow: hidden;
+    }
+
+    .wire-canvas::before,
+    .wire-canvas::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .wire-canvas::before {
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 16% 84%, rgba(255, 255, 255, 0.02));
+      opacity: 0.55;
+    }
+
+    .wire-canvas::after {
+      left: 50%;
+      right: auto;
+      width: 1px;
+      background: rgba(255, 255, 255, 0.06);
+      transform: translateX(-50%);
+    }
+
+    .wire-svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .wire-svg path {
+      fill: none;
+      stroke-width: 5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      filter: drop-shadow(0 0 8px currentColor);
+      opacity: 0.96;
+    }
+
+    .wire-label {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 70%;
+      text-align: center;
+      font-family: "Chakra Petch", sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: rgba(227, 248, 255, 0.44);
+    }
+
+    .wire-label.top {
+      top: 18px;
+    }
+
+    .wire-label.bottom {
+      bottom: 18px;
+    }
+
+    .terminal-shell,
+    .router-shell,
+    .door-shell,
+    .summary-shell {
+      min-height: 0;
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    .terminal-screen,
+    .signal-grid,
+    .door-summary,
+    .summary-shell {
+      border-radius: 20px;
+      border: 1px solid rgba(147, 235, 243, 0.12);
+      background: rgba(4, 15, 22, 0.72);
+    }
+
+    .terminal-screen {
+      padding: 14px;
+      display: grid;
+      gap: 8px;
+      min-height: 150px;
+      font-family: "Chakra Petch", sans-serif;
+      font-size: 14px;
+      color: rgba(204, 255, 231, 0.94);
+      letter-spacing: 0.04em;
+      align-content: start;
+    }
+
+    .terminal-line {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+    }
+
+    .terminal-prompt {
+      color: rgba(104, 232, 255, 0.9);
+    }
+
+    .signal-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      padding: 12px;
+    }
+
+    .signal-card {
+      justify-content: space-between;
+      padding: 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(147, 235, 243, 0.12);
+      background: rgba(7, 20, 26, 0.84);
+      font-size: 12px;
+      color: rgba(232, 249, 255, 0.82);
+    }
+
+    .signal-card strong {
+      font-family: "Chakra Petch", sans-serif;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 13px;
+    }
+
+    .signal-card .lamp-dot.good {
+      background: var(--good);
+      box-shadow: 0 0 12px rgba(91, 240, 186, 0.54);
+    }
+
+    .signal-card .lamp-dot.warn {
+      background: var(--warn);
+      box-shadow: 0 0 12px rgba(255, 216, 111, 0.5);
+    }
+
+    .signal-card .lamp-dot.bad {
+      background: var(--bad);
+      box-shadow: 0 0 12px rgba(255, 125, 143, 0.5);
+    }
+
+    .pass-display,
+    .door-display {
+      min-height: 64px;
+      padding: 12px 14px;
+      border-radius: 18px;
+      border: 1px solid rgba(147, 235, 243, 0.14);
+      background: rgba(5, 19, 28, 0.82);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .pass-text,
+    .door-text {
+      font-family: "Chakra Petch", sans-serif;
+      font-size: clamp(22px, 4vw, 34px);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      color: rgba(237, 250, 255, 0.98);
+    }
+
+    .pass-hint,
+    .door-hint {
+      font-size: 11px;
+      color: rgba(214, 244, 255, 0.5);
+      text-align: right;
+    }
+
+    .primary-btn,
+    .start-btn {
+      padding: 14px 18px;
+      border-radius: 16px;
+      background:
+        linear-gradient(135deg, rgba(84, 227, 255, 0.94), rgba(90, 240, 186, 0.86));
+      color: #04212a;
+      font-family: "Chakra Petch", sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      box-shadow: 0 12px 26px rgba(62, 230, 212, 0.22);
+    }
+
+    .primary-btn.alt,
+    .start-btn.alt {
+      background: linear-gradient(135deg, rgba(127, 153, 255, 0.94), rgba(104, 232, 255, 0.78));
+    }
+
+    .mini-btn {
+      padding: 10px 12px;
+      border-radius: 14px;
+      border-color: rgba(147, 235, 243, 0.14);
+      background: rgba(9, 26, 36, 0.8);
+      color: rgba(235, 250, 255, 0.84);
+      font-family: "Chakra Petch", sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .mini-btn[disabled],
+    .primary-btn[disabled] {
+      opacity: 0.38;
+      cursor: default;
+      transform: none;
+    }
+
+    .status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 64px;
+      padding: 12px 14px;
+      border-radius: 20px;
+      border: 1px solid rgba(147, 235, 243, 0.14);
+      background: rgba(8, 21, 29, 0.78);
+    }
+
+    .status-text {
+      min-width: 0;
+      font-size: 13px;
+      color: rgba(236, 250, 255, 0.88);
+      line-height: 1.4;
+    }
+
+    .autosave {
+      white-space: nowrap;
+      font-family: "Chakra Petch", sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(133, 221, 231, 0.48);
+    }
+
+    .autosave.pulse {
+      color: rgba(91, 240, 186, 0.92);
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(1, 4, 8, 0.72);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      z-index: 20;
+    }
+
+    .overlay.visible {
+      display: flex;
+    }
+
+    .modal {
+      width: min(100%, 720px);
+      border-radius: 28px;
+      border: 1px solid rgba(147, 235, 243, 0.16);
+      background:
+        linear-gradient(180deg, rgba(10, 31, 41, 0.97), rgba(5, 15, 21, 0.98)),
+        radial-gradient(circle at 18% 10%, rgba(104, 232, 255, 0.08), transparent 22%);
+      box-shadow: 0 26px 60px rgba(0, 0, 0, 0.42);
+      overflow: hidden;
+    }
+
+    .start-modal,
+    .note-modal,
+    .end-modal {
+      padding: 18px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .modal-head h3 {
+      margin: 0;
+      font-family: "Chakra Petch", sans-serif;
+      font-size: clamp(22px, 4.5vw, 36px);
+      line-height: 0.95;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .note-close {
+      padding: 10px 12px;
+      border-color: rgba(147, 235, 243, 0.14);
+      background: rgba(9, 26, 36, 0.8);
+      font-family: "Chakra Petch", sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .start-copy,
+    .end-copy {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--muted);
+    }
+
+    .start-grid,
+    .note-grid,
+    .summary-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .start-grid {
+      grid-template-columns: 1.08fr 0.92fr;
+    }
+
+    .note-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .summary-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .hint-card,
+    .summary-card,
+    .start-card {
+      min-height: 0;
+      padding: 14px;
+      border-radius: 20px;
+      border: 1px solid rgba(147, 235, 243, 0.12);
+      background: rgba(8, 21, 29, 0.78);
+      align-items: flex-start;
+    }
+
+    .hint-card {
+      display: grid;
+      gap: 8px;
+    }
+
+    .hint-label {
+      color: rgba(134, 221, 230, 0.56);
+    }
+
+    .hint-value {
+      font-family: "Chakra Petch", sans-serif;
+      font-size: 20px;
+      line-height: 1.05;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: rgba(236, 250, 255, 0.96);
+    }
+
+    .hint-copy,
+    .summary-copy {
+      margin: 0;
+      font-size: 12px;
+      line-height: 1.55;
+      color: var(--muted);
+    }
+
+    .summary-card {
+      display: grid;
+      gap: 10px;
+    }
+
+    .summary-card strong {
+      font-family: "Chakra Petch", sans-serif;
+      font-size: 14px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .summary-card .lamp-dot {
+      margin-top: 2px;
+    }
+
+    .start-card {
+      display: grid;
+      gap: 10px;
+    }
+
+    .start-card strong {
+      font-family: "Chakra Petch", sans-serif;
+      font-size: 15px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .start-actions,
+    .end-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .rotate-overlay {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background:
+        radial-gradient(circle at 50% 30%, rgba(104, 232, 255, 0.18), transparent 40%),
+        rgba(1, 7, 10, 0.96);
+      z-index: 30;
+      pointer-events: none;
+    }
+
+    .rotate-card {
+      padding: 24px 26px;
+      border-radius: 28px;
+      border: 1px solid rgba(147, 235, 243, 0.18);
+      background: rgba(7, 22, 31, 0.88);
+      text-align: center;
+      box-shadow: 0 24px 44px rgba(0, 0, 0, 0.44);
+    }
+
+    .rotate-card strong {
+      display: block;
+      font-family: "Chakra Petch", sans-serif;
+      font-size: 28px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .rotate-card span {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @keyframes pulseAlarm {
+      0%,
+      100% {
+        transform: scale(0.94);
+        opacity: 0.72;
+      }
+
+      50% {
+        transform: scale(1.08);
+        opacity: 1;
+      }
+    }
+
+    @media (orientation: portrait) and (max-width: 900px) {
+      .rotate-overlay {
+        display: flex;
+      }
+    }
+
+    @media (max-width: 980px) {
+      .hud {
+        grid-template-columns: 1fr;
+      }
+
+      .top-actions {
+        justify-content: flex-start;
+      }
+
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .room-panel {
+        min-height: 230px;
+      }
+    }
+
+    @media (max-height: 560px) {
+      .app {
+        gap: 8px;
+        padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+      }
+
+      .room-panel,
+      .control-panel {
+        border-radius: 24px;
+      }
+
+      .room-panel {
+        padding: 12px;
+      }
+
+      .control-panel {
+        padding: 12px;
+      }
+
+      .panel-card {
+        padding: 12px;
+        gap: 10px;
+      }
+
+      .hud,
+      .layout {
+        gap: 8px;
+      }
+
+      .phase-chip {
+        padding: 6px 8px 7px;
+      }
+
+      .phase-step {
+        font-size: 10px;
+      }
+
+      .ghost-btn {
+        padding: 8px 10px;
+        min-width: 74px;
+        font-size: 11px;
+      }
+
+      .panel-top h2 {
+        font-size: clamp(18px, 2.4vw, 26px);
+      }
+
+      .objective-card {
+        min-width: 150px;
+      }
+
+      .objective-text {
+        font-size: 12px;
+      }
+
+      .card-copy,
+      .status-text,
+      .start-copy,
+      .end-copy {
+        font-size: 12px;
+      }
+
+      .chip-title,
+      .key-main,
+      .digit-main,
+      .toggle-main,
+      .source-name,
+      .port-name {
+        font-size: 14px;
+      }
+
+      .chip-sub,
+      .key-sub,
+      .digit-sub,
+      .toggle-sub,
+      .source-sub,
+      .port-sub,
+      .node-sub {
+        font-size: 10px;
+      }
+
+      .room-node {
+        padding: 8px 10px;
+        min-width: 80px;
+      }
+
+      .wire-shell {
+        grid-template-columns: minmax(0, 1fr) 112px minmax(0, 1fr);
+      }
+
+      .terminal-screen {
+        min-height: 124px;
+        font-size: 12px;
+      }
+
+      .status-bar {
+        min-height: 56px;
+        padding: 10px 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="hud">
+      <div class="brand">
+        <span class="brand-kicker">Server Room Escape</span>
+        <h1>Network &amp; Escape</h1>
+      </div>
+      <div class="phase-strip" id="phaseStrip" aria-label="phase status"></div>
+      <div class="top-actions">
+        <button type="button" class="ghost-btn" id="noteBtn">Note</button>
+        <button type="button" class="ghost-btn" id="soundBtn">Voice On</button>
+        <button type="button" class="ghost-btn danger" id="resetBtn">Reset</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="room-panel" aria-label="server room">
+        <div class="room-frame">
+          <div class="room-backdrop" aria-hidden="true"></div>
+          <div class="server-stack" aria-hidden="true"></div>
+          <div class="console-stack" aria-hidden="true"></div>
+          <div class="desk-frame" aria-hidden="true"></div>
+          <div class="alarm-bar" aria-hidden="true"></div>
+          <div class="door-frame" id="doorFrame" aria-hidden="true"></div>
+
+          <button type="button" class="room-node node-desk" data-view="desk">
+            <span class="node-head"><span class="node-name">Desk</span><span class="node-led"></span></span>
+            <span class="node-sub">OSI doodle</span>
+          </button>
+          <button type="button" class="room-node node-drawer" data-view="drawer">
+            <span class="node-head"><span class="node-name">Drawer</span><span class="node-led"></span></span>
+            <span class="node-sub">Senior note</span>
+          </button>
+          <button type="button" class="room-node node-rack" data-view="rack">
+            <span class="node-head"><span class="node-name">Rack</span><span class="node-led"></span></span>
+            <span class="node-sub">Physical layer</span>
+          </button>
+          <button type="button" class="room-node node-pc" data-view="pc">
+            <span class="node-head"><span class="node-name">PC</span><span class="node-led"></span></span>
+            <span class="node-sub">Password / Ping</span>
+          </button>
+          <button type="button" class="room-node node-router" data-view="router">
+            <span class="node-head"><span class="node-name">RT-Sec</span><span class="node-led"></span></span>
+            <span class="node-sub">Backup WAN</span>
+          </button>
+          <button type="button" class="room-node node-door" data-view="door">
+            <span class="node-head"><span class="node-name">Door</span><span class="node-led"></span></span>
+            <span class="node-sub">Exit control</span>
+          </button>
+
+          <div class="room-status">
+            <div class="status-pod">
+              <span class="summary-row"><span class="lamp-dot" id="netLamp"></span>NW</span>
+              <span id="netLabel">offline</span>
+            </div>
+            <div class="status-pod">
+              <span class="summary-row"><span class="lamp-dot" id="internetLamp"></span>INET</span>
+              <span id="internetLabel">offline</span>
+            </div>
+            <div class="status-pod">
+              <span class="summary-row"><span class="lamp-dot" id="doorLamp"></span>LOCK</span>
+              <span id="doorLabel">sealed</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="control-panel" aria-label="control panel">
+        <div class="panel-top">
+          <div>
+            <span class="mini-label" id="panelPhaseLabel">Phase 1</span>
+            <h2 id="panelTitle">Desk Doodle</h2>
+          </div>
+          <div class="objective-card">
+            <span class="objective-label">Target</span>
+            <span class="objective-text" id="objectiveText">引き出しの鍵</span>
+          </div>
+        </div>
+        <div class="panel-body" id="panelBody"></div>
+        <div class="status-bar">
+          <div class="status-text" id="statusText"></div>
+          <div class="autosave" id="autosaveText">auto save</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="overlay" id="startOverlay">
+    <div class="modal start-modal">
+      <div class="modal-head">
+        <div>
+          <span class="brand-kicker">Server Room Escape</span>
+          <h3>Network &amp; Escape</h3>
+        </div>
+      </div>
+      <p class="start-copy">
+        先輩の代打でサーバールームに入ったまま閉じ込められた。頼れるのは先輩ノートと、覚えているNWの基礎だけ。
+      </p>
+      <div class="start-grid">
+        <div class="start-card">
+          <strong>Web / Touch / Mouse</strong>
+          <span class="start-copy">1画面完結。タップでDesk → Rack → PC → RT → Doorを進める。</span>
+        </div>
+        <div class="start-card">
+          <strong>Auto Save</strong>
+          <span class="start-copy">進行はこの端末に保存。Voiceは初回操作後に有効化される。</span>
+        </div>
+      </div>
+      <div class="start-actions">
+        <button type="button" class="start-btn" id="startBtn">Start</button>
+        <button type="button" class="start-btn alt" id="continueBtn">Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="noteOverlay">
+    <div class="modal note-modal">
+      <div class="modal-head">
+        <div>
+          <span class="brand-kicker">Senior Note</span>
+          <h3 id="noteTitle">Phase Note</h3>
+        </div>
+        <button type="button" class="note-close" id="closeNoteBtn">Close</button>
+      </div>
+      <div class="note-grid" id="noteGrid"></div>
+    </div>
+  </div>
+
+  <div class="overlay" id="endOverlay">
+    <div class="modal end-modal">
+      <div class="modal-head">
+        <div>
+          <span class="brand-kicker">Epilogue</span>
+          <h3>Escaped</h3>
+        </div>
+      </div>
+      <p class="end-copy">
+        ドアは開いた。直していたのは本番NWではなく、先輩が組みかけていた冗長NW。退出だけは最後まで「謎こそ最強のセキュリティ」だった。
+      </p>
+      <div class="summary-grid" id="summaryGrid"></div>
+      <div class="end-actions">
+        <button type="button" class="start-btn" id="restartBtn">Restart</button>
+        <button type="button" class="start-btn alt" id="closeEndBtn">Back</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="rotate-overlay">
+    <div class="rotate-card">
+      <strong>Landscape</strong>
+      <span>横持ち推奨</span>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const STORAGE_KEY = "network-escape-save-v1";
+      const LAYERS = ["PHY", "DATA", "NET", "TRANS", "SESSION", "PRESENT", "APP"];
+      const LAYER_POOL = ["APP", "PHY", "NET", "SESSION", "DATA", "PRESENT", "TRANS"];
+      const SOURCES = ["ISP", "PC", "DOOR"];
+      const TARGETS = ["WAN", "LAN1", "LAN2"];
+      const CORRECT_WIRES = {
+        ISP: "WAN",
+        PC: "LAN1",
+        DOOR: "LAN2"
+      };
+      const SOURCE_COLOR = {
+        ISP: "#68e8ff",
+        PC: "#a2b2ff",
+        DOOR: "#ffb857"
+      };
+      const PASSWORD = "RT-SEC";
+      const PASSWORD_KEYS = ["R", "T", "-", "S", "E", "C", "N", "W"];
+      const DOOR_CODE = ["1", "3", "7", "2"];
+      const PHASE_META = [
+        { id: 1, label: "Desk", step: "鍵" },
+        { id: 2, label: "Wire", step: "配線" },
+        { id: 3, label: "Ping", step: "確認" },
+        { id: 4, label: "Router", step: "RT" },
+        { id: 5, label: "Door", step: "脱出" }
+      ];
+      const VIEW_META = {
+        desk: { phase: 1, title: "Desk Doodle", objective: "引き出しの鍵" },
+        drawer: { phase: 1, title: "Drawer", objective: "先輩ノート" },
+        rack: { phase: 2, title: "Physical Layer", objective: "配線を戻す" },
+        pc: { phase: 3, title: "PC Console", objective: "PINGで切り分け" },
+        router: { phase: 4, title: "RT-Sec", objective: "冗長WANを修正" },
+        door: { phase: 5, title: "Door Lock", objective: "退出コード" }
+      };
+      const PHASE_HINTS = {
+        1: [
+          { label: "Desk", value: "PHY → APP", copy: "机の落書き。物理層から順番に触る。" },
+          { label: "OSI", value: "1 2 3 4 5 6 7", copy: "物理層から上へ。正しい順序だけが鍵になる。" },
+          { label: "Senior", value: "START PHYSICAL", copy: "先輩の記憶。まずは物理層から着手。" }
+        ],
+        2: [
+          { label: "Rack", value: "ISP → WAN", copy: "青線。外線はRTのWANへ。" },
+          { label: "Desk", value: "PC → LAN1", copy: "白線。確認用PCはLAN1。" },
+          { label: "Door", value: "DOOR → LAN2", copy: "橙線。読取機はLAN2。" }
+        ],
+        3: [
+          { label: "PC", value: "PASS = HOST", copy: "待機画面のHOST名をそのまま使う。" },
+          { label: "Ping", value: "RT / INET", copy: "両方叩けば断点が見える。" },
+          { label: "Memory", value: "NEXT = RT", copy: "ルーターまでは届くか。外へは届くか。" }
+        ],
+        4: [
+          { label: "RT", value: "BACKUP", copy: "RT-Secは冗長用。MAINではない。" },
+          { label: "WAN", value: "PPPOE", copy: "設定表の回線方式。IPoEではない。" },
+          { label: "Lamp", value: "READER NG", copy: "回線が直っても退出リーダーは反応しない。" }
+        ],
+        5: [
+          { label: "Truth", value: "READER = DECOY", copy: "退出は入退室システムの外。" },
+          { label: "Unused", value: "1 → 3 → 7 → 2", copy: "未使用だった謎。順番どおりに押す。" },
+          { label: "Senior", value: "NAZO IS SECURITY", copy: "最後まで先輩の趣味が残っている。" }
+        ]
+      };
+      const SUMMARY_ITEMS = [
+        {
+          label: "Truth",
+          title: "Main NW was fine",
+          copy: "直していたのは先輩が構築中だった冗長NW。"
+        },
+        {
+          label: "Exit",
+          title: "Reader was a decoy",
+          copy: "退出は独自の謎ロック。入室管理の対象外だった。"
+        }
+      ];
+
+      const els = {
+        phaseStrip: document.getElementById("phaseStrip"),
+        panelPhaseLabel: document.getElementById("panelPhaseLabel"),
+        panelTitle: document.getElementById("panelTitle"),
+        objectiveText: document.getElementById("objectiveText"),
+        panelBody: document.getElementById("panelBody"),
+        statusText: document.getElementById("statusText"),
+        autosaveText: document.getElementById("autosaveText"),
+        noteBtn: document.getElementById("noteBtn"),
+        soundBtn: document.getElementById("soundBtn"),
+        resetBtn: document.getElementById("resetBtn"),
+        startOverlay: document.getElementById("startOverlay"),
+        startBtn: document.getElementById("startBtn"),
+        continueBtn: document.getElementById("continueBtn"),
+        noteOverlay: document.getElementById("noteOverlay"),
+        noteTitle: document.getElementById("noteTitle"),
+        noteGrid: document.getElementById("noteGrid"),
+        closeNoteBtn: document.getElementById("closeNoteBtn"),
+        endOverlay: document.getElementById("endOverlay"),
+        summaryGrid: document.getElementById("summaryGrid"),
+        restartBtn: document.getElementById("restartBtn"),
+        closeEndBtn: document.getElementById("closeEndBtn"),
+        roomButtons: [...document.querySelectorAll(".room-node")],
+        netLamp: document.getElementById("netLamp"),
+        internetLamp: document.getElementById("internetLamp"),
+        doorLamp: document.getElementById("doorLamp"),
+        netLabel: document.getElementById("netLabel"),
+        internetLabel: document.getElementById("internetLabel"),
+        doorLabel: document.getElementById("doorLabel"),
+        doorFrame: document.getElementById("doorFrame")
+      };
+
+      let audioContext = null;
+      let ambientNodes = null;
+      let autosaveTimer = 0;
+
+      function createDefaultState() {
+        return {
+          started: false,
+          voiceOn: true,
+          activeView: "desk",
+          noteOpen: false,
+          endOpen: false,
+          status: "先輩ノートを見つけろ。",
+          deskProgress: [],
+          deskSolved: false,
+          deskError: false,
+          drawerOpened: false,
+          selectedSource: null,
+          wires: {},
+          wiresSolved: false,
+          pcGuess: "",
+          pcUnlocked: false,
+          pingRT: false,
+          pingInet: false,
+          routerLine: "MAIN",
+          routerWan: "IPoE",
+          routerSolved: false,
+          doorInput: [],
+          doorUnlocked: false,
+          finished: false
+        };
+      }
+
+      function loadState() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) {
+            return createDefaultState();
+          }
+          const parsed = JSON.parse(raw);
+          return {
+            ...createDefaultState(),
+            ...parsed,
+            wires: {
+              ...(parsed?.wires || {})
+            }
+          };
+        } catch (error) {
+          return createDefaultState();
+        }
+      }
+
+      let state = loadState();
+
+      function hasProgress() {
+        return Boolean(
+          state.started ||
+          state.deskSolved ||
+          state.drawerOpened ||
+          state.wiresSolved ||
+          state.pcUnlocked ||
+          state.routerSolved ||
+          state.finished
+        );
+      }
+
+      function persistState() {
+        try {
+          const toSave = {
+            ...state,
+            noteOpen: false,
+            endOpen: false
+          };
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+          window.clearTimeout(autosaveTimer);
+          els.autosaveText.classList.add("pulse");
+          autosaveTimer = window.setTimeout(() => {
+            els.autosaveText.classList.remove("pulse");
+          }, 420);
+        } catch (error) {
+          // Ignore localStorage failures.
+        }
+      }
+
+      function clearSave() {
+        try {
+          localStorage.removeItem(STORAGE_KEY);
+        } catch (error) {
+          // Ignore localStorage failures.
+        }
+      }
+
+      function getPhase() {
+        if (state.finished || state.routerSolved) {
+          return 5;
+        }
+        if (state.pcUnlocked && state.pingRT && state.pingInet) {
+          return 4;
+        }
+        if (state.wiresSolved) {
+          return 3;
+        }
+        if (state.drawerOpened) {
+          return 2;
+        }
+        return 1;
+      }
+
+      function getUnlockedViews() {
+        return {
+          desk: true,
+          drawer: state.deskSolved,
+          rack: state.drawerOpened,
+          pc: state.wiresSolved,
+          router: state.pcUnlocked && state.pingRT && state.pingInet,
+          door: state.routerSolved
+        };
+      }
+
+      function getRecommendedView() {
+        if (state.finished) {
+          return "door";
+        }
+        if (state.routerSolved) {
+          return "door";
+        }
+        if (state.pcUnlocked && state.pingRT && state.pingInet) {
+          return "router";
+        }
+        if (state.wiresSolved) {
+          return "pc";
+        }
+        if (state.drawerOpened) {
+          return "rack";
+        }
+        if (state.deskSolved) {
+          return "drawer";
+        }
+        return "desk";
+      }
+
+      function ensureViewAccess() {
+        const unlocked = getUnlockedViews();
+        if (!unlocked[state.activeView]) {
+          state.activeView = getRecommendedView();
+        }
+      }
+
+      function ensureAudioContext() {
+        if (audioContext) {
+          if (audioContext.state === "suspended") {
+            audioContext.resume().catch(() => {});
+          }
+          return;
+        }
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) {
+          return;
+        }
+        audioContext = new AudioCtx();
+        startAmbient();
+      }
+
+      function startAmbient() {
+        if (!audioContext || ambientNodes) {
+          return;
+        }
+        const gain = audioContext.createGain();
+        gain.gain.value = state.voiceOn ? 0.012 : 0.00001;
+        gain.connect(audioContext.destination);
+
+        const filter = audioContext.createBiquadFilter();
+        filter.type = "lowpass";
+        filter.frequency.value = 480;
+        filter.Q.value = 0.2;
+        filter.connect(gain);
+
+        const oscA = audioContext.createOscillator();
+        oscA.type = "triangle";
+        oscA.frequency.value = 82;
+        oscA.connect(filter);
+
+        const oscB = audioContext.createOscillator();
+        oscB.type = "sine";
+        oscB.frequency.value = 123;
+        oscB.connect(filter);
+
+        const lfo = audioContext.createOscillator();
+        lfo.type = "sine";
+        lfo.frequency.value = 0.15;
+
+        const lfoGain = audioContext.createGain();
+        lfoGain.gain.value = 80;
+        lfo.connect(lfoGain);
+        lfoGain.connect(filter.frequency);
+
+        oscA.start();
+        oscB.start();
+        lfo.start();
+
+        ambientNodes = { gain, filter, oscA, oscB, lfo, lfoGain };
+      }
+
+      function syncAudio() {
+        if (!ambientNodes) {
+          return;
+        }
+        ambientNodes.gain.gain.cancelScheduledValues(audioContext.currentTime);
+        ambientNodes.gain.gain.linearRampToValueAtTime(
+          state.voiceOn ? 0.012 : 0.00001,
+          audioContext.currentTime + 0.18
+        );
+      }
+
+      function playTone(kind) {
+        ensureAudioContext();
+        if (!audioContext || !state.voiceOn) {
+          return;
+        }
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        const filter = audioContext.createBiquadFilter();
+        filter.type = "bandpass";
+
+        const now = audioContext.currentTime;
+        if (kind === "success") {
+          osc.type = "triangle";
+          osc.frequency.setValueAtTime(520, now);
+          osc.frequency.exponentialRampToValueAtTime(860, now + 0.16);
+          filter.frequency.value = 920;
+        } else if (kind === "error") {
+          osc.type = "sawtooth";
+          osc.frequency.setValueAtTime(280, now);
+          osc.frequency.exponentialRampToValueAtTime(180, now + 0.16);
+          filter.frequency.value = 300;
+        } else {
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(420, now);
+          osc.frequency.exponentialRampToValueAtTime(480, now + 0.1);
+          filter.frequency.value = 720;
+        }
+
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.exponentialRampToValueAtTime(0.05, now + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(audioContext.destination);
+        osc.start(now);
+        osc.stop(now + 0.2);
+      }
+
+      function speak(line) {
+        if (!state.voiceOn || !("speechSynthesis" in window)) {
+          return;
+        }
+        const utterance = new SpeechSynthesisUtterance(line);
+        utterance.lang = "ja-JP";
+        utterance.pitch = 0.92;
+        utterance.rate = 1.06;
+        utterance.volume = 0.88;
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(utterance);
+      }
+
+      function setStatus(line, options = {}) {
+        state.status = line;
+        if (options.tone) {
+          playTone(options.tone);
+        }
+        if (options.voice) {
+          speak(line);
+        }
+      }
+
+      function saveAndRender() {
+        persistState();
+        render();
+      }
+
+      function startNewGame() {
+        state = createDefaultState();
+        state.started = true;
+        state.status = "閉じ込められた。まずは机を調べろ。";
+        ensureAudioContext();
+        playTone("ping");
+        speak("閉じ込められた。まずは机を調べろ。");
+        saveAndRender();
+      }
+
+      function continueGame() {
+        if (!hasProgress()) {
+          startNewGame();
+          return;
+        }
+        state.started = true;
+        ensureAudioContext();
+        saveAndRender();
+      }
+
+      function hardReset() {
+        clearSave();
+        if ("speechSynthesis" in window) {
+          window.speechSynthesis.cancel();
+        }
+        state = createDefaultState();
+        render();
+      }
+
+      function openNote() {
+        if (!state.drawerOpened) {
+          setStatus("まだノートは手に入っていない。", { tone: "error" });
+          render();
+          return;
+        }
+        state.noteOpen = true;
+        render();
+      }
+
+      function closeNote() {
+        state.noteOpen = false;
+        render();
+      }
+
+      function openEnd() {
+        state.endOpen = true;
+        render();
+      }
+
+      function closeEnd() {
+        state.endOpen = false;
+        render();
+      }
+
+      function selectView(view) {
+        const unlocked = getUnlockedViews();
+        if (!unlocked[view]) {
+          setStatus("まだそこには触れない。", { tone: "error" });
+          render();
+          return;
+        }
+        state.activeView = view;
+        render();
+      }
+
+      function handleLayerTap(layer) {
+        ensureAudioContext();
+        const expected = LAYERS[state.deskProgress.length];
+        if (layer === expected) {
+          state.deskProgress = [...state.deskProgress, layer];
+          state.deskError = false;
+          if (state.deskProgress.length === LAYERS.length) {
+            state.deskSolved = true;
+            state.activeView = "drawer";
+            setStatus("鍵の場所が見えた。引き出しを開けろ。", {
+              tone: "success",
+              voice: true
+            });
+          } else {
+            setStatus(`OSI ${state.deskProgress.length}/7`, { tone: "ping" });
+          }
+        } else {
+          state.deskProgress = [];
+          state.deskError = true;
+          setStatus("順番が違う。物理層からやり直し。", {
+            tone: "error"
+          });
+        }
+        saveAndRender();
+      }
+
+      function openDrawer() {
+        state.drawerOpened = true;
+        state.activeView = "rack";
+        setStatus("先輩ノートを発見。次は物理層を戻す。", {
+          tone: "success",
+          voice: true
+        });
+        saveAndRender();
+      }
+
+      function selectWireSource(source) {
+        state.selectedSource = source;
+        setStatus(`${source} を選択。右のポートへ接続。`);
+        render();
+      }
+
+      function assignWire(target) {
+        if (!state.selectedSource) {
+          setStatus("左の機器を選んでからポートを触る。", {
+            tone: "error"
+          });
+          render();
+          return;
+        }
+        state.wires[state.selectedSource] = target;
+        setStatus(`${state.selectedSource} → ${target}`, { tone: "ping" });
+        state.selectedSource = null;
+        saveAndRender();
+      }
+
+      function validateWires() {
+        const assignedAll = SOURCES.every((source) => state.wires[source]);
+        if (!assignedAll) {
+          setStatus("3本すべて接続する。", { tone: "error" });
+          render();
+          return;
+        }
+        const correct = SOURCES.every((source) => state.wires[source] === CORRECT_WIRES[source]);
+        if (correct) {
+          state.wiresSolved = true;
+          state.activeView = "pc";
+          setStatus("配線は正常。次はPCでPING確認。", {
+            tone: "success",
+            voice: true
+          });
+        } else {
+          setStatus("ランプ色が合わない。配線図を見直せ。", {
+            tone: "error"
+          });
+        }
+        saveAndRender();
+      }
+
+      function pushPasswordKey(key) {
+        if (state.pcUnlocked || state.pcGuess.length >= PASSWORD.length) {
+          return;
+        }
+        state.pcGuess += key;
+        playTone("ping");
+        render();
+      }
+
+      function backspacePassword() {
+        if (!state.pcGuess) {
+          return;
+        }
+        state.pcGuess = state.pcGuess.slice(0, -1);
+        render();
+      }
+
+      function clearPassword() {
+        state.pcGuess = "";
+        render();
+      }
+
+      function loginPc() {
+        if (state.pcGuess === PASSWORD) {
+          state.pcUnlocked = true;
+          state.pcGuess = PASSWORD;
+          setStatus("PCログイン成功。ルーターと外をPING。", {
+            tone: "success",
+            voice: true
+          });
+        } else {
+          state.pcGuess = "";
+          setStatus("PCパスワードが違う。HOST名を見ろ。", {
+            tone: "error"
+          });
+        }
+        saveAndRender();
+      }
+
+      function pingTarget(target) {
+        if (target === "rt") {
+          state.pingRT = true;
+          setStatus("RT-Sec 応答あり。", { tone: "ping" });
+        } else {
+          state.pingInet = true;
+          setStatus("インターネットは応答なし。WAN側NG。", {
+            tone: "error"
+          });
+        }
+        if (state.pingRT && state.pingInet) {
+          state.activeView = "router";
+          setStatus("断点はRT-Secの外側。設定を直せ。", {
+            tone: "success",
+            voice: true
+          });
+        }
+        saveAndRender();
+      }
+
+      function setRouterLine(value) {
+        state.routerLine = value;
+        setStatus(`LINE = ${value}`, { tone: "ping" });
+        render();
+      }
+
+      function setRouterWan(value) {
+        state.routerWan = value;
+        setStatus(`WAN = ${value}`, { tone: "ping" });
+        render();
+      }
+
+      function applyRouter() {
+        if (state.routerLine === "BACKUP" && state.routerWan === "PPPoE") {
+          state.routerSolved = true;
+          state.activeView = "door";
+          setStatus("冗長WAN復旧。ただし読取機は沈黙したまま。", {
+            tone: "success",
+            voice: true
+          });
+        } else {
+          setStatus("RT-Sec の設定がまだ違う。", { tone: "error" });
+        }
+        saveAndRender();
+      }
+
+      function pressDoorDigit(value) {
+        if (state.doorUnlocked) {
+          return;
+        }
+        const nextInput = [...state.doorInput, value];
+        const isPrefix = nextInput.every((digit, index) => digit === DOOR_CODE[index]);
+        if (!isPrefix) {
+          state.doorInput = [];
+          setStatus("コード不一致。未使用の謎を思い出せ。", {
+            tone: "error"
+          });
+          saveAndRender();
+          return;
+        }
+        state.doorInput = nextInput;
+        playTone("ping");
+        if (nextInput.length === DOOR_CODE.length) {
+          state.doorUnlocked = true;
+          state.finished = true;
+          state.endOpen = true;
+          setStatus("ドア解錠。サーバールームから脱出した。", {
+            tone: "success",
+            voice: true
+          });
+          saveAndRender();
+          return;
+        }
+        render();
+      }
+
+      function clearDoorCode() {
+        state.doorInput = [];
+        render();
+      }
+
+      function renderPhaseStrip() {
+        const currentPhase = getPhase();
+        els.phaseStrip.innerHTML = PHASE_META.map((phase) => {
+          const classNames = [
+            "phase-chip",
+            phase.id === currentPhase ? "active" : "",
+            phase.id < currentPhase || state.finished ? "done" : ""
+          ].filter(Boolean).join(" ");
+          return `
+            <div class="${classNames}">
+              <span class="phase-name">Phase ${phase.id}</span>
+              <span class="phase-step">${phase.label} / ${phase.step}</span>
+            </div>
+          `;
+        }).join("");
+      }
+
+      function renderRoomButtons() {
+        const unlocked = getUnlockedViews();
+        els.roomButtons.forEach((button) => {
+          const view = button.dataset.view;
+          const done =
+            (view === "desk" && state.deskSolved) ||
+            (view === "drawer" && state.drawerOpened) ||
+            (view === "rack" && state.wiresSolved) ||
+            (view === "pc" && state.pcUnlocked && state.pingRT && state.pingInet) ||
+            (view === "router" && state.routerSolved) ||
+            (view === "door" && state.doorUnlocked);
+          button.classList.toggle("locked", !unlocked[view]);
+          button.classList.toggle("active", view === state.activeView);
+          button.classList.toggle("done", done);
+        });
+      }
+
+      function setLampState(element, kind) {
+        element.className = "lamp-dot";
+        if (kind) {
+          element.classList.add(kind);
+        }
+      }
+
+      function renderRoomStatus() {
+        const netKind = state.wiresSolved ? "good" : state.drawerOpened ? "warn" : "bad";
+        const inetKind = state.routerSolved ? "good" : state.pcUnlocked && state.pingInet ? "bad" : "warn";
+        const doorKind = state.doorUnlocked ? "good" : state.routerSolved ? "warn" : "bad";
+
+        setLampState(els.netLamp, netKind);
+        setLampState(els.internetLamp, inetKind);
+        setLampState(els.doorLamp, doorKind);
+
+        els.netLabel.textContent = state.wiresSolved ? "stable" : state.drawerOpened ? "checking" : "offline";
+        els.internetLabel.textContent = state.routerSolved ? "restored" : state.pcUnlocked && state.pingInet ? "断線" : "unknown";
+        els.doorLabel.textContent = state.doorUnlocked ? "open" : state.routerSolved ? "manual" : "sealed";
+        els.doorFrame.classList.toggle("open", state.doorUnlocked);
+      }
+
+      function maskedPassText() {
+        const chars = PASSWORD.split("").map((char, index) => (state.pcGuess[index] ? state.pcGuess[index] : "•"));
+        return chars.join("");
+      }
+
+      function maskedDoorText() {
+        if (!state.doorInput.length) {
+          return "• • • •";
+        }
+        return [...state.doorInput, ...Array(DOOR_CODE.length - state.doorInput.length).fill("•")].join(" ");
+      }
+
+      function renderDeskView() {
+        return `
+          <div class="panel-card desk-card">
+            <div class="card-headline">
+              <div>
+                <span class="system-label">Desk</span>
+                <p class="card-copy">机の落書き。物理層から順に押すと、引き出しの鍵が見つかる。</p>
+              </div>
+              <div class="phase-pod"><span class="tiny-led"></span>OSI</div>
+            </div>
+            <div class="progress-track">
+              ${LAYERS.map((_, index) => `
+                <div class="progress-node ${state.deskProgress[index] ? "done" : ""}"></div>
+              `).join("")}
+            </div>
+            <div class="layer-grid">
+              ${LAYER_POOL.map((layer) => `
+                <button type="button" class="chip ${state.deskProgress.includes(layer) ? "done" : ""} ${state.deskError ? "error" : ""}" data-layer="${layer}">
+                  <span class="chip-title">${layer}</span>
+                  <span class="chip-sub">${layer === "PHY" ? "L1" : layer === "DATA" ? "L2" : layer === "NET" ? "L3" : layer === "TRANS" ? "L4" : layer === "SESSION" ? "L5" : layer === "PRESENT" ? "L6" : "L7"}</span>
+                </button>
+              `).join("")}
+            </div>
+            <div class="panel-foot">
+              <div class="inline-row">
+                <div class="legend-chip"><span class="legend-swatch" style="color: var(--cyan); background: var(--cyan);"></span>PHY → APP</div>
+                <div class="legend-chip"><span class="legend-swatch" style="color: var(--good); background: var(--good);"></span>${state.deskSolved ? "Key found" : "Need 7"}</div>
+              </div>
+              ${state.deskSolved ? '<button type="button" class="primary-btn" id="openDrawerBtn">Open Drawer</button>' : '<button type="button" class="mini-btn" id="deskHintBtn">Hint</button>'}
+            </div>
+          </div>
+        `;
+      }
+
+      function renderDrawerView() {
+        if (!state.deskSolved) {
+          return `
+            <div class="panel-card">
+              <div class="card-headline">
+                <div>
+                  <span class="system-label">Drawer</span>
+                  <p class="card-copy">鍵の場所がまだ特定できていない。Deskを先に解く。</p>
+                </div>
+                <div class="phase-pod"><span class="tiny-led"></span>Locked</div>
+              </div>
+            </div>
+          `;
+        }
+
+        if (!state.drawerOpened) {
+          return `
+            <div class="panel-card">
+              <div class="card-headline">
+                <div>
+                  <span class="system-label">Drawer</span>
+                  <p class="card-copy">右側の引き出しが少し浮いている。中に先輩のノートがある。</p>
+                </div>
+                <div class="phase-pod"><span class="tiny-led"></span>Unlocked</div>
+              </div>
+              <div class="pass-display">
+                <div>
+                  <div class="pass-text">NOTE READY</div>
+                  <div class="pass-hint">Senior note / physical layer / next puzzle</div>
+                </div>
+              </div>
+              <div class="panel-foot">
+                <div class="legend-chip"><span class="legend-swatch" style="color: var(--warn); background: var(--warn);"></span>Desk clear</div>
+                <button type="button" class="primary-btn" id="drawerOpenBtn">Take Note</button>
+              </div>
+            </div>
+          `;
+        }
+
+        return `
+          <div class="panel-card">
+            <div class="card-headline">
+              <div>
+                <span class="system-label">Senior Note</span>
+                <p class="card-copy">「物理層から着手するべし」。配線図と機器ランプのメモが残っている。</p>
+              </div>
+              <div class="phase-pod"><span class="tiny-led"></span>Acquired</div>
+            </div>
+            <div class="note-grid">
+              ${PHASE_HINTS[2].map((hint) => `
+                <div class="hint-card">
+                  <span class="hint-label">${hint.label}</span>
+                  <div class="hint-value">${hint.value}</div>
+                  <p class="hint-copy">${hint.copy}</p>
+                </div>
+              `).join("")}
+            </div>
+            <div class="panel-foot">
+              <div class="legend-chip"><span class="legend-swatch" style="color: var(--good); background: var(--good);"></span>Notebook ready</div>
+              <button type="button" class="primary-btn" id="toRackBtn">Go Rack</button>
+            </div>
+          </div>
+        `;
+      }
+
+      function buildWirePath(source, target) {
+        const sourceY = { ISP: 22, PC: 50, DOOR: 78 }[source];
+        const targetY = { WAN: 22, LAN1: 50, LAN2: 78 }[target];
+        return `M 10 ${sourceY} C 40 ${sourceY} 60 ${targetY} 90 ${targetY}`;
+      }
+
+      function renderRackView() {
+        const wirePaths = SOURCES.map((source) => {
+          const target = state.wires[source];
+          if (!target) {
+            return "";
+          }
+          return `<path d="${buildWirePath(source, target)}" style="color:${SOURCE_COLOR[source]}; stroke:${SOURCE_COLOR[source]};"></path>`;
+        }).join("");
+
+        const assignedAll = SOURCES.every((source) => state.wires[source]);
+
+        return `
+          <div class="panel-card">
+            <div class="card-headline">
+              <div>
+                <span class="system-label">Patch Board</span>
+                <p class="card-copy">左の機器を選んで、右のポートに接続。先輩ノートの配線図どおりに戻す。</p>
+              </div>
+              <div class="phase-pod"><span class="tiny-led"></span>${state.wiresSolved ? "Stable" : "Linking"}</div>
+            </div>
+
+            <div class="wire-shell">
+              <div class="wire-column">
+                ${SOURCES.map((source) => `
+                  <button type="button" class="source-btn ${state.selectedSource === source ? "active" : ""} ${state.wires[source] ? "done" : ""}" data-source="${source}">
+                    <span class="source-name">${source}</span>
+                    <span class="source-sub">${source === "ISP" ? "青 / uplink" : source === "PC" ? "白 / test pc" : "橙 / reader"}</span>
+                  </button>
+                `).join("")}
+              </div>
+              <div class="wire-canvas">
+                <svg class="wire-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                  ${wirePaths}
+                </svg>
+                <span class="wire-label top">PATCH</span>
+                <span class="wire-label bottom">RT-SEC</span>
+              </div>
+              <div class="wire-column">
+                ${TARGETS.map((target) => `
+                  <button type="button" class="port-btn ${Object.values(state.wires).includes(target) ? "done" : ""}" data-target="${target}">
+                    <span class="port-name">${target}</span>
+                    <span class="port-sub">${target === "WAN" ? "to ISP" : target === "LAN1" ? "to PC" : "to reader"}</span>
+                  </button>
+                `).join("")}
+              </div>
+            </div>
+
+            <div class="signal-grid">
+              <div class="signal-card"><strong>NW lamp</strong><span class="lamp-dot ${state.wiresSolved ? "good" : assignedAll ? "warn" : "bad"}"></span></div>
+              <div class="signal-card"><strong>Guide</strong><span>${state.selectedSource ? `${state.selectedSource} selected` : "source → port"}</span></div>
+            </div>
+
+            <div class="panel-foot">
+              <div class="inline-row">
+                <div class="legend-chip"><span class="legend-swatch" style="color: ${SOURCE_COLOR.ISP}; background: ${SOURCE_COLOR.ISP};"></span>ISP</div>
+                <div class="legend-chip"><span class="legend-swatch" style="color: ${SOURCE_COLOR.PC}; background: ${SOURCE_COLOR.PC};"></span>PC</div>
+                <div class="legend-chip"><span class="legend-swatch" style="color: ${SOURCE_COLOR.DOOR}; background: ${SOURCE_COLOR.DOOR};"></span>DOOR</div>
+              </div>
+              ${state.wiresSolved
+                ? '<button type="button" class="primary-btn" id="toPcBtn">Go PC</button>'
+                : `<button type="button" class="primary-btn" id="checkWireBtn" ${assignedAll ? "" : "disabled"}>Check Link</button>`}
+            </div>
+          </div>
+        `;
+      }
+
+      function renderPcView() {
+        if (!state.pcUnlocked) {
+          return `
+            <div class="panel-card">
+              <div class="card-headline">
+                <div>
+                  <span class="system-label">Lock Screen</span>
+                  <p class="card-copy">待機画面のHOST名がそのままパスワード。オンスクリーンキーで入力する。</p>
+                </div>
+                <div class="phase-pod"><span class="tiny-led"></span>HOST</div>
+              </div>
+
+              <div class="pass-display">
+                <div>
+                  <div class="pass-text">${maskedPassText()}</div>
+                  <div class="pass-hint">HOST: RT-Sec / LOGIN</div>
+                </div>
+                <div class="phase-pod"><span class="tiny-led"></span>${state.pcGuess.length}/${PASSWORD.length}</div>
+              </div>
+
+              <div class="key-grid">
+                ${PASSWORD_KEYS.map((key) => `
+                  <button type="button" class="key-btn" data-key="${key}">
+                    <span class="key-main">${key}</span>
+                    <span class="key-sub">input</span>
+                  </button>
+                `).join("")}
+              </div>
+
+              <div class="panel-foot">
+                <div class="inline-row">
+                  <button type="button" class="mini-btn" id="pcBackBtn">Back</button>
+                  <button type="button" class="mini-btn" id="pcClearBtn">Clear</button>
+                </div>
+                <button type="button" class="primary-btn" id="pcLoginBtn" ${state.pcGuess.length === PASSWORD.length ? "" : "disabled"}>Login</button>
+              </div>
+            </div>
+          `;
+        }
+
+        return `
+          <div class="panel-card">
+            <div class="card-headline">
+              <div>
+                <span class="system-label">Terminal</span>
+                <p class="card-copy">ルーター宛と外宛の両方をPINGして、断点を切り分ける。</p>
+              </div>
+              <div class="phase-pod"><span class="tiny-led"></span>Online</div>
+            </div>
+
+            <div class="terminal-shell">
+              <div class="terminal-screen">
+                <div class="terminal-line"><span class="terminal-prompt">$</span><span>host RT-Sec</span></div>
+                <div class="terminal-line"><span class="terminal-prompt">$</span><span>login accepted</span></div>
+                ${state.pingRT ? '<div class="terminal-line"><span class="terminal-prompt">$</span><span>ping RT-Sec ... 0% loss</span></div>' : ""}
+                ${state.pingInet ? '<div class="terminal-line"><span class="terminal-prompt">$</span><span>ping internet ... timeout</span></div>' : ""}
+              </div>
+
+              <div class="signal-grid">
+                <div class="signal-card"><strong>RT-Sec</strong><span class="lamp-dot ${state.pingRT ? "good" : "warn"}"></span></div>
+                <div class="signal-card"><strong>Internet</strong><span class="lamp-dot ${state.pingInet ? "bad" : "warn"}"></span></div>
+              </div>
+            </div>
+
+            <div class="panel-foot">
+              <div class="inline-row">
+                <button type="button" class="mini-btn" id="pingRtBtn" ${state.pingRT ? "disabled" : ""}>Ping RT-Sec</button>
+                <button type="button" class="mini-btn" id="pingInetBtn" ${state.pingInet ? "disabled" : ""}>Ping Internet</button>
+              </div>
+              <button type="button" class="primary-btn" id="toRouterBtn" ${state.pingRT && state.pingInet ? "" : "disabled"}>Go Router</button>
+            </div>
+          </div>
+        `;
+      }
+
+      function renderRouterView() {
+        return `
+          <div class="panel-card">
+            <div class="card-headline">
+              <div>
+                <span class="system-label">RT-Sec Config</span>
+                <p class="card-copy">本番ではなく冗長NW用の設定を直す。先輩ノートどおり BACKUP / PPPoE を選ぶ。</p>
+              </div>
+              <div class="phase-pod"><span class="tiny-led"></span>Backup</div>
+            </div>
+
+            <div class="router-shell">
+              <div class="pass-display">
+                <div>
+                  <div class="pass-text">RT-SEC</div>
+                  <div class="pass-hint">Backup router / host reuse</div>
+                </div>
+                <div class="phase-pod"><span class="tiny-led"></span>edit</div>
+              </div>
+
+              <div class="toggle-grid">
+                <div class="panel-card">
+                  <div class="card-headline">
+                    <div>
+                      <span class="system-label">Line</span>
+                      <p class="card-copy">どの回線の設定か。</p>
+                    </div>
+                  </div>
+                  <div class="toggle-grid">
+                    ${["MAIN", "BACKUP"].map((value) => `
+                      <button type="button" class="toggle-btn ${state.routerLine === value ? "active" : ""}" data-line="${value}">
+                        <span class="toggle-main">${value}</span>
+                        <span class="toggle-sub">${value === "MAIN" ? "production" : "redundant"}</span>
+                      </button>
+                    `).join("")}
+                  </div>
+                </div>
+
+                <div class="panel-card">
+                  <div class="card-headline">
+                    <div>
+                      <span class="system-label">WAN</span>
+                      <p class="card-copy">接続方式。</p>
+                    </div>
+                  </div>
+                  <div class="toggle-grid">
+                    ${["IPoE", "PPPoE"].map((value) => `
+                      <button type="button" class="toggle-btn ${state.routerWan === value ? "active" : ""}" data-wan="${value}">
+                        <span class="toggle-main">${value}</span>
+                        <span class="toggle-sub">${value === "IPoE" ? "wrong" : "correct"}</span>
+                      </button>
+                    `).join("")}
+                  </div>
+                </div>
+              </div>
+
+              <div class="signal-grid">
+                <div class="signal-card"><strong>NW</strong><span class="lamp-dot ${state.wiresSolved ? "good" : "warn"}"></span></div>
+                <div class="signal-card"><strong>INET</strong><span class="lamp-dot ${state.routerSolved ? "good" : "bad"}"></span></div>
+              </div>
+            </div>
+
+            <div class="panel-foot">
+              <div class="legend-chip"><span class="legend-swatch" style="color: var(--warn); background: var(--warn);"></span>RT-Sec is redundant</div>
+              <button type="button" class="primary-btn" id="applyRouterBtn">Apply</button>
+            </div>
+          </div>
+        `;
+      }
+
+      function renderDoorView() {
+        if (!state.routerSolved) {
+          return `
+            <div class="panel-card">
+              <div class="card-headline">
+                <div>
+                  <span class="system-label">Door</span>
+                  <p class="card-copy">まずはネットワークを直す。退出リーダーはまだ沈黙している。</p>
+                </div>
+                <div class="phase-pod"><span class="tiny-led"></span>Locked</div>
+              </div>
+            </div>
+          `;
+        }
+
+        return `
+          <div class="panel-card">
+            <div class="card-headline">
+              <div>
+                <span class="system-label">Unused Riddle</span>
+                <p class="card-copy">退出は入退室システムの外だった。未使用の謎どおりに数字を押す。</p>
+              </div>
+              <div class="phase-pod"><span class="tiny-led"></span>${state.doorUnlocked ? "Open" : "Manual"}</div>
+            </div>
+
+            <div class="door-shell">
+              <div class="door-display">
+                <div>
+                  <div class="door-text">${maskedDoorText()}</div>
+                  <div class="door-hint">Unused note: 1 → 3 → 7 → 2</div>
+                </div>
+                <div class="phase-pod"><span class="tiny-led"></span>${state.doorInput.length}/4</div>
+              </div>
+
+              <div class="door-grid">
+                ${["1", "2", "3", "4", "5", "6", "7", "CLR"].map((digit) => `
+                  <button type="button" class="digit-btn" data-digit="${digit}">
+                    <span class="digit-main">${digit}</span>
+                    <span class="digit-sub">${digit === "CLR" ? "clear" : "code"}</span>
+                  </button>
+                `).join("")}
+              </div>
+
+              <div class="signal-grid">
+                <div class="signal-card"><strong>Reader</strong><span class="lamp-dot bad"></span></div>
+                <div class="signal-card"><strong>Manual Lock</strong><span class="lamp-dot ${state.doorUnlocked ? "good" : "warn"}"></span></div>
+              </div>
+            </div>
+
+            <div class="panel-foot">
+              <div class="legend-chip"><span class="legend-swatch" style="color: var(--purple); background: var(--purple);"></span>1 → 3 → 7 → 2</div>
+              <button type="button" class="primary-btn" id="openEndBtn">${state.doorUnlocked ? "Epilogue" : "Note"}</button>
+            </div>
+          </div>
+        `;
+      }
+
+      function renderPanel() {
+        const view = state.activeView;
+        let markup = "";
+        if (view === "desk") {
+          markup = renderDeskView();
+        } else if (view === "drawer") {
+          markup = renderDrawerView();
+        } else if (view === "rack") {
+          markup = renderRackView();
+        } else if (view === "pc") {
+          markup = renderPcView();
+        } else if (view === "router") {
+          markup = renderRouterView();
+        } else {
+          markup = renderDoorView();
+        }
+        els.panelBody.innerHTML = markup;
+      }
+
+      function bindPanelEvents() {
+        els.panelBody.querySelectorAll("[data-layer]").forEach((button) => {
+          button.addEventListener("click", () => handleLayerTap(button.dataset.layer));
+        });
+
+        const openDrawerBtn = els.panelBody.querySelector("#openDrawerBtn");
+        if (openDrawerBtn) {
+          openDrawerBtn.addEventListener("click", openDrawer);
+        }
+
+        const drawerOpenBtn = els.panelBody.querySelector("#drawerOpenBtn");
+        if (drawerOpenBtn) {
+          drawerOpenBtn.addEventListener("click", openDrawer);
+        }
+
+        const toRackBtn = els.panelBody.querySelector("#toRackBtn");
+        if (toRackBtn) {
+          toRackBtn.addEventListener("click", () => selectView("rack"));
+        }
+
+        const deskHintBtn = els.panelBody.querySelector("#deskHintBtn");
+        if (deskHintBtn) {
+          deskHintBtn.addEventListener("click", openNote);
+        }
+
+        els.panelBody.querySelectorAll("[data-source]").forEach((button) => {
+          button.addEventListener("click", () => selectWireSource(button.dataset.source));
+        });
+
+        els.panelBody.querySelectorAll("[data-target]").forEach((button) => {
+          button.addEventListener("click", () => assignWire(button.dataset.target));
+        });
+
+        const checkWireBtn = els.panelBody.querySelector("#checkWireBtn");
+        if (checkWireBtn) {
+          checkWireBtn.addEventListener("click", validateWires);
+        }
+
+        const toPcBtn = els.panelBody.querySelector("#toPcBtn");
+        if (toPcBtn) {
+          toPcBtn.addEventListener("click", () => selectView("pc"));
+        }
+
+        els.panelBody.querySelectorAll("[data-key]").forEach((button) => {
+          button.addEventListener("click", () => pushPasswordKey(button.dataset.key));
+        });
+
+        const pcBackBtn = els.panelBody.querySelector("#pcBackBtn");
+        if (pcBackBtn) {
+          pcBackBtn.addEventListener("click", backspacePassword);
+        }
+
+        const pcClearBtn = els.panelBody.querySelector("#pcClearBtn");
+        if (pcClearBtn) {
+          pcClearBtn.addEventListener("click", clearPassword);
+        }
+
+        const pcLoginBtn = els.panelBody.querySelector("#pcLoginBtn");
+        if (pcLoginBtn) {
+          pcLoginBtn.addEventListener("click", loginPc);
+        }
+
+        const pingRtBtn = els.panelBody.querySelector("#pingRtBtn");
+        if (pingRtBtn) {
+          pingRtBtn.addEventListener("click", () => pingTarget("rt"));
+        }
+
+        const pingInetBtn = els.panelBody.querySelector("#pingInetBtn");
+        if (pingInetBtn) {
+          pingInetBtn.addEventListener("click", () => pingTarget("inet"));
+        }
+
+        const toRouterBtn = els.panelBody.querySelector("#toRouterBtn");
+        if (toRouterBtn) {
+          toRouterBtn.addEventListener("click", () => selectView("router"));
+        }
+
+        els.panelBody.querySelectorAll("[data-line]").forEach((button) => {
+          button.addEventListener("click", () => setRouterLine(button.dataset.line));
+        });
+
+        els.panelBody.querySelectorAll("[data-wan]").forEach((button) => {
+          button.addEventListener("click", () => setRouterWan(button.dataset.wan));
+        });
+
+        const applyRouterBtn = els.panelBody.querySelector("#applyRouterBtn");
+        if (applyRouterBtn) {
+          applyRouterBtn.addEventListener("click", applyRouter);
+        }
+
+        els.panelBody.querySelectorAll("[data-digit]").forEach((button) => {
+          button.addEventListener("click", () => {
+            if (button.dataset.digit === "CLR") {
+              clearDoorCode();
+            } else {
+              pressDoorDigit(button.dataset.digit);
+            }
+          });
+        });
+
+        const openEndBtn = els.panelBody.querySelector("#openEndBtn");
+        if (openEndBtn) {
+          openEndBtn.addEventListener("click", () => {
+            if (state.doorUnlocked) {
+              openEnd();
+            } else {
+              openNote();
+            }
+          });
+        }
+      }
+
+      function renderNoteOverlay() {
+        const phase = getPhase();
+        els.noteTitle.textContent = `Phase ${phase} Note`;
+        els.noteGrid.innerHTML = PHASE_HINTS[phase].map((hint) => `
+          <div class="hint-card">
+            <span class="hint-label">${hint.label}</span>
+            <div class="hint-value">${hint.value}</div>
+            <p class="hint-copy">${hint.copy}</p>
+          </div>
+        `).join("");
+        els.noteOverlay.classList.toggle("visible", state.noteOpen);
+      }
+
+      function renderEndOverlay() {
+        els.summaryGrid.innerHTML = SUMMARY_ITEMS.map((item, index) => `
+          <div class="summary-card">
+            <div class="summary-row">
+              <span class="lamp-dot ${index === 0 ? "good" : "warn"}"></span>
+              <strong>${item.label}</strong>
+            </div>
+            <div class="hint-value">${item.title}</div>
+            <p class="summary-copy">${item.copy}</p>
+          </div>
+        `).join("");
+        els.endOverlay.classList.toggle("visible", state.endOpen);
+      }
+
+      function renderStartOverlay() {
+        const showOverlay = !state.started;
+        els.startOverlay.classList.toggle("visible", showOverlay);
+        els.continueBtn.style.display = hasProgress() ? "inline-flex" : "none";
+      }
+
+      function renderHeader() {
+        const viewMeta = VIEW_META[state.activeView];
+        const phase = getPhase();
+        els.panelPhaseLabel.textContent = `Phase ${phase}`;
+        els.panelTitle.textContent = viewMeta.title;
+        els.objectiveText.textContent = viewMeta.objective;
+        els.statusText.textContent = state.status;
+        els.soundBtn.textContent = state.voiceOn ? "Voice On" : "Voice Off";
+      }
+
+      function render() {
+        ensureViewAccess();
+        renderPhaseStrip();
+        renderRoomButtons();
+        renderRoomStatus();
+        renderHeader();
+        renderPanel();
+        bindPanelEvents();
+        renderNoteOverlay();
+        renderEndOverlay();
+        renderStartOverlay();
+        syncAudio();
+      }
+
+      els.roomButtons.forEach((button) => {
+        button.addEventListener("click", () => selectView(button.dataset.view));
+      });
+
+      els.noteBtn.addEventListener("click", openNote);
+      els.closeNoteBtn.addEventListener("click", closeNote);
+
+      els.soundBtn.addEventListener("click", () => {
+        state.voiceOn = !state.voiceOn;
+        ensureAudioContext();
+        syncAudio();
+        if (!state.voiceOn && "speechSynthesis" in window) {
+          window.speechSynthesis.cancel();
+        }
+        setStatus(state.voiceOn ? "Voice と SE を有効化。" : "Voice と SE を停止。", {
+          tone: "ping",
+          voice: false
+        });
+        saveAndRender();
+      });
+
+      els.resetBtn.addEventListener("click", hardReset);
+      els.startBtn.addEventListener("click", startNewGame);
+      els.continueBtn.addEventListener("click", continueGame);
+      els.restartBtn.addEventListener("click", startNewGame);
+      els.closeEndBtn.addEventListener("click", closeEnd);
+
+      window.addEventListener("pointerdown", () => {
+        if (state.started) {
+          ensureAudioContext();
+        }
+      }, { once: true });
+
+      render();
+    })();
+  </script>
+</body>
+</html>
