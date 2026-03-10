@@ -649,6 +649,7 @@
         <div class="meta-row" aria-live="polite">
           <span class="chip warn" id="privacyChip">MASK LOCK</span>
           <span class="chip" id="intervalChip">10S</span>
+          <span class="chip" id="analysisChip">CARE</span>
           <span class="chip local" id="modeChip">LOCAL</span>
         </div>
       </div>
@@ -669,6 +670,14 @@
         <button class="mini-btn ghost" id="macCameraButton" type="button">Mac</button>
       </div>
       <div class="settings-row">
+        <label class="settings-label">View Mode</label>
+        <div class="settings-row actions actions-3">
+          <button class="mini-btn ghost" id="careModeButton" type="button">Care</button>
+          <button class="mini-btn ghost" id="objectModeButton" type="button">Object</button>
+          <button class="mini-btn ghost" id="babyModeButton" type="button">Baby</button>
+        </div>
+      </div>
+      <div class="settings-row">
         <label class="settings-label" for="modelInput">Gemini Model</label>
         <input class="input" id="modelInput" type="text" value="gemini-3.1-flash-lite-preview" spellcheck="false" />
       </div>
@@ -684,7 +693,7 @@
     </div>
 
     <section class="summary-card" aria-live="polite">
-      <div class="summary-kicker">Context</div>
+      <div class="summary-kicker" id="summaryKicker">Care View</div>
       <div class="summary-text" id="summaryText">思いやりのきっかけ</div>
       <div class="summary-sub" id="summarySub">start to preview</div>
     </section>
@@ -729,23 +738,75 @@
       geminiPathForModel(modelId) {
         return `/__gemini/v1beta/models/${encodeURIComponent(modelId)}:generateContent`;
       },
-      geminiPrompt: [
-        "あなたは日常風景を、環境の刺激や負荷の観点で短く見直す補助役です。",
-        "人物の診断・属性推定・感情推定は禁止です。",
-        "注目するのは環境だけ。情報量、圧迫感、まぶしさ、動線のわかりにくさ、音の予感、逃げ場の少なさ。",
-        "画面に重ねるので text は 2-8 文字の短い日本語。",
-        "JSON only.",
-        "{\"summary\":\"刺激が重なる\",\"factors\":[{\"text\":\"情報量多い\",\"x\":0.52,\"y\":0.28,\"level\":\"high\"}]}",
-        "rules:",
-        "- factors は 1-4 件",
-        "- summary は 8-14 文字",
-        "- x と y は 0.08 以上 0.92 以下",
-        "- level は low / medium / high",
-        "- text は配慮のヒントだけ",
-        "- 医療・障害・能力の診断は禁止",
-      ].join("\n"),
       liveModelAssetPath:
         "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite",
+    };
+
+    const ANALYSIS_MODES = {
+      care: {
+        chip: "CARE",
+        kicker: "Care View",
+        idleSummary: "思いやりのきっかけ",
+        idleDetail: "environment load lens",
+        prompt: [
+          "あなたは日常風景を、環境の刺激や負荷の観点で短く見直す補助役です。",
+          "人物の診断・属性推定・感情推定は禁止です。",
+          "注目するのは環境だけ。情報量、圧迫感、まぶしさ、動線のわかりにくさ、音の予感、逃げ場の少なさ。",
+          "画面に重ねるので text は 2-8 文字の短い日本語。",
+          "JSON only.",
+          "{\"summary\":\"刺激が重なる\",\"factors\":[{\"text\":\"情報量多い\",\"x\":0.52,\"y\":0.28,\"level\":\"high\"}]}",
+          "rules:",
+          "- factors は 1-4 件",
+          "- summary は 8-14 文字",
+          "- x と y は 0.08 以上 0.92 以下",
+          "- level は low / medium / high",
+          "- text は配慮のヒントだけ",
+          "- 医療・障害・能力の診断は禁止",
+        ].join("\n"),
+      },
+      object: {
+        chip: "OBJECT",
+        kicker: "Object View",
+        idleSummary: "見える物体を拾う",
+        idleDetail: "scene object labels",
+        prompt: [
+          "あなたは画像に写る環境物体だけを短く言語化する補助役です。",
+          "人物の診断・属性推定・感情推定は禁止です。顔や人物説明も不要です。",
+          "空間に見える物体や要素だけを拾ってください。例: 机、椅子、窓、看板、床、扉、車。",
+          "画面に重ねるので text は 2-8 文字の短い日本語。",
+          "JSON only.",
+          "{\"summary\":\"見える物体\",\"factors\":[{\"text\":\"看板\",\"x\":0.68,\"y\":0.26,\"level\":\"medium\"},{\"text\":\"床\",\"x\":0.50,\"y\":0.82,\"level\":\"low\"}]}",
+          "rules:",
+          "- factors は 2-4 件",
+          "- summary は 6-14 文字",
+          "- x と y は 0.08 以上 0.92 以下",
+          "- level は low / medium / high",
+          "- text は物体名や場所名だけ",
+          "- 評価語や感情語は禁止",
+        ].join("\n"),
+      },
+      baby: {
+        chip: "BABY",
+        kicker: "Baby Safety",
+        idleSummary: "育児目線で確認",
+        idleDetail: "child safety lens",
+        prompt: [
+          "あなたは写っている環境を、育児中の安全確認の観点で短く見直す補助役です。",
+          "人物の診断・属性推定・感情推定は禁止です。",
+          "乳幼児や小さい子どもが近くにいる想定で、ぶつかる、転ぶ、口に入れる、落下する、熱い、届きやすい、挟まる等の環境上の注意点だけを出してください。",
+          "危険が強く見えない場合は、危険少なめのような穏やかな表現にしてください。",
+          "画面に重ねるので text は 2-8 文字の短い日本語。",
+          "JSON only.",
+          "{\"summary\":\"育児目線で注意\",\"factors\":[{\"text\":\"角に注意\",\"x\":0.52,\"y\":0.44,\"level\":\"high\"},{\"text\":\"足元注意\",\"x\":0.46,\"y\":0.82,\"level\":\"medium\"}]}",
+          "rules:",
+          "- factors は 1-4 件",
+          "- summary は 8-14 文字",
+          "- x と y は 0.08 以上 0.92 以下",
+          "- level は low / medium / high",
+          "- text は安全確認の短い注意点だけ",
+          "- 医療判断や保護者評価は禁止",
+        ].join("\n"),
+      },
     };
 
     const state = {
@@ -753,6 +814,7 @@
       scanning: false,
       stream: null,
       source: "demo",
+      analysisMode: "care",
       cameraTarget: "rear",
       facingTarget: "rear",
       preferredMacDeviceId: "",
@@ -782,8 +844,10 @@
       labelLayer: document.getElementById("labelLayer"),
       summaryText: document.getElementById("summaryText"),
       summarySub: document.getElementById("summarySub"),
+      summaryKicker: document.getElementById("summaryKicker"),
       privacyChip: document.getElementById("privacyChip"),
       intervalChip: document.getElementById("intervalChip"),
+      analysisChip: document.getElementById("analysisChip"),
       modeChip: document.getElementById("modeChip"),
       camChip: document.getElementById("camChip"),
       faceChip: document.getElementById("faceChip"),
@@ -798,6 +862,9 @@
       scanNowButton: document.getElementById("scanNowButton"),
       swapCameraButton: document.getElementById("swapCameraButton"),
       macCameraButton: document.getElementById("macCameraButton"),
+      careModeButton: document.getElementById("careModeButton"),
+      objectModeButton: document.getElementById("objectModeButton"),
+      babyModeButton: document.getElementById("babyModeButton"),
       modelInput: document.getElementById("modelInput"),
       proxyNote: document.getElementById("proxyNote"),
       startButton: document.getElementById("startButton"),
@@ -857,10 +924,23 @@
       el.statusLine.textContent = text;
     }
 
+    function currentAnalysisConfig() {
+      return ANALYSIS_MODES[state.analysisMode] || ANALYSIS_MODES.care;
+    }
+
     function syncCameraButtons() {
       el.swapCameraButton.textContent = state.facingTarget === "front" ? "Front" : "Rear";
       el.swapCameraButton.classList.toggle("active", state.cameraTarget !== "mac");
       el.macCameraButton.classList.toggle("active", state.cameraTarget === "mac");
+    }
+
+    function syncAnalysisButtons() {
+      const config = currentAnalysisConfig();
+      el.careModeButton.classList.toggle("active", state.analysisMode === "care");
+      el.objectModeButton.classList.toggle("active", state.analysisMode === "object");
+      el.babyModeButton.classList.toggle("active", state.analysisMode === "baby");
+      el.analysisChip.textContent = config.chip;
+      el.summaryKicker.textContent = config.kicker;
     }
 
     function setModeChip(mode) {
@@ -1622,7 +1702,7 @@
     }
 
     function normalizeLivePayload(raw) {
-      const summary = String(raw?.summary || "").trim() || "刺激を見直す";
+      const summary = String(raw?.summary || "").trim() || currentAnalysisConfig().idleSummary;
       const sourceFactors = Array.isArray(raw?.factors) ? raw.factors : [];
       const factors = sourceFactors
         .map((item, index) => ({
@@ -1644,6 +1724,7 @@
 
     async function requestGemini(frame) {
       const model = String(el.modelInput.value || DEFAULTS.model).trim() || DEFAULTS.model;
+      const prompt = currentAnalysisConfig().prompt;
       const response = await fetch(DEFAULTS.geminiPathForModel(model), {
         method: "POST",
         headers: {
@@ -1655,7 +1736,7 @@
             {
               role: "user",
               parts: [
-                { text: DEFAULTS.geminiPrompt },
+                { text: prompt },
                 {
                   inlineData: {
                     mimeType: frame.mimeType,
@@ -1686,12 +1767,9 @@
       return normalizeLivePayload(json);
     }
 
-    function analyzeLocally() {
+    function readFrameSignals() {
       if (!workCtx) {
-        return {
-          summary: "刺激を見直す",
-          factors: [{ text: "様子確認", x: 0.5, y: 0.44, level: "medium" }],
-        };
+        return null;
       }
 
       const width = workCanvas.width;
@@ -1762,24 +1840,58 @@
       const centerEdgeMean = centerEdge / Math.max(centerSamples, 1);
       const lowerEdgeMean = lowerEdge / Math.max(lowerSamples, 1);
 
+      return {
+        width,
+        height,
+        lumaMean,
+        satMean,
+        edgeMean,
+        lumaStd,
+        highlightRate,
+        darkRate,
+        centerEdgeMean,
+        lowerEdgeMean,
+      };
+    }
+
+    function uniqueFactors(factors) {
+      const seen = new Set();
+      return factors.filter((item) => {
+        const key = `${item.text}:${item.x}:${item.y}`;
+        if (!item.text || seen.has(key)) {
+          return false;
+        }
+        seen.add(key);
+        return true;
+      });
+    }
+
+    function buildCareLocalFallback(metrics) {
+      if (!metrics) {
+        return {
+          summary: currentAnalysisConfig().idleSummary,
+          factors: [{ text: "様子確認", x: 0.5, y: 0.44, level: "medium" }],
+        };
+      }
+
       const factors = [];
 
-      if (edgeMean > 0.18 || lumaStd > 0.22) {
+      if (metrics.edgeMean > 0.18 || metrics.lumaStd > 0.22) {
         factors.push({ text: "情報量多い", x: 0.5, y: 0.24, level: "high" });
       }
-      if (highlightRate > 0.12 || (lumaMean > 0.58 && lumaStd > 0.2)) {
-        factors.push({ text: "まぶしさ", x: 0.78, y: 0.18, level: highlightRate > 0.2 ? "high" : "medium" });
+      if (metrics.highlightRate > 0.12 || (metrics.lumaMean > 0.58 && metrics.lumaStd > 0.2)) {
+        factors.push({ text: "まぶしさ", x: 0.78, y: 0.18, level: metrics.highlightRate > 0.2 ? "high" : "medium" });
       }
-      if (satMean > 0.32) {
-        factors.push({ text: "色刺激", x: 0.82, y: 0.34, level: satMean > 0.42 ? "high" : "medium" });
+      if (metrics.satMean > 0.32) {
+        factors.push({ text: "色刺激", x: 0.82, y: 0.34, level: metrics.satMean > 0.42 ? "high" : "medium" });
       }
-      if (darkRate > 0.36 || lumaMean < 0.24) {
+      if (metrics.darkRate > 0.36 || metrics.lumaMean < 0.24) {
         factors.push({ text: "見通し低い", x: 0.22, y: 0.17, level: "medium" });
       }
-      if (centerEdgeMean > edgeMean * 1.12) {
+      if (metrics.centerEdgeMean > metrics.edgeMean * 1.12) {
         factors.push({ text: "中心圧迫", x: 0.52, y: 0.54, level: "high" });
       }
-      if (lowerEdgeMean > edgeMean * 1.18) {
+      if (metrics.lowerEdgeMean > metrics.edgeMean * 1.18) {
         factors.push({ text: "足元多忙", x: 0.46, y: 0.82, level: "medium" });
       }
 
@@ -1797,8 +1909,99 @@
 
       return {
         summary,
-        factors: factors.slice(0, 4),
+        factors: uniqueFactors(factors).slice(0, 4),
       };
+    }
+
+    function buildObjectLocalFallback(metrics) {
+      if (!metrics) {
+        return {
+          summary: "見える物体を拾う",
+          factors: [{ text: "物体", x: 0.5, y: 0.44, level: "low" }],
+        };
+      }
+
+      const factors = [];
+
+      factors.push({
+        text: metrics.highlightRate > 0.08 ? "空" : "上部",
+        x: 0.5,
+        y: 0.14,
+        level: "low",
+      });
+      if (metrics.edgeMean > 0.15) {
+        factors.push({ text: "建物", x: 0.52, y: 0.36, level: "medium" });
+      }
+      if (metrics.satMean > 0.28) {
+        factors.push({ text: "看板", x: 0.78, y: 0.26, level: "medium" });
+      }
+      factors.push({
+        text: metrics.lowerEdgeMean > metrics.edgeMean * 1.08 ? "通路" : "床面",
+        x: 0.48,
+        y: 0.82,
+        level: "low",
+      });
+      if (metrics.darkRate > 0.3) {
+        factors.push({ text: "影", x: 0.22, y: 0.22, level: "low" });
+      }
+
+      return {
+        summary: metrics.edgeMean > 0.18 ? "物体が重なる" : "見える物体",
+        factors: uniqueFactors(factors).slice(0, 4),
+      };
+    }
+
+    function buildBabyLocalFallback(metrics) {
+      if (!metrics) {
+        return {
+          summary: "育児目線で確認",
+          factors: [{ text: "危険確認", x: 0.5, y: 0.44, level: "medium" }],
+        };
+      }
+
+      const factors = [];
+
+      if (metrics.centerEdgeMean > metrics.edgeMean * 1.06) {
+        factors.push({ text: "角に注意", x: 0.52, y: 0.5, level: "high" });
+      }
+      if (metrics.lowerEdgeMean > metrics.edgeMean * 1.1 || metrics.darkRate > 0.32) {
+        factors.push({ text: "足元注意", x: 0.46, y: 0.82, level: "high" });
+      }
+      if (metrics.highlightRate > 0.14) {
+        factors.push({ text: "まぶしさ", x: 0.76, y: 0.18, level: "medium" });
+      }
+      if (metrics.satMean > 0.34) {
+        factors.push({ text: "小物確認", x: 0.8, y: 0.34, level: "medium" });
+      }
+      if (metrics.darkRate > 0.38) {
+        factors.push({ text: "見失い注意", x: 0.22, y: 0.18, level: "medium" });
+      }
+
+      if (!factors.length) {
+        factors.push({ text: "危険少なめ", x: 0.5, y: 0.38, level: "low" });
+      }
+
+      const summary = factors.some((item) => item.level === "high")
+        ? "育児目線で注意"
+        : factors[0].text === "危険少なめ"
+          ? "大きな危険は少なめ"
+          : "育児目線で確認";
+
+      return {
+        summary,
+        factors: uniqueFactors(factors).slice(0, 4),
+      };
+    }
+
+    function analyzeLocally(modeId = state.analysisMode) {
+      const metrics = readFrameSignals();
+      if (modeId === "object") {
+        return buildObjectLocalFallback(metrics);
+      }
+      if (modeId === "baby") {
+        return buildBabyLocalFallback(metrics);
+      }
+      return buildCareLocalFallback(metrics);
     }
 
     function canUseLiveRelay() {
@@ -1827,13 +2030,13 @@
             result = await requestGemini(frame);
             mode = "live";
           } catch (error) {
-            result = analyzeLocally();
+            result = analyzeLocally(state.analysisMode);
             mode = "local";
             const message = error instanceof Error ? error.message : String(error);
             updateStatus(`relay fallback -> ${message.slice(0, 38)}`);
           }
         } else {
-          result = analyzeLocally();
+          result = analyzeLocally(state.analysisMode);
           mode = "local";
         }
 
@@ -1868,7 +2071,7 @@
       el.video.classList.remove("live");
       setCameraChip("CAM OFF");
       setModeChip("local");
-      updateSummary("思いやりのきっかけ", "camera or demo scene");
+      updateSummary(currentAnalysisConfig().idleSummary, currentAnalysisConfig().idleDetail);
       updateStatus("stopped");
     }
 
@@ -1945,6 +2148,29 @@
         await startSession();
       });
 
+      const handleModeChange = async (modeId) => {
+        state.analysisMode = modeId;
+        syncAnalysisButtons();
+        if (state.running) {
+          updateStatus(`mode -> ${currentAnalysisConfig().chip.toLowerCase()}`);
+          await runScan({ manual: true });
+          return;
+        }
+        updateSummary(currentAnalysisConfig().idleSummary, currentAnalysisConfig().idleDetail);
+      };
+
+      el.careModeButton.addEventListener("click", () => {
+        void handleModeChange("care");
+      });
+
+      el.objectModeButton.addEventListener("click", () => {
+        void handleModeChange("object");
+      });
+
+      el.babyModeButton.addEventListener("click", () => {
+        void handleModeChange("baby");
+      });
+
       window.addEventListener("resize", () => {
         setViewportHeight();
         resizeCanvases();
@@ -1971,10 +2197,11 @@
       renderDemoScene();
       await probeGeminiRelay();
       await loadFaceDetector();
-      updateSummary("思いやりのきっかけ", "camera or demo scene");
+      updateSummary(currentAnalysisConfig().idleSummary, currentAnalysisConfig().idleDetail);
       setCameraChip("CAM OFF");
       setModeChip("local");
       syncCameraButtons();
+      syncAnalysisButtons();
       renderCountdown();
     }
 
