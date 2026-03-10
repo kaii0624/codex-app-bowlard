@@ -272,6 +272,10 @@
       grid-template-columns: 1fr 1fr;
     }
 
+    .settings-row.actions-3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
     .settings-label {
       font-size: 10px;
       letter-spacing: 0.16em;
@@ -340,6 +344,12 @@
     .dock-btn.ghost {
       border-color: rgba(255, 255, 255, 0.12);
       background: rgba(255, 255, 255, 0.03);
+    }
+
+    .mini-btn.active {
+      border-color: rgba(241, 163, 75, 0.44);
+      background: linear-gradient(135deg, rgba(241, 163, 75, 0.16), rgba(121, 189, 215, 0.16));
+      color: var(--ink);
     }
 
     .note {
@@ -653,9 +663,10 @@
     </header>
 
     <section class="settings-panel" id="settingsPanel" hidden>
-      <div class="settings-row actions">
+      <div class="settings-row actions actions-3">
         <button class="mini-btn primary" id="scanNowButton" type="button">Scan</button>
         <button class="mini-btn secondary" id="swapCameraButton" type="button">Rear</button>
+        <button class="mini-btn ghost" id="macCameraButton" type="button">Mac</button>
       </div>
       <div class="settings-row">
         <label class="settings-label" for="modelInput">Gemini Model</label>
@@ -742,7 +753,9 @@
       scanning: false,
       stream: null,
       source: "demo",
-      usingFrontCamera: false,
+      cameraTarget: "rear",
+      facingTarget: "rear",
+      preferredMacDeviceId: "",
       nextScanAt: 0,
       countdownTimer: null,
       scanTimer: null,
@@ -784,6 +797,7 @@
       settingsPanel: document.getElementById("settingsPanel"),
       scanNowButton: document.getElementById("scanNowButton"),
       swapCameraButton: document.getElementById("swapCameraButton"),
+      macCameraButton: document.getElementById("macCameraButton"),
       modelInput: document.getElementById("modelInput"),
       proxyNote: document.getElementById("proxyNote"),
       startButton: document.getElementById("startButton"),
@@ -841,6 +855,12 @@
 
     function updateStatus(text) {
       el.statusLine.textContent = text;
+    }
+
+    function syncCameraButtons() {
+      el.swapCameraButton.textContent = state.facingTarget === "front" ? "Front" : "Rear";
+      el.swapCameraButton.classList.toggle("active", state.cameraTarget !== "mac");
+      el.macCameraButton.classList.toggle("active", state.cameraTarget === "mac");
     }
 
     function setModeChip(mode) {
@@ -989,7 +1009,7 @@
     }
 
     function sourceIsMirrored() {
-      return state.source === "camera" && state.usingFrontCamera;
+      return state.source === "camera" && state.cameraTarget === "front";
     }
 
     function drawSourceToContext(ctx, crop, destWidth, destHeight) {
@@ -1221,6 +1241,76 @@
       }
     }
 
+    function isMacBuiltInCameraLabel(label) {
+      return /(FaceTime|Built-in|MacBook|内蔵|内建)/i.test(String(label || ""));
+    }
+
+    function isContinuityCameraLabel(label) {
+      return /(iPhone|Continuity|Desk View|デスクビュー|連係|連携)/i.test(String(label || ""));
+    }
+
+    function baseVideoConstraints() {
+      return {
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+        frameRate: { ideal: 24, max: 30 },
+      };
+    }
+
+    async function pickMacBookCameraDeviceId() {
+      if (!navigator.mediaDevices?.enumerateDevices) {
+        return "";
+      }
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videos = devices.filter((device) => device.kind === "videoinput");
+      if (!videos.length) {
+        return "";
+      }
+      const exact = videos.find((device) => isMacBuiltInCameraLabel(device.label));
+      const likelyBuiltIn = videos.find((device) => !isContinuityCameraLabel(device.label));
+      const fallback = videos.length === 1 ? videos[0] : null;
+      const picked = exact || likelyBuiltIn || fallback;
+      const deviceId = String(picked?.deviceId || "");
+      if (deviceId) {
+        state.preferredMacDeviceId = deviceId;
+      }
+      return deviceId;
+    }
+
+    async function openMacBookCameraStream() {
+      const warmupStream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: baseVideoConstraints(),
+      });
+
+      let shouldKeepWarmup = false;
+      try {
+        const warmupTrack = warmupStream.getVideoTracks()[0];
+        if (warmupTrack && isMacBuiltInCameraLabel(warmupTrack.label)) {
+          shouldKeepWarmup = true;
+          return warmupStream;
+        }
+
+        const deviceId = state.preferredMacDeviceId || await pickMacBookCameraDeviceId();
+        if (!deviceId) {
+          throw new Error("mac camera not found");
+        }
+
+        stopTracks(warmupStream);
+        return await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: {
+            deviceId: { exact: deviceId },
+            ...baseVideoConstraints(),
+          },
+        });
+      } finally {
+        if (!shouldKeepWarmup) {
+          stopTracks(warmupStream);
+        }
+      }
+    }
+
     async function startCameraSource() {
       if (!navigator.mediaDevices?.getUserMedia) {
         throw new Error("camera unsupported");
@@ -1228,36 +1318,39 @@
 
       stopTracks(state.stream);
       state.stream = null;
-      const preferredFacing = state.usingFrontCamera ? "user" : "environment";
-
-      const attemptConstraints = [
-        {
-          audio: false,
-          video: {
-            facingMode: { ideal: preferredFacing },
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-            frameRate: { ideal: 24, max: 30 },
-          },
-        },
-        {
-          audio: false,
-          video: {
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-            frameRate: { ideal: 24, max: 30 },
-          },
-        },
-      ];
 
       let stream = null;
       let lastError = null;
-      for (const constraints of attemptConstraints) {
+
+      if (state.cameraTarget === "mac") {
         try {
-          stream = await navigator.mediaDevices.getUserMedia(constraints);
-          break;
+          stream = await openMacBookCameraStream();
         } catch (error) {
           lastError = error;
+        }
+      } else {
+        const preferredFacing = state.cameraTarget === "front" ? "user" : "environment";
+        const attemptConstraints = [
+          {
+            audio: false,
+            video: {
+              facingMode: { ideal: preferredFacing },
+              ...baseVideoConstraints(),
+            },
+          },
+          {
+            audio: false,
+            video: baseVideoConstraints(),
+          },
+        ];
+
+        for (const constraints of attemptConstraints) {
+          try {
+            stream = await navigator.mediaDevices.getUserMedia(constraints);
+            break;
+          } catch (error) {
+            lastError = error;
+          }
         }
       }
 
@@ -1274,10 +1367,14 @@
 
       state.stream = stream;
       state.source = "camera";
-      setCameraChip(state.usingFrontCamera ? "CAM FRONT" : "CAM REAR");
-      updateStatus("camera live");
-
       const track = stream.getVideoTracks()[0];
+      const trackLabel = String(track?.label || "").trim();
+      if (state.cameraTarget === "mac") {
+        setCameraChip("CAM MAC");
+      } else {
+        setCameraChip(state.cameraTarget === "front" ? "CAM FRONT" : "CAM REAR");
+      }
+      updateStatus(trackLabel ? `camera live · ${trackLabel}` : "camera live");
       if (track) {
         track.addEventListener("ended", () => {
           if (!state.running) return;
@@ -1304,7 +1401,12 @@
         await startCameraSource();
       } catch (error) {
         await switchToDemoSource();
-        updateStatus("camera unavailable -> demo");
+        const message = error instanceof Error ? error.message : String(error);
+        if (state.cameraTarget === "mac") {
+          updateStatus(message.includes("not found") ? "mac camera not found -> demo" : "mac camera unavailable -> demo");
+        } else {
+          updateStatus("camera unavailable -> demo");
+        }
       }
     }
 
@@ -1820,13 +1922,27 @@
       });
 
       el.swapCameraButton.addEventListener("click", async () => {
-        state.usingFrontCamera = !state.usingFrontCamera;
-        el.swapCameraButton.textContent = state.usingFrontCamera ? "Front" : "Rear";
+        state.facingTarget = state.facingTarget === "front" ? "rear" : "front";
+        state.cameraTarget = state.facingTarget;
+        syncCameraButtons();
         if (state.running) {
           updateStatus("switching camera");
           await ensurePreviewSource();
           await runScan({ manual: true });
         }
+      });
+
+      el.macCameraButton.addEventListener("click", async () => {
+        state.cameraTarget = "mac";
+        syncCameraButtons();
+        if (state.running) {
+          updateStatus("starting mac camera");
+          await ensurePreviewSource();
+          await runScan({ manual: true });
+          return;
+        }
+        updateStatus("starting mac camera");
+        await startSession();
       });
 
       window.addEventListener("resize", () => {
@@ -1858,6 +1974,7 @@
       updateSummary("思いやりのきっかけ", "camera or demo scene");
       setCameraChip("CAM OFF");
       setModeChip("local");
+      syncCameraButtons();
       renderCountdown();
     }
 
