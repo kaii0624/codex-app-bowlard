@@ -676,6 +676,11 @@
           <button class="mini-btn ghost" id="objectModeButton" type="button">Object</button>
           <button class="mini-btn ghost" id="babyModeButton" type="button">Baby</button>
         </div>
+        <div class="settings-row actions actions-3">
+          <button class="mini-btn ghost" id="negativeModeButton" type="button">Neg</button>
+          <button class="mini-btn ghost" id="hypeModeButton" type="button">Hype</button>
+          <button class="mini-btn ghost" id="questModeButton" type="button">Quest</button>
+        </div>
       </div>
       <div class="settings-row">
         <label class="settings-label">Scan Every</label>
@@ -821,6 +826,69 @@
           "- 医療判断や保護者評価は禁止",
         ].join("\n"),
       },
+      negative: {
+        chip: "NEG",
+        kicker: "Negative View",
+        idleSummary: "まずケチをつける",
+        idleDetail: "scene roast mode",
+        prompt: [
+          "あなたは写っている環境や物体に対して、何が何でも否定的な意見を言いたい辛口レビュアーです。",
+          "人物への評価、属性推定、感情推定、外見批判は禁止です。批判対象は環境や物体だけです。",
+          "空間の見た目、配置、雑然さ、暗さ、圧迫感、古さ、使いにくさを短く辛口で表現してください。",
+          "画面に重ねるので text は 2-8 文字の短い日本語。",
+          "JSON only.",
+          "{\"summary\":\"正直しんどい\",\"factors\":[{\"text\":\"ごちゃつく\",\"x\":0.52,\"y\":0.30,\"level\":\"high\"},{\"text\":\"暗すぎ\",\"x\":0.22,\"y\":0.18,\"level\":\"medium\"}]}",
+          "rules:",
+          "- factors は 1-4 件",
+          "- summary は 6-14 文字",
+          "- x と y は 0.08 以上 0.92 以下",
+          "- level は low / medium / high",
+          "- text は環境や物体への辛口コメントだけ",
+          "- 人物や集団への中傷は禁止",
+        ].join("\n"),
+      },
+      hype: {
+        chip: "HYPE",
+        kicker: "Hype View",
+        idleSummary: "全部盛って褒める",
+        idleDetail: "promo copy lens",
+        prompt: [
+          "あなたは写っている環境や物体を、何でも魅力的に盛って伝えたい宣伝担当です。",
+          "人物への評価、属性推定、感情推定は禁止です。対象は環境や物体だけです。",
+          "光、色、形、抜け感、存在感を、短い褒め言葉や宣伝コピーとして返してください。",
+          "画面に重ねるので text は 2-8 文字の短い日本語。",
+          "JSON only.",
+          "{\"summary\":\"映え要素が強い\",\"factors\":[{\"text\":\"光きれい\",\"x\":0.74,\"y\":0.18,\"level\":\"high\"},{\"text\":\"主役感\",\"x\":0.52,\"y\":0.42,\"level\":\"medium\"}]}",
+          "rules:",
+          "- factors は 1-4 件",
+          "- summary は 6-14 文字",
+          "- x と y は 0.08 以上 0.92 以下",
+          "- level は low / medium / high",
+          "- text は褒め言葉か宣伝語だけ",
+          "- 否定表現は禁止",
+        ].join("\n"),
+      },
+      quest: {
+        chip: "QUEST",
+        kicker: "Quest Map",
+        idleSummary: "RPG視点で見る",
+        idleDetail: "dungeon route lens",
+        prompt: [
+          "あなたは画像の環境を RPG や探索ゲームのマップとして見立てる案内役です。",
+          "人物への評価、属性推定、感情推定は禁止です。対象は環境や物体だけです。",
+          "入口、高台、遮蔽物、通路、トラップ、足場、宝箱感のように、ゲーム視点の短いタグで返してください。",
+          "画面に重ねるので text は 2-8 文字の短い日本語。",
+          "JSON only.",
+          "{\"summary\":\"探索ルートあり\",\"factors\":[{\"text\":\"入口\",\"x\":0.50,\"y\":0.74,\"level\":\"medium\"},{\"text\":\"遮蔽物\",\"x\":0.24,\"y\":0.40,\"level\":\"high\"}]}",
+          "rules:",
+          "- factors は 1-4 件",
+          "- summary は 6-14 文字",
+          "- x と y は 0.08 以上 0.92 以下",
+          "- level は low / medium / high",
+          "- text はゲーム内タグだけ",
+          "- 現実の危険断定は禁止",
+        ].join("\n"),
+      },
     };
 
     const state = {
@@ -880,6 +948,9 @@
       careModeButton: document.getElementById("careModeButton"),
       objectModeButton: document.getElementById("objectModeButton"),
       babyModeButton: document.getElementById("babyModeButton"),
+      negativeModeButton: document.getElementById("negativeModeButton"),
+      hypeModeButton: document.getElementById("hypeModeButton"),
+      questModeButton: document.getElementById("questModeButton"),
       interval5Button: document.getElementById("interval5Button"),
       interval10Button: document.getElementById("interval10Button"),
       interval20Button: document.getElementById("interval20Button"),
@@ -957,6 +1028,9 @@
       el.careModeButton.classList.toggle("active", state.analysisMode === "care");
       el.objectModeButton.classList.toggle("active", state.analysisMode === "object");
       el.babyModeButton.classList.toggle("active", state.analysisMode === "baby");
+      el.negativeModeButton.classList.toggle("active", state.analysisMode === "negative");
+      el.hypeModeButton.classList.toggle("active", state.analysisMode === "hype");
+      el.questModeButton.classList.toggle("active", state.analysisMode === "quest");
       el.analysisChip.textContent = config.chip;
       el.summaryKicker.textContent = config.kicker;
     }
@@ -2023,6 +2097,122 @@
       };
     }
 
+    function buildNegativeLocalFallback(metrics) {
+      if (!metrics) {
+        return {
+          summary: "正直いまいち",
+          factors: [{ text: "雑に見える", x: 0.5, y: 0.42, level: "medium" }],
+        };
+      }
+
+      const factors = [];
+
+      if (metrics.edgeMean > 0.16 || metrics.lumaStd > 0.2) {
+        factors.push({ text: "ごちゃつく", x: 0.5, y: 0.24, level: "high" });
+      }
+      if (metrics.darkRate > 0.32 || metrics.lumaMean < 0.26) {
+        factors.push({ text: "暗すぎ", x: 0.22, y: 0.18, level: "medium" });
+      }
+      if (metrics.highlightRate > 0.12) {
+        factors.push({ text: "光がキツい", x: 0.76, y: 0.18, level: "medium" });
+      }
+      if (metrics.centerEdgeMean > metrics.edgeMean * 1.08) {
+        factors.push({ text: "圧が強い", x: 0.52, y: 0.52, level: "high" });
+      }
+      if (metrics.lowerEdgeMean > metrics.edgeMean * 1.08) {
+        factors.push({ text: "足元うるさい", x: 0.46, y: 0.82, level: "medium" });
+      }
+      if (metrics.satMean > 0.34) {
+        factors.push({ text: "色が騒がしい", x: 0.82, y: 0.34, level: "medium" });
+      }
+
+      if (!factors.length) {
+        factors.push({ text: "妙に味気ない", x: 0.5, y: 0.38, level: "low" });
+      }
+
+      const summary = factors.some((item) => item.level === "high")
+        ? "正直かなり微妙"
+        : "正直いまいち";
+
+      return {
+        summary,
+        factors: uniqueFactors(factors).slice(0, 4),
+      };
+    }
+
+    function buildHypeLocalFallback(metrics) {
+      if (!metrics) {
+        return {
+          summary: "映えに変換する",
+          factors: [{ text: "主役感", x: 0.5, y: 0.42, level: "medium" }],
+        };
+      }
+
+      const factors = [];
+
+      if (metrics.highlightRate > 0.08 || metrics.lumaMean > 0.48) {
+        factors.push({ text: "光きれい", x: 0.74, y: 0.18, level: "high" });
+      }
+      if (metrics.satMean > 0.26) {
+        factors.push({ text: "色映える", x: 0.82, y: 0.32, level: "medium" });
+      }
+      if (metrics.centerEdgeMean > metrics.edgeMean * 1.06) {
+        factors.push({ text: "主役感", x: 0.52, y: 0.48, level: "high" });
+      }
+      if (metrics.lowerEdgeMean > metrics.edgeMean * 1.04) {
+        factors.push({ text: "抜け感", x: 0.48, y: 0.8, level: "medium" });
+      }
+      if (metrics.darkRate < 0.28) {
+        factors.push({ text: "空気いい", x: 0.22, y: 0.18, level: "low" });
+      }
+
+      if (!factors.length) {
+        factors.push({ text: "素材つよい", x: 0.5, y: 0.36, level: "medium" });
+      }
+
+      const summary = factors.some((item) => item.level === "high")
+        ? "映え要素が強い"
+        : "盛れる景色";
+
+      return {
+        summary,
+        factors: uniqueFactors(factors).slice(0, 4),
+      };
+    }
+
+    function buildQuestLocalFallback(metrics) {
+      if (!metrics) {
+        return {
+          summary: "探索ルートあり",
+          factors: [{ text: "入口", x: 0.5, y: 0.74, level: "medium" }],
+        };
+      }
+
+      const factors = [];
+
+      factors.push({ text: "入口", x: 0.5, y: 0.76, level: "medium" });
+      if (metrics.centerEdgeMean > metrics.edgeMean * 1.08) {
+        factors.push({ text: "遮蔽物", x: 0.28, y: 0.44, level: "high" });
+      }
+      if (metrics.lowerEdgeMean > metrics.edgeMean * 1.08) {
+        factors.push({ text: "段差", x: 0.46, y: 0.84, level: "medium" });
+      }
+      if (metrics.highlightRate > 0.1) {
+        factors.push({ text: "発光罠", x: 0.76, y: 0.2, level: "medium" });
+      }
+      if (metrics.darkRate > 0.34) {
+        factors.push({ text: "視界霧", x: 0.2, y: 0.18, level: "low" });
+      }
+      if (metrics.satMean > 0.28) {
+        factors.push({ text: "宝箱感", x: 0.8, y: 0.34, level: "low" });
+      }
+
+      return {
+        summary: factors.some((item) => item.level === "high") ? "クエスト感が強い" : "探索ルートあり",
+        factors: uniqueFactors(factors).slice(0, 4),
+      };
+    }
+
     function analyzeLocally(modeId = state.analysisMode) {
       const metrics = readFrameSignals();
       if (modeId === "object") {
@@ -2030,6 +2220,15 @@
       }
       if (modeId === "baby") {
         return buildBabyLocalFallback(metrics);
+      }
+      if (modeId === "negative") {
+        return buildNegativeLocalFallback(metrics);
+      }
+      if (modeId === "hype") {
+        return buildHypeLocalFallback(metrics);
+      }
+      if (modeId === "quest") {
+        return buildQuestLocalFallback(metrics);
       }
       return buildCareLocalFallback(metrics);
     }
@@ -2212,6 +2411,18 @@
 
       el.babyModeButton.addEventListener("click", () => {
         void handleModeChange("baby");
+      });
+
+      el.negativeModeButton.addEventListener("click", () => {
+        void handleModeChange("negative");
+      });
+
+      el.hypeModeButton.addEventListener("click", () => {
+        void handleModeChange("hype");
+      });
+
+      el.questModeButton.addEventListener("click", () => {
+        void handleModeChange("quest");
       });
 
       el.interval5Button.addEventListener("click", () => {
