@@ -678,6 +678,14 @@
         </div>
       </div>
       <div class="settings-row">
+        <label class="settings-label">Scan Every</label>
+        <div class="settings-row actions actions-3">
+          <button class="mini-btn ghost" id="interval5Button" type="button">5s</button>
+          <button class="mini-btn ghost" id="interval10Button" type="button">10s</button>
+          <button class="mini-btn ghost" id="interval20Button" type="button">20s</button>
+        </div>
+      </div>
+      <div class="settings-row">
         <label class="settings-label" for="modelInput">Gemini Model</label>
         <input class="input" id="modelInput" type="text" value="gemini-3.1-flash-lite-preview" spellcheck="false" />
       </div>
@@ -741,6 +749,12 @@
       liveModelAssetPath:
         "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite",
     };
+
+    const SCAN_INTERVAL_OPTIONS = [
+      { id: "5s", label: "5s", ms: 5000 },
+      { id: "10s", label: "10s", ms: 10000 },
+      { id: "20s", label: "20s", ms: 20000 },
+    ];
 
     const ANALYSIS_MODES = {
       care: {
@@ -815,6 +829,7 @@
       stream: null,
       source: "demo",
       analysisMode: "care",
+      scanIntervalMs: DEFAULTS.scanIntervalMs,
       cameraTarget: "rear",
       facingTarget: "rear",
       preferredMacDeviceId: "",
@@ -865,6 +880,9 @@
       careModeButton: document.getElementById("careModeButton"),
       objectModeButton: document.getElementById("objectModeButton"),
       babyModeButton: document.getElementById("babyModeButton"),
+      interval5Button: document.getElementById("interval5Button"),
+      interval10Button: document.getElementById("interval10Button"),
+      interval20Button: document.getElementById("interval20Button"),
       modelInput: document.getElementById("modelInput"),
       proxyNote: document.getElementById("proxyNote"),
       startButton: document.getElementById("startButton"),
@@ -943,6 +961,18 @@
       el.summaryKicker.textContent = config.kicker;
     }
 
+    function currentIntervalOption() {
+      return SCAN_INTERVAL_OPTIONS.find((item) => item.ms === state.scanIntervalMs) || SCAN_INTERVAL_OPTIONS[1];
+    }
+
+    function syncIntervalButtons() {
+      const activeMs = state.scanIntervalMs;
+      el.interval5Button.classList.toggle("active", activeMs === 5000);
+      el.interval10Button.classList.toggle("active", activeMs === 10000);
+      el.interval20Button.classList.toggle("active", activeMs === 20000);
+      el.intervalChip.textContent = currentIntervalOption().label.toUpperCase();
+    }
+
     function setModeChip(mode) {
       state.lastMode = mode;
       el.modeChip.textContent = mode === "live" ? "LIVE" : "LOCAL";
@@ -994,14 +1024,14 @@
     function scheduleNextScan(token) {
       stopScanTimer();
       if (!state.running) return;
-      state.nextScanAt = Date.now() + DEFAULTS.scanIntervalMs;
+      state.nextScanAt = Date.now() + state.scanIntervalMs;
       renderCountdown();
       state.scanTimer = window.setTimeout(() => {
         if (!state.running || token !== state.sessionToken) {
           return;
         }
         void runScan();
-      }, DEFAULTS.scanIntervalMs);
+      }, state.scanIntervalMs);
     }
 
     function toggleSettings(force) {
@@ -2159,6 +2189,19 @@
         updateSummary(currentAnalysisConfig().idleSummary, currentAnalysisConfig().idleDetail);
       };
 
+      const handleIntervalChange = (nextMs) => {
+        state.scanIntervalMs = nextMs;
+        syncIntervalButtons();
+        if (!state.running) {
+          updateStatus(`scan every ${currentIntervalOption().label}`);
+          return;
+        }
+        updateStatus(`interval -> ${currentIntervalOption().label}`);
+        if (!state.scanning) {
+          scheduleNextScan(state.sessionToken);
+        }
+      };
+
       el.careModeButton.addEventListener("click", () => {
         void handleModeChange("care");
       });
@@ -2169,6 +2212,18 @@
 
       el.babyModeButton.addEventListener("click", () => {
         void handleModeChange("baby");
+      });
+
+      el.interval5Button.addEventListener("click", () => {
+        handleIntervalChange(5000);
+      });
+
+      el.interval10Button.addEventListener("click", () => {
+        handleIntervalChange(10000);
+      });
+
+      el.interval20Button.addEventListener("click", () => {
+        handleIntervalChange(20000);
       });
 
       window.addEventListener("resize", () => {
@@ -2202,6 +2257,7 @@
       setModeChip("local");
       syncCameraButtons();
       syncAnalysisButtons();
+      syncIntervalButtons();
       renderCountdown();
     }
 
