@@ -429,49 +429,6 @@
       word-break: keep-all;
     }
 
-    .summary-card {
-      position: absolute;
-      top: calc(env(safe-area-inset-top) + 86px);
-      left: 14px;
-      right: auto;
-      max-width: min(76vw, 320px);
-      z-index: 9;
-      padding: 14px 15px 15px;
-      display: grid;
-      gap: 6px;
-      border-radius: var(--radius-lg);
-      border: 1px solid rgba(255, 222, 165, 0.2);
-      background: linear-gradient(160deg, rgba(12, 17, 23, 0.74), rgba(12, 17, 23, 0.5));
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-    }
-
-    .summary-kicker {
-      font-size: 10px;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: rgba(244, 234, 213, 0.5);
-    }
-
-    .summary-text {
-      font-family: "Noto Sans JP", sans-serif;
-      font-size: 20px;
-      line-height: 1.15;
-      letter-spacing: -0.05em;
-      color: var(--ink);
-      min-height: 24px;
-    }
-
-    .summary-sub {
-      display: none;
-      font-family: "Noto Sans JP", sans-serif;
-      font-size: 12px;
-      line-height: 1.35;
-      color: rgba(244, 234, 213, 0.58);
-      min-height: 16px;
-    }
-
     .privacy-card {
       position: absolute;
       left: 14px;
@@ -615,13 +572,6 @@
         font-size: 24px;
       }
 
-      .summary-card {
-        max-width: min(80vw, 292px);
-      }
-
-      .summary-text {
-        font-size: 18px;
-      }
     }
   </style>
 </head>
@@ -692,12 +642,6 @@
 
     <div class="label-layer" id="labelLayer" aria-hidden="true"></div>
 
-    <section class="summary-card" aria-live="polite">
-      <div class="summary-kicker" id="summaryKicker">Care View</div>
-      <div class="summary-text" id="summaryText">思いやりのきっかけ</div>
-      <div class="summary-sub" id="summarySub">start to preview</div>
-    </section>
-
     <aside class="privacy-card" aria-live="polite">
       <canvas id="thumbCanvas" width="176" height="264"></canvas>
       <div class="privacy-meta">
@@ -735,7 +679,6 @@
     const ANALYSIS_MODES = {
       care: {
         chip: "CARE",
-        kicker: "Care View",
         idleSummary: "思いやりのきっかけ",
         idleDetail: "environment load lens",
         prompt: [
@@ -753,7 +696,6 @@
       },
       object: {
         chip: "OBJECT",
-        kicker: "Object View",
         idleSummary: "見える物体を拾う",
         idleDetail: "scene object labels",
         prompt: [
@@ -771,7 +713,6 @@
       },
       baby: {
         chip: "BABY",
-        kicker: "Baby Safety",
         idleSummary: "育児目線で確認",
         idleDetail: "child safety lens",
         prompt: [
@@ -790,7 +731,6 @@
       },
       negative: {
         chip: "NEG",
-        kicker: "Negative View",
         idleSummary: "まずケチをつける",
         idleDetail: "scene roast mode",
         prompt: [
@@ -808,7 +748,6 @@
       },
       hype: {
         chip: "HYPE",
-        kicker: "Hype View",
         idleSummary: "全部盛って褒める",
         idleDetail: "promo copy lens",
         prompt: [
@@ -826,7 +765,6 @@
       },
       quest: {
         chip: "QUEST",
-        kicker: "Quest Map",
         idleSummary: "RPG視点で見る",
         idleDetail: "dungeon route lens",
         prompt: [
@@ -878,9 +816,6 @@
       demoCanvas: document.getElementById("demoCanvas"),
       maskCanvas: document.getElementById("maskCanvas"),
       labelLayer: document.getElementById("labelLayer"),
-      summaryText: document.getElementById("summaryText"),
-      summarySub: document.getElementById("summarySub"),
-      summaryKicker: document.getElementById("summaryKicker"),
       privacyChip: document.getElementById("privacyChip"),
       intervalChip: document.getElementById("intervalChip"),
       analysisChip: document.getElementById("analysisChip"),
@@ -981,16 +916,14 @@
     }
 
     function syncAnalysisButtons() {
-      const config = currentAnalysisConfig();
       el.careModeButton.classList.toggle("active", state.analysisMode === "care");
       el.objectModeButton.classList.toggle("active", state.analysisMode === "object");
       el.babyModeButton.classList.toggle("active", state.analysisMode === "baby");
       el.negativeModeButton.classList.toggle("active", state.analysisMode === "negative");
       el.hypeModeButton.classList.toggle("active", state.analysisMode === "hype");
       el.questModeButton.classList.toggle("active", state.analysisMode === "quest");
-      el.summaryKicker.textContent = config.kicker;
       if (el.analysisChip) {
-        el.analysisChip.textContent = config.chip;
+        el.analysisChip.textContent = currentAnalysisConfig().chip;
       }
     }
 
@@ -1120,12 +1053,8 @@
         .replaceAll("\"", "&quot;");
     }
 
-    function updateSummary(summary, detail = "") {
+    function updateSummary(summary) {
       state.latestSummary = summary;
-      el.summaryText.textContent = summary;
-      if (detail) {
-        el.summarySub.textContent = detail;
-      }
     }
 
     function renderTransportMeta() {
