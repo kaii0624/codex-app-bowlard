@@ -681,8 +681,9 @@
         <label class="settings-label" for="modelInput">Gemini Model</label>
         <input class="input" id="modelInput" type="text" value="gemini-3.1-flash-lite-preview" spellcheck="false" />
       </div>
-      <div class="settings-row">
+      <div class="settings-row actions">
         <button class="mini-btn ghost" id="helpButton" type="button">説明を見る</button>
+        <button class="mini-btn ghost" id="promptButton" type="button">プロンプトを見る</button>
       </div>
       <div class="settings-row">
         <p class="note" id="proxyNote">`/__gemini` 経由。顔マスクが使えない時は送信せずローカル解析に切り替えます。</p>
@@ -926,6 +927,7 @@
       interval20Button: document.getElementById("interval20Button"),
       modelInput: document.getElementById("modelInput"),
       helpButton: document.getElementById("helpButton"),
+      promptButton: document.getElementById("promptButton"),
       proxyNote: document.getElementById("proxyNote"),
       startButton: document.getElementById("startButton"),
       stopButton: document.getElementById("stopButton"),
@@ -2333,6 +2335,11 @@
       el.helpButton.addEventListener("click", () => {
         toggleSettings(false);
         window.location.href = "./guide.html";
+      });
+
+      el.promptButton.addEventListener("click", () => {
+        toggleSettings(false);
+        window.location.href = "./prompts.html";
       });
 
       el.swapCameraButton.addEventListener("click", async () => {

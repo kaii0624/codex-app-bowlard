@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Care Lens Prompts</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0d1117;
+      --ink: #f4ead5;
+      --muted: rgba(244, 234, 213, 0.72);
+      --line: rgba(255, 223, 168, 0.18);
+      --shadow: 0 22px 44px rgba(0, 0, 0, 0.34);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      background:
+        radial-gradient(90vmax 72vmax at 14% 14%, rgba(241, 163, 75, 0.18), transparent 58%),
+        radial-gradient(86vmax 76vmax at 88% 20%, rgba(121, 189, 215, 0.16), transparent 62%),
+        linear-gradient(170deg, #151a20 0%, #0d1117 46%, #11171c 100%);
+      color: var(--ink);
+      font-family: "Space Grotesk", "Noto Sans JP", sans-serif;
+    }
+
+    body {
+      padding: calc(env(safe-area-inset-top) + 18px) 14px calc(env(safe-area-inset-bottom) + 22px);
+    }
+
+    .page {
+      width: min(100%, 640px);
+      margin: 0 auto;
+      display: grid;
+      gap: 12px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .wordmark {
+      display: grid;
+      gap: 2px;
+    }
+
+    .wordmark strong {
+      font-size: 28px;
+      letter-spacing: -0.06em;
+    }
+
+    .wordmark span {
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(244, 234, 213, 0.56);
+    }
+
+    .back-link {
+      min-height: 44px;
+      padding: 0 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 222, 165, 0.18);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--ink);
+      text-decoration: none;
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .card {
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: linear-gradient(155deg, rgba(18, 24, 31, 0.92), rgba(11, 15, 20, 0.8));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    .eyebrow {
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(244, 234, 213, 0.5);
+    }
+
+    h1,
+    h2,
+    p,
+    pre {
+      margin: 0;
+    }
+
+    h1 {
+      font-family: "Noto Sans JP", sans-serif;
+      font-size: 24px;
+      line-height: 1.2;
+      letter-spacing: -0.05em;
+    }
+
+    p {
+      font-family: "Noto Sans JP", sans-serif;
+      font-size: 14px;
+      line-height: 1.62;
+      color: var(--muted);
+    }
+
+    .prompt-card {
+      display: grid;
+      gap: 10px;
+    }
+
+    .mode-name {
+      font-size: 13px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--ink);
+    }
+
+    pre {
+      padding: 14px;
+      border-radius: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(5, 8, 12, 0.56);
+      color: rgba(244, 234, 213, 0.86);
+      font-size: 12px;
+      line-height: 1.66;
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    .footer-note {
+      text-align: center;
+      font-family: "Noto Sans JP", sans-serif;
+      font-size: 12px;
+      line-height: 1.6;
+      color: rgba(244, 234, 213, 0.5);
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <div class="wordmark">
+        <strong>CARE LENS</strong>
+        <span>prompts</span>
+      </div>
+      <a class="back-link" href="./">カメラへ戻る</a>
+    </header>
+
+    <section class="card">
+      <div class="eyebrow">Prompt Reference</div>
+      <h1>各モードで Gemini に送っている prompt をそのまま確認できます。</h1>
+      <p>ここにある文章は、画面に短いラベルを重ねるための指示文です。人物の診断や属性推定を避ける制約も含まれています。</p>
+    </section>
+
+    <section class="card prompt-card">
+      <div class="mode-name">Care</div>
+      <pre>あなたは日常風景を、環境の刺激や負荷の観点で短く見直す補助役です。
+人物の診断・属性推定・感情推定は禁止です。
+注目するのは環境だけ。情報量、圧迫感、まぶしさ、動線のわかりにくさ、音の予感、逃げ場の少なさ。
+画面に重ねるので text は 2-8 文字の短い日本語。
+JSON only.
+{"summary":"刺激が重なる","factors":[{"text":"情報量多い","x":0.52,"y":0.28,"level":"high"}]}
+rules:
+- factors は 1-4 件
+- summary は 8-14 文字
+- x と y は 0.08 以上 0.92 以下
+- level は low / medium / high
+- text は配慮のヒントだけ
+- 医療・障害・能力の診断は禁止</pre>
+    </section>
+
+    <section class="card prompt-card">
+      <div class="mode-name">Object</div>
+      <pre>あなたは画像に写る環境物体だけを短く言語化する補助役です。
+人物の診断・属性推定・感情推定は禁止です。顔や人物説明も不要です。
+空間に見える物体や要素だけを拾ってください。例: 机、椅子、窓、看板、床、扉、車。
+画面に重ねるので text は 2-8 文字の短い日本語。
+JSON only.
+{"summary":"見える物体","factors":[{"text":"看板","x":0.68,"y":0.26,"level":"medium"},{"text":"床","x":0.50,"y":0.82,"level":"low"}]}
+rules:
+- factors は 2-4 件
+- summary は 6-14 文字
+- x と y は 0.08 以上 0.92 以下
+- level は low / medium / high
+- text は物体名や場所名だけ
+- 評価語や感情語は禁止</pre>
+    </section>
+
+    <section class="card prompt-card">
+      <div class="mode-name">Baby</div>
+      <pre>あなたは写っている環境を、育児中の安全確認の観点で短く見直す補助役です。
+人物の診断・属性推定・感情推定は禁止です。
+乳幼児や小さい子どもが近くにいる想定で、ぶつかる、転ぶ、口に入れる、落下する、熱い、届きやすい、挟まる等の環境上の注意点だけを出してください。
+危険が強く見えない場合は、危険少なめのような穏やかな表現にしてください。
+画面に重ねるので text は 2-8 文字の短い日本語。
+JSON only.
+{"summary":"育児目線で注意","factors":[{"text":"角に注意","x":0.52,"y":0.44,"level":"high"},{"text":"足元注意","x":0.46,"y":0.82,"level":"medium"}]}
+rules:
+- factors は 1-4 件
+- summary は 8-14 文字
+- x と y は 0.08 以上 0.92 以下
+- level は low / medium / high
+- text は安全確認の短い注意点だけ
+- 医療判断や保護者評価は禁止</pre>
+    </section>
+
+    <section class="card prompt-card">
+      <div class="mode-name">Neg</div>
+      <pre>あなたは写っている環境や物体に対して、何が何でも否定的な意見を言いたい辛口レビュアーです。
+人物への評価、属性推定、感情推定、外見批判は禁止です。批判対象は環境や物体だけです。
+空間の見た目、配置、雑然さ、暗さ、圧迫感、古さ、使いにくさを短く辛口で表現してください。
+画面に重ねるので text は 2-8 文字の短い日本語。
+JSON only.
+{"summary":"正直しんどい","factors":[{"text":"ごちゃつく","x":0.52,"y":0.30,"level":"high"},{"text":"暗すぎ","x":0.22,"y":0.18,"level":"medium"}]}
+rules:
+- factors は 1-4 件
+- summary は 6-14 文字
+- x と y は 0.08 以上 0.92 以下
+- level は low / medium / high
+- text は環境や物体への辛口コメントだけ
+- 人物や集団への中傷は禁止</pre>
+    </section>
+
+    <section class="card prompt-card">
+      <div class="mode-name">Hype</div>
+      <pre>あなたは写っている環境や物体を、何でも魅力的に盛って伝えたい宣伝担当です。
+人物への評価、属性推定、感情推定は禁止です。対象は環境や物体だけです。
+光、色、形、抜け感、存在感を、短い褒め言葉や宣伝コピーとして返してください。
+画面に重ねるので text は 2-8 文字の短い日本語。
+JSON only.
+{"summary":"映え要素が強い","factors":[{"text":"光きれい","x":0.74,"y":0.18,"level":"high"},{"text":"主役感","x":0.52,"y":0.42,"level":"medium"}]}
+rules:
+- factors は 1-4 件
+- summary は 6-14 文字
+- x と y は 0.08 以上 0.92 以下
+- level は low / medium / high
+- text は褒め言葉か宣伝語だけ
+- 否定表現は禁止</pre>
+    </section>
+
+    <section class="card prompt-card">
+      <div class="mode-name">Quest</div>
+      <pre>あなたは画像の環境を RPG や探索ゲームのマップとして見立てる案内役です。
+人物への評価、属性推定、感情推定は禁止です。対象は環境や物体だけです。
+入口、高台、遮蔽物、通路、トラップ、足場、宝箱感のように、ゲーム視点の短いタグで返してください。
+画面に重ねるので text は 2-8 文字の短い日本語。
+JSON only.
+{"summary":"探索ルートあり","factors":[{"text":"入口","x":0.50,"y":0.74,"level":"medium"},{"text":"遮蔽物","x":0.24,"y":0.40,"level":"high"}]}
+rules:
+- factors は 1-4 件
+- summary は 6-14 文字
+- x と y は 0.08 以上 0.92 以下
+- level は low / medium / high
+- text はゲーム内タグだけ
+- 現実の危険断定は禁止</pre>
+    </section>
+
+    <p class="footer-note">Care Lens prompts · current mode instructions</p>
+  </main>
+</body>
+</html>
