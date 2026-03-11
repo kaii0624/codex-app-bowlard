@@ -1,0 +1,881 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <title>Chiikawa Camera Raid</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #080913;
+      --ink: #f9fbff;
+      --muted: rgba(231, 238, 255, 0.75);
+      --panel: rgba(11, 15, 28, 0.76);
+      --line: rgba(197, 213, 255, 0.34);
+      --good: #6ef4b5;
+      --warn: #ffd566;
+      --bad: #ff8aa8;
+      font-family: "Avenir Next", "Hiragino Sans", "Yu Gothic", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+    }
+
+    body {
+      position: fixed;
+      inset: 0;
+      touch-action: manipulation;
+      user-select: none;
+    }
+
+    button {
+      font: inherit;
+      color: inherit;
+    }
+
+    .app {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      background:
+        radial-gradient(120vmax 80vmax at 84% 8%, rgba(116, 166, 255, 0.18), transparent 56%),
+        radial-gradient(104vmax 92vmax at 12% 90%, rgba(255, 132, 196, 0.2), transparent 58%),
+        linear-gradient(165deg, #0f1531, #070a16 62%);
+    }
+
+    #camera,
+    .fog,
+    #battlefield,
+    #effectLayer,
+    #damageLayer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    #camera {
+      object-fit: cover;
+      z-index: 1;
+      transform: scaleX(-1);
+      filter: saturate(1.14) contrast(1.04) brightness(0.72);
+      background: #131930;
+    }
+
+    .fog {
+      z-index: 2;
+      pointer-events: none;
+      background:
+        radial-gradient(52% 40% at 50% 116%, rgba(255, 141, 189, 0.33), transparent 76%),
+        radial-gradient(45% 38% at 52% -14%, rgba(106, 144, 255, 0.26), transparent 74%),
+        linear-gradient(180deg, rgba(5, 7, 18, 0.16), rgba(2, 3, 8, 0.46));
+      mix-blend-mode: screen;
+    }
+
+    #battlefield {
+      z-index: 4;
+      pointer-events: none;
+    }
+
+    #target {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: min(30vw, 128px);
+      aspect-ratio: 1;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      border: 2px solid rgba(255, 220, 144, 0.88);
+      box-shadow:
+        0 0 0 1px rgba(0, 0, 0, 0.54),
+        0 0 24px rgba(255, 208, 80, 0.35),
+        inset 0 0 18px rgba(255, 214, 116, 0.25);
+      z-index: 6;
+    }
+
+    #target::before,
+    #target::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      border-radius: 999px;
+      pointer-events: none;
+    }
+
+    #target::before {
+      width: 132%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(255, 220, 140, 0.9), transparent);
+    }
+
+    #target::after {
+      width: 2px;
+      height: 132%;
+      background: linear-gradient(180deg, transparent, rgba(255, 220, 140, 0.9), transparent);
+    }
+
+    #target .lock {
+      position: absolute;
+      left: 50%;
+      top: calc(100% + 8px);
+      transform: translateX(-50%);
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      color: rgba(255, 234, 177, 0.9);
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+    }
+
+    #target.pulse {
+      animation: pulseRing 0.2s ease-out;
+    }
+
+    .fighter {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: clamp(84px, 23vw, 124px);
+      aspect-ratio: 1;
+      transform: translate(-50%, -50%);
+      transform-origin: 50% 50%;
+      pointer-events: none;
+      filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.45));
+      z-index: 7;
+      will-change: transform;
+    }
+
+    .fighter svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .fighter.back {
+      opacity: 0.94;
+      z-index: 5;
+    }
+
+    #effectLayer {
+      z-index: 8;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    #damageLayer {
+      z-index: 9;
+      pointer-events: none;
+      overflow: hidden;
+      isolation: isolate;
+    }
+
+    .damage {
+      position: absolute;
+      left: 0;
+      top: 0;
+      transform: translate(-50%, -50%);
+      font-family: "Arial Black", "Impact", sans-serif;
+      font-size: clamp(34px, 9vw, 76px);
+      line-height: 1;
+      letter-spacing: -0.045em;
+      white-space: nowrap;
+      color: var(--tone, #ffd95a);
+      -webkit-text-stroke: 3px var(--stroke, #401334);
+      text-shadow:
+        0 2px 0 rgba(255, 255, 255, 0.76),
+        0 8px 16px rgba(0, 0, 0, 0.46);
+      animation: damageRise 0.82s cubic-bezier(0.12, 0.78, 0.2, 1) forwards;
+      pointer-events: none;
+    }
+
+    .damage.crit {
+      font-size: clamp(44px, 11vw, 92px);
+      filter: drop-shadow(0 0 18px rgba(255, 180, 214, 0.66));
+    }
+
+    .spark {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: clamp(18px, 3.2vw, 26px);
+      height: 4px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 244, 183, 0.95), rgba(255, 145, 173, 0));
+      transform: translate(-50%, -50%) rotate(var(--rot, 0deg));
+      transform-origin: center;
+      animation: sparkBurst 0.45s ease-out forwards;
+      pointer-events: none;
+      box-shadow: 0 0 14px rgba(255, 205, 124, 0.7);
+    }
+
+    .hud {
+      position: absolute;
+      top: calc(env(safe-area-inset-top) + 12px);
+      left: 12px;
+      right: 72px;
+      z-index: 12;
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      pointer-events: none;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 22px;
+      padding: 0 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(194, 210, 255, 0.38);
+      background: rgba(9, 13, 24, 0.72);
+      backdrop-filter: blur(8px);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.34);
+    }
+
+    .chip.good {
+      color: var(--good);
+      border-color: rgba(110, 244, 181, 0.48);
+    }
+
+    .chip.warn {
+      color: var(--warn);
+      border-color: rgba(255, 213, 102, 0.54);
+    }
+
+    .chip.bad {
+      color: var(--bad);
+      border-color: rgba(255, 138, 168, 0.56);
+    }
+
+    .settings-btn {
+      position: absolute;
+      top: calc(env(safe-area-inset-top) + 12px);
+      right: 12px;
+      width: 46px;
+      height: 46px;
+      z-index: 13;
+      border: 1px solid rgba(194, 209, 255, 0.44);
+      border-radius: 14px;
+      background: rgba(11, 15, 28, 0.76);
+      backdrop-filter: blur(12px);
+      display: grid;
+      place-items: center;
+      font-size: 22px;
+      box-shadow: 0 10px 26px rgba(0, 0, 0, 0.42);
+      cursor: pointer;
+    }
+
+    .panel {
+      position: absolute;
+      top: calc(env(safe-area-inset-top) + 66px);
+      right: 12px;
+      z-index: 14;
+      width: min(284px, calc(100vw - 24px));
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      backdrop-filter: blur(18px);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.42);
+    }
+
+    .panel[hidden] {
+      display: none;
+    }
+
+    .row {
+      display: grid;
+      gap: 8px;
+    }
+
+    .row.actions {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .btn {
+      min-height: 40px;
+      border-radius: 12px;
+      border: 1px solid rgba(196, 212, 255, 0.4);
+      background: rgba(19, 27, 44, 0.86);
+      letter-spacing: 0.08em;
+      font-size: 12px;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+    }
+
+    .btn.primary {
+      border-color: rgba(110, 244, 181, 0.52);
+      background: linear-gradient(145deg, rgba(16, 44, 35, 0.95), rgba(8, 24, 18, 0.95));
+    }
+
+    .btn.ghost {
+      border-color: rgba(255, 155, 189, 0.52);
+      background: linear-gradient(145deg, rgba(49, 22, 35, 0.92), rgba(23, 12, 18, 0.95));
+    }
+
+    .statline {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 0 2px;
+      min-height: 18px;
+    }
+
+    .status {
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: calc(env(safe-area-inset-bottom) + 10px);
+      z-index: 12;
+      min-height: 30px;
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(192, 207, 255, 0.3);
+      background: rgba(9, 13, 24, 0.74);
+      color: rgba(238, 243, 255, 0.76);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.34);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    @keyframes pulseRing {
+      0% {
+        box-shadow:
+          0 0 0 1px rgba(0, 0, 0, 0.54),
+          0 0 18px rgba(255, 208, 80, 0.35),
+          inset 0 0 10px rgba(255, 214, 116, 0.2);
+      }
+      100% {
+        box-shadow:
+          0 0 0 1px rgba(0, 0, 0, 0.54),
+          0 0 30px rgba(255, 236, 149, 0.72),
+          inset 0 0 28px rgba(255, 228, 157, 0.45);
+      }
+    }
+
+    @keyframes damageRise {
+      0% {
+        opacity: 0;
+        transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + 40px)) scale(0.5);
+      }
+      18% {
+        opacity: 1;
+        transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% - 8px)) scale(1.12);
+      }
+      100% {
+        opacity: 0;
+        transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, -154px))) scale(1.02);
+      }
+    }
+
+    @keyframes sparkBurst {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.4) rotate(var(--rot, 0deg));
+      }
+      30% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0;
+        transform: translate(
+          calc(-50% + var(--tx, 0px)),
+          calc(-50% + var(--ty, 0px))
+        ) scale(1.15) rotate(var(--rot, 0deg));
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <video id="camera" playsinline autoplay muted></video>
+    <div class="fog" aria-hidden="true"></div>
+
+    <section id="battlefield" aria-hidden="true">
+      <div id="target"><span class="lock">LOCK</span></div>
+
+      <div class="fighter" id="fighter0">
+        <svg viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <ellipse cx="46" cy="28" rx="12" ry="11" fill="#ffffff" stroke="#171717" stroke-width="5"/>
+          <ellipse cx="94" cy="28" rx="12" ry="11" fill="#ffffff" stroke="#171717" stroke-width="5"/>
+          <circle cx="70" cy="74" r="46" fill="#ffffff" stroke="#171717" stroke-width="5"/>
+          <ellipse cx="51" cy="83" rx="9" ry="10" fill="#151515"/>
+          <ellipse cx="89" cy="83" rx="9" ry="10" fill="#151515"/>
+          <ellipse cx="49" cy="100" rx="10" ry="6" fill="#f9a7c3"/>
+          <ellipse cx="91" cy="100" rx="10" ry="6" fill="#f9a7c3"/>
+          <path d="M64 92c4 5 8 5 12 0" stroke="#171717" stroke-width="4" stroke-linecap="round" fill="none"/>
+          <path d="M64 101c4 4 8 4 12 0" stroke="#171717" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+          <path d="M24 112 L120 128" stroke="#f6b9cb" stroke-width="10" stroke-linecap="round"/>
+          <path d="M26 111 L120 127" stroke="#171717" stroke-width="3" stroke-linecap="round" opacity="0.78"/>
+          <path d="M20 111c-5 3-10 8-12 14" stroke="#f6b9cb" stroke-width="8" stroke-linecap="round" fill="none"/>
+        </svg>
+      </div>
+
+      <div class="fighter back" id="fighter1">
+        <svg viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <ellipse cx="46" cy="28" rx="12" ry="11" fill="#ffffff" stroke="#171717" stroke-width="5"/>
+          <ellipse cx="94" cy="28" rx="12" ry="11" fill="#ffffff" stroke="#171717" stroke-width="5"/>
+          <circle cx="70" cy="74" r="46" fill="#ffffff" stroke="#171717" stroke-width="5"/>
+          <path d="M36 36 L70 46 L104 36" fill="#60b8ef" stroke="#171717" stroke-width="4" stroke-linejoin="round"/>
+          <ellipse cx="51" cy="83" rx="9" ry="10" fill="#151515"/>
+          <ellipse cx="89" cy="83" rx="9" ry="10" fill="#151515"/>
+          <ellipse cx="49" cy="100" rx="10" ry="6" fill="#f9a7c3"/>
+          <ellipse cx="91" cy="100" rx="10" ry="6" fill="#f9a7c3"/>
+          <path d="M64 92c4 5 8 5 12 0" stroke="#171717" stroke-width="4" stroke-linecap="round" fill="none"/>
+          <path d="M63 100c5 5 9 5 13 0" stroke="#171717" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+          <path d="M20 125 L118 103" stroke="#71bef4" stroke-width="10" stroke-linecap="round"/>
+          <path d="M22 124 L118 103" stroke="#171717" stroke-width="3" stroke-linecap="round" opacity="0.82"/>
+          <path d="M20 124c-7-2-12-4-16-9" stroke="#71bef4" stroke-width="8" stroke-linecap="round" fill="none"/>
+        </svg>
+      </div>
+
+      <div id="effectLayer"></div>
+      <div id="damageLayer"></div>
+    </section>
+
+    <section class="hud" aria-live="polite">
+      <div class="chip" id="camChip">CAM OFF</div>
+      <div class="chip" id="hitChip">HIT 0</div>
+      <div class="chip" id="dpsChip">DPS 0</div>
+    </section>
+
+    <button class="settings-btn" id="settingsBtn" type="button" aria-controls="settingsPanel" aria-expanded="false" aria-label="Settings">
+      &#9881;
+    </button>
+
+    <section class="panel" id="settingsPanel" hidden>
+      <div class="row actions">
+        <button class="btn primary" id="startBtn" type="button">START</button>
+        <button class="btn ghost" id="stopBtn" type="button">STOP</button>
+      </div>
+      <div class="row">
+        <button class="btn" id="burstBtn" type="button">BURST</button>
+      </div>
+      <div class="statline">
+        <span id="modeText">CENTER LOCK</span>
+        <span id="scanText">FACE OFF</span>
+      </div>
+    </section>
+
+    <div class="status" id="statusText">READY</div>
+  </main>
+
+  <script>
+    const camera = document.getElementById("camera");
+    const battlefield = document.getElementById("battlefield");
+    const effectLayer = document.getElementById("effectLayer");
+    const damageLayer = document.getElementById("damageLayer");
+    const target = document.getElementById("target");
+
+    const camChip = document.getElementById("camChip");
+    const hitChip = document.getElementById("hitChip");
+    const dpsChip = document.getElementById("dpsChip");
+    const modeText = document.getElementById("modeText");
+    const scanText = document.getElementById("scanText");
+    const statusText = document.getElementById("statusText");
+
+    const settingsBtn = document.getElementById("settingsBtn");
+    const settingsPanel = document.getElementById("settingsPanel");
+    const startBtn = document.getElementById("startBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const burstBtn = document.getElementById("burstBtn");
+
+    const fighterNodes = [
+      document.getElementById("fighter0"),
+      document.getElementById("fighter1")
+    ];
+
+    const fighters = fighterNodes.map((node, index) => ({
+      node,
+      phase: Math.PI * index,
+      speed: 0.00115 + index * 0.00024,
+      attackStart: -1,
+      attackDuration: 360,
+      hitDone: false,
+      lean: index === 0 ? -11 : 10,
+      radiusX: 112 + index * 30,
+      radiusY: 76 + index * 22
+    }));
+
+    const palette = [
+      { tone: "#ffd857", stroke: "#612500" },
+      { tone: "#ff7eb5", stroke: "#531247" },
+      { tone: "#9f58ff", stroke: "#351a60" },
+      { tone: "#ff9853", stroke: "#6f2400" },
+      { tone: "#f0ff71", stroke: "#3d4e00" }
+    ];
+
+    let stream = null;
+    let running = false;
+    let animationId = 0;
+    let nextAttackAt = 0;
+    let combo = 0;
+    let totalDamage = 0;
+    let battleStart = 0;
+    let burstQueue = new Set();
+    let centerX = 0;
+    let centerY = 0;
+    let arenaWidth = 0;
+    let arenaHeight = 0;
+    let attackCursor = 0;
+    let cameraWaitTimer = 0;
+    let cameraAttemptId = 0;
+
+    function rand(min, max) {
+      return Math.random() * (max - min) + min;
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function queue(fn, delayMs) {
+      const id = window.setTimeout(() => {
+        burstQueue.delete(id);
+        fn();
+      }, delayMs);
+      burstQueue.add(id);
+    }
+
+    function clearQueued() {
+      burstQueue.forEach((id) => window.clearTimeout(id));
+      burstQueue.clear();
+    }
+
+    function clearCameraWaitTimer() {
+      if (cameraWaitTimer) {
+        window.clearTimeout(cameraWaitTimer);
+      }
+      cameraWaitTimer = 0;
+    }
+
+    function setStatus(text) {
+      statusText.textContent = text;
+    }
+
+    function setChipTone(element, text, tone) {
+      element.textContent = text;
+      element.classList.remove("good", "warn", "bad");
+      if (tone) {
+        element.classList.add(tone);
+      }
+    }
+
+    function setCamState(state) {
+      if (state === "OFF") {
+        setChipTone(camChip, "CAM OFF", null);
+      } else if (state === "WAIT") {
+        setChipTone(camChip, "CAM WAIT", "warn");
+      } else if (state === "ON") {
+        setChipTone(camChip, "CAM ON", "good");
+      } else {
+        setChipTone(camChip, "CAM ERR", "bad");
+      }
+    }
+
+    function refreshArenaMetrics() {
+      const rect = battlefield.getBoundingClientRect();
+      arenaWidth = rect.width;
+      arenaHeight = rect.height;
+      centerX = rect.width * 0.5;
+      centerY = rect.height * 0.5;
+
+      const base = Math.min(arenaWidth, arenaHeight);
+      fighters.forEach((fighter, index) => {
+        fighter.radiusX = clamp(base * (0.25 + index * 0.065), 84, 170);
+        fighter.radiusY = clamp(base * (0.17 + index * 0.055), 58, 130);
+      });
+    }
+
+    function formatCompact(value) {
+      return value.toLocaleString("en-US");
+    }
+
+    function updateMetrics() {
+      hitChip.textContent = `HIT ${combo}`;
+      const elapsedSec = Math.max(1, (performance.now() - battleStart) / 1000);
+      const dps = Math.round(totalDamage / elapsedSec);
+      dpsChip.textContent = `DPS ${formatCompact(dps)}`;
+    }
+
+    function pulseTarget() {
+      target.classList.remove("pulse");
+      void target.offsetWidth;
+      target.classList.add("pulse");
+    }
+
+    function spawnSpark(x, y) {
+      const spark = document.createElement("i");
+      spark.className = "spark";
+      const angle = rand(0, Math.PI * 2);
+      const dist = rand(26, 86);
+      spark.style.left = `${x}px`;
+      spark.style.top = `${y}px`;
+      spark.style.setProperty("--rot", `${(angle * 180) / Math.PI}deg`);
+      spark.style.setProperty("--tx", `${Math.cos(angle) * dist}px`);
+      spark.style.setProperty("--ty", `${Math.sin(angle) * dist}px`);
+      effectLayer.appendChild(spark);
+      queue(() => spark.remove(), 440);
+    }
+
+    function spawnDamage(x, y, isCrit = false) {
+      const ramp = 1 + Math.min(6, combo / 70);
+      const base = rand(38000, 980000);
+      const value = Math.floor(base * ramp * (isCrit ? 1.82 : 1));
+
+      const damage = document.createElement("span");
+      const tone = palette[Math.floor(Math.random() * palette.length)];
+      damage.className = isCrit ? "damage crit" : "damage";
+      damage.textContent = formatCompact(value);
+      damage.style.left = `${x + rand(-84, 84)}px`;
+      damage.style.top = `${y + rand(-42, 74)}px`;
+      damage.style.setProperty("--dx", `${rand(-24, 24)}px`);
+      damage.style.setProperty("--dy", `${rand(-182, -104)}px`);
+      damage.style.setProperty("--tone", tone.tone);
+      damage.style.setProperty("--stroke", tone.stroke);
+      damageLayer.appendChild(damage);
+      queue(() => damage.remove(), 860);
+
+      combo += 1;
+      totalDamage += value;
+      updateMetrics();
+    }
+
+    function impact(x, y, forceCrit = false) {
+      pulseTarget();
+      const isCrit = forceCrit || Math.random() < 0.24;
+      const burst = isCrit ? 3 : 2;
+      for (let i = 0; i < burst; i += 1) {
+        spawnDamage(x, y, isCrit && i === 0);
+      }
+      const sparks = isCrit ? 8 : 5;
+      for (let i = 0; i < sparks; i += 1) {
+        spawnSpark(x, y);
+      }
+    }
+
+    function launchAttack(now) {
+      const fighter = fighters[attackCursor % fighters.length];
+      attackCursor += 1;
+      fighter.attackStart = now;
+      fighter.hitDone = false;
+      modeText.textContent = fighter === fighters[0] ? "PINK RAID" : "BLUE RAID";
+    }
+
+    function updateFighter(fighter, now) {
+      const angle = fighter.phase + now * fighter.speed;
+      const orbitX = centerX + Math.cos(angle) * fighter.radiusX;
+      const orbitY = centerY + Math.sin(angle * 1.28) * fighter.radiusY;
+
+      let x = orbitX;
+      let y = orbitY;
+      let scale = 1;
+      let rot = fighter.lean + Math.sin(angle * 2.2) * 8;
+
+      if (fighter.attackStart > 0) {
+        const progress = (now - fighter.attackStart) / fighter.attackDuration;
+        if (progress >= 1) {
+          fighter.attackStart = -1;
+          fighter.hitDone = false;
+        } else {
+          const lunge = Math.sin(progress * Math.PI);
+          x = orbitX + (centerX - orbitX) * lunge * 0.9;
+          y = orbitY + (centerY - orbitY) * lunge * 0.9;
+          scale = 1 + lunge * 0.2;
+          rot += (centerX >= orbitX ? 1 : -1) * lunge * 12;
+          if (!fighter.hitDone && progress > 0.53) {
+            fighter.hitDone = true;
+            impact(centerX + rand(-20, 20), centerY + rand(-16, 16));
+          }
+        }
+      }
+
+      fighter.node.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%) rotate(${rot}deg) scale(${scale})`;
+    }
+
+    function render(now) {
+      if (!running) {
+        return;
+      }
+
+      if (now >= nextAttackAt) {
+        launchAttack(now);
+        nextAttackAt = now + rand(190, 290);
+      }
+
+      fighters.forEach((fighter) => updateFighter(fighter, now));
+      animationId = window.requestAnimationFrame(render);
+    }
+
+    function bootBattle() {
+      running = true;
+      combo = 0;
+      totalDamage = 0;
+      battleStart = performance.now();
+      nextAttackAt = battleStart + 160;
+      updateMetrics();
+      refreshArenaMetrics();
+      animationId = window.requestAnimationFrame(render);
+
+      for (let i = 0; i < 5; i += 1) {
+        queue(() => {
+          if (running) {
+            impact(centerX + rand(-18, 18), centerY + rand(-14, 14), true);
+          }
+        }, i * 46);
+      }
+    }
+
+    function stopStream() {
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+      }
+      stream = null;
+      camera.srcObject = null;
+    }
+
+    function stopAll() {
+      running = false;
+      cameraAttemptId += 1;
+      if (animationId) {
+        window.cancelAnimationFrame(animationId);
+      }
+      animationId = 0;
+      clearCameraWaitTimer();
+      clearQueued();
+      stopStream();
+      damageLayer.replaceChildren();
+      effectLayer.replaceChildren();
+      modeText.textContent = "CENTER LOCK";
+      setCamState("OFF");
+      setStatus("READY");
+      updateMetrics();
+    }
+
+    async function startAll() {
+      if (running) {
+        return;
+      }
+
+      const attemptId = cameraAttemptId + 1;
+      cameraAttemptId = attemptId;
+      setCamState("WAIT");
+      setStatus("CAM WAIT");
+      scanText.textContent = "FACE OFF";
+
+      bootBattle();
+
+      clearCameraWaitTimer();
+      cameraWaitTimer = window.setTimeout(() => {
+        if (attemptId !== cameraAttemptId || !running || stream) {
+          return;
+        }
+        setCamState("ERR");
+        setStatus("CAM ERR");
+      }, 7000);
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        clearCameraWaitTimer();
+        setCamState("ERR");
+        setStatus("NO CAMERA API");
+        return;
+      }
+
+      try {
+        const nextStream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: {
+            facingMode: "user",
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          }
+        });
+
+        if (attemptId !== cameraAttemptId || !running) {
+          nextStream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+
+        stream = nextStream;
+        camera.srcObject = stream;
+        await camera.play();
+        clearCameraWaitTimer();
+        setCamState("ON");
+        setStatus("CENTER LOCK");
+      } catch (error) {
+        console.error(error);
+        clearCameraWaitTimer();
+        setCamState("ERR");
+        setStatus("CAM ERR");
+      }
+    }
+
+    function burst() {
+      if (!running) {
+        setStatus("PRESS START");
+        return;
+      }
+      for (let i = 0; i < 18; i += 1) {
+        queue(() => {
+          if (running) {
+            impact(centerX + rand(-32, 32), centerY + rand(-28, 28), Math.random() < 0.45);
+          }
+        }, i * 32);
+      }
+      setStatus("BURST");
+    }
+
+    function togglePanel() {
+      const next = settingsPanel.hidden;
+      settingsPanel.hidden = !next;
+      settingsBtn.setAttribute("aria-expanded", String(next));
+    }
+
+    settingsBtn.addEventListener("click", togglePanel);
+    startBtn.addEventListener("click", () => {
+      startAll();
+    });
+    stopBtn.addEventListener("click", stopAll);
+    burstBtn.addEventListener("click", burst);
+
+    window.addEventListener("resize", refreshArenaMetrics);
+    window.addEventListener("orientationchange", refreshArenaMetrics);
+    window.addEventListener("beforeunload", stopStream);
+
+    refreshArenaMetrics();
+    setCamState("OFF");
+    updateMetrics();
+  </script>
+</body>
+</html>
