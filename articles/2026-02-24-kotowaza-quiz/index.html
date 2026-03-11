@@ -64,6 +64,27 @@
     }
     .article p { margin: 0; font-size: 13px; line-height: 1.8; color: var(--text-main); }
     .article p + p { margin-top: 12px; }
+    .shot {
+      margin: 16px 0;
+      display: grid;
+      gap: 8px;
+    }
+    .shot img {
+      width: 100%;
+      display: block;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.64);
+      box-shadow:
+        0 8px 24px rgba(0, 0, 0, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.72);
+      background: rgba(255, 255, 255, 0.55);
+    }
+    .shot figcaption {
+      font-size: 11px;
+      line-height: 1.6;
+      color: rgba(0, 0, 0, 0.36);
+      text-align: center;
+    }
     .actions { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px; }
     .btn {
       display: inline-flex; align-items: center; justify-content: center;
@@ -103,12 +124,20 @@
         意識している。選択肢は4択だが、紛らわしい語句を意図的に混ぜることで
         「なんとなく知っている」状態から「正確に理解している」状態への変化を促す。
       </p>
+      <figure class="shot">
+        <img src="./images/2026-02-24-kotowaza-quiz-desktop.jpg" alt="ことわざクイズの広い画面でのスクリーンショット" loading="lazy" />
+        <figcaption>広めの初期画面。問題文と4択の全体構成が見えるカットです。</figcaption>
+      </figure>
       <p>
         5問全問正解時の紙吹雪エフェクトは、小さな達成感の演出だ。
         レビューモードでは、その日の全問題を振り返れる。
         毎日続けることで、自然とことわざの語彙が広がっていく。
         文化的な学習をゲームの形式で包むことの有効性を、改めて確認できたプロジェクトだった。
       </p>
+      <figure class="shot">
+        <img src="./images/2026-02-24-kotowaza-quiz-phone.jpg" alt="ことわざクイズの iPhone 画面スクリーンショット" loading="lazy" />
+        <figcaption>iPhone 縦画面の回答後。フィードバックが出た状態で学習の流れが分かります。</figcaption>
+      </figure>
       <div class="actions">
         <a class="btn primary" href="../../apps/2026-02-24-kotowaza-quiz/">App</a>
         <a class="btn secondary" href="../../">Hub</a>

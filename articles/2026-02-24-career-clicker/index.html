@@ -64,6 +64,27 @@
     }
     .article p { margin: 0; font-size: 13px; line-height: 1.8; color: var(--text-main); }
     .article p + p { margin-top: 12px; }
+    .shot {
+      margin: 16px 0;
+      display: grid;
+      gap: 8px;
+    }
+    .shot img {
+      width: 100%;
+      display: block;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.64);
+      box-shadow:
+        0 8px 24px rgba(0, 0, 0, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.72);
+      background: rgba(255, 255, 255, 0.55);
+    }
+    .shot figcaption {
+      font-size: 11px;
+      line-height: 1.6;
+      color: rgba(0, 0, 0, 0.36);
+      text-align: center;
+    }
     .actions { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px; }
     .btn {
       display: inline-flex; align-items: center; justify-content: center;
@@ -104,6 +125,10 @@
         8種類のアップグレードは1.5倍のコストスケーリングを採用し、
         序盤は気軽に買えるが終盤は戦略的な選択が必要になる。
       </p>
+      <figure class="shot">
+        <img src="./images/2026-02-24-career-clicker-desktop.jpg" alt="Career Clicker の広い画面でのスクリーンショット" loading="lazy" />
+        <figcaption>広めの初期画面。肩書き、XP、アップグレード一覧をまとめて見渡せます。</figcaption>
+      </figure>
       <p>
         オフライン収益（最大8時間キャップ）とプレステージシステムは、
         長期リテンションのための2大設計だ。
@@ -111,6 +136,10 @@
         コストバランスの精度にかかっている。
         数値設計は感覚と試行錯誤の産物だが、AIとの反復が調整速度を大幅に上げた。
       </p>
+      <figure class="shot">
+        <img src="./images/2026-02-24-career-clicker-phone.jpg" alt="Career Clicker の iPhone 画面スクリーンショット" loading="lazy" />
+        <figcaption>iPhone 縦画面のプレイ中。タップ直後の XP 増加と浮遊テキストが見える状態です。</figcaption>
+      </figure>
       <div class="actions">
         <a class="btn primary" href="../../apps/2026-02-24-career-clicker/">App</a>
         <a class="btn secondary" href="../../">Hub</a>

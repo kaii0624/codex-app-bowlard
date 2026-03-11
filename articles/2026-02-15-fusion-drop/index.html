@@ -150,6 +150,30 @@
       margin-top: 12px;
     }
 
+    .shot {
+      margin: 16px 0;
+      display: grid;
+      gap: 8px;
+    }
+
+    .shot img {
+      width: 100%;
+      display: block;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.64);
+      box-shadow:
+        0 8px 24px rgba(0, 0, 0, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.72);
+      background: rgba(255, 255, 255, 0.55);
+    }
+
+    .shot figcaption {
+      font-size: 11px;
+      line-height: 1.6;
+      color: rgba(0, 0, 0, 0.36);
+      text-align: center;
+    }
+
     .actions {
       margin-top: 14px;
       display: flex;
@@ -215,6 +239,10 @@
         その興味をゲーム化するときに、まだ自分がやったことのなかったスイカゲームの発想に似ているというアナロジーを見つけ、
         元素がどんどん大きくなっていく手触りとして対応させました。
       </p>
+      <figure class="shot">
+        <img src="./images/2026-02-15-fusion-drop-desktop.jpg" alt="Fusion Drop の広い画面でのスクリーンショット" loading="lazy" />
+        <figcaption>広めの初期画面。次の元素と盤面全体が落ち着いた状態で見えるカットです。</figcaption>
+      </figure>
       <p>
         自然に核融合で大きくなっていくのは42番目の鉄原子まで、というイメージもこの中で再現し、
         宇宙で実際に起こっている反応や、惑星ができていくようなダイナミクスをこのアプリに込めています。
@@ -223,6 +251,10 @@
         単純にスイカゲームをやったことがなかったので、まず自分でもやってみたいという思いがあり、
         そのまま実装して形にしました。
       </p>
+      <figure class="shot">
+        <img src="./images/2026-02-15-fusion-drop-phone.jpg" alt="Fusion Drop の iPhone 画面スクリーンショット" loading="lazy" />
+        <figcaption>iPhone 縦画面のプレイ中。落とした元素が盤面に入っていく瞬間を切り取っています。</figcaption>
+      </figure>
 
       <div class="actions">
         <a class="btn primary" href="../../apps/2026-02-15-fusion-drop/">App</a>

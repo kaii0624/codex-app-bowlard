@@ -64,6 +64,27 @@
     }
     .article p { margin: 0; font-size: 13px; line-height: 1.8; color: var(--text-main); }
     .article p + p { margin-top: 12px; }
+    .shot {
+      margin: 16px 0;
+      display: grid;
+      gap: 8px;
+    }
+    .shot img {
+      width: 100%;
+      display: block;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.64);
+      box-shadow:
+        0 8px 24px rgba(0, 0, 0, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.72);
+      background: rgba(255, 255, 255, 0.55);
+    }
+    .shot figcaption {
+      font-size: 11px;
+      line-height: 1.6;
+      color: rgba(0, 0, 0, 0.36);
+      text-align: center;
+    }
     .actions { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px; }
     .btn {
       display: inline-flex; align-items: center; justify-content: center;
@@ -104,12 +125,20 @@
         「ChatGPTタイルとGPT-4タイルが合体してGeminiになる」という体験は、
         現実の業界地図と重なって奇妙なリアリティがある。
       </p>
+      <figure class="shot">
+        <img src="./images/2026-02-24-ai-merge-desktop.jpg" alt="AI Merge の広い画面でのスクリーンショット" loading="lazy" />
+        <figcaption>広めの初期画面。AI系タイルの全体配置と進化ツリーの雰囲気が見えるカットです。</figcaption>
+      </figure>
       <p>
         マトリックス風の雨降り背景、各タイルのグロウアニメーション、マージ時のパーティクルバーストなど、
         ビジュアルに時間をかけた。2048はシンプルすぎるからこそ、見た目で差別化する余地がある。
         Claude 3のタイル（2048）に到達したときの演出だけは、特別に派手にした。
         自己言及的なユーモアのつもりだ。
       </p>
+      <figure class="shot">
+        <img src="./images/2026-02-24-ai-merge-phone.jpg" alt="AI Merge の iPhone 画面スクリーンショット" loading="lazy" />
+        <figcaption>iPhone 縦画面のプレイ中。1手進めたあとのタイル移動とスコア変化が見えるカットです。</figcaption>
+      </figure>
       <div class="actions">
         <a class="btn primary" href="../../apps/2026-02-24-ai-merge/">App</a>
         <a class="btn secondary" href="../../">Hub</a>

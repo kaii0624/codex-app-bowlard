@@ -64,6 +64,27 @@
     }
     .article p { margin: 0; font-size: 13px; line-height: 1.8; color: var(--text-main); }
     .article p + p { margin-top: 12px; }
+    .shot {
+      margin: 16px 0;
+      display: grid;
+      gap: 8px;
+    }
+    .shot img {
+      width: 100%;
+      display: block;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.64);
+      box-shadow:
+        0 8px 24px rgba(0, 0, 0, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.72);
+      background: rgba(255, 255, 255, 0.55);
+    }
+    .shot figcaption {
+      font-size: 11px;
+      line-height: 1.6;
+      color: rgba(0, 0, 0, 0.36);
+      text-align: center;
+    }
     .actions { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px; }
     .btn {
       display: inline-flex; align-items: center; justify-content: center;
@@ -102,12 +123,20 @@
         50語の漢字データを用意し、毎日5問を日付ベースのシードで選ぶ。
         同じ日は誰でも同じ問題が出る、という共有感もWordleから学んだポイントだ。
       </p>
+      <figure class="shot">
+        <img src="./images/2026-02-24-kanji-daily-desktop.jpg" alt="Kanji Daily の広い画面でのスクリーンショット" loading="lazy" />
+        <figcaption>広めの初期画面。今日の問題と選択肢を落ち着いた状態で確認できるカットです。</figcaption>
+      </figure>
       <p>
         絵文字グリッドのシェア機能を入れたのは、SNSでの自然拡散を狙ったから。
         「✅✅❌✅✅ 4/5」という一行が、見た人の好奇心を刺激する。
         ストリーク（連続日数）の表示も、継続動機として機能する。
         AI との対話だけで、これだけ整ったUXが1日で作れた事実に、まだ驚いている。
       </p>
+      <figure class="shot">
+        <img src="./images/2026-02-24-kanji-daily-phone.jpg" alt="Kanji Daily の iPhone 画面スクリーンショット" loading="lazy" />
+        <figcaption>iPhone 縦画面の回答後。正誤表示と次へ進む流れが見えるカットです。</figcaption>
+      </figure>
       <div class="actions">
         <a class="btn primary" href="../../apps/2026-02-24-kanji-daily/">App</a>
         <a class="btn secondary" href="../../">Hub</a>
