@@ -150,6 +150,30 @@
       margin-top: 12px;
     }
 
+    .shot {
+      margin: 16px 0;
+      display: grid;
+      gap: 8px;
+    }
+
+    .shot img {
+      width: 100%;
+      display: block;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.64);
+      box-shadow:
+        0 8px 24px rgba(0, 0, 0, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.72);
+      background: rgba(255, 255, 255, 0.55);
+    }
+
+    .shot figcaption {
+      font-size: 11px;
+      line-height: 1.6;
+      color: rgba(0, 0, 0, 0.36);
+      text-align: center;
+    }
+
     .actions {
       margin-top: 14px;
       display: flex;
@@ -216,10 +240,18 @@
         触ってみると想像以上にハマってしまう中毒性があって、
         「広告に邪魔されずにこのテンポで遊べる体験」を形にすること自体が良い検証になりました。
       </p>
+      <figure class="shot">
+        <img src="./images/brick-blast-phone.jpg" alt="Brick Blast の iPhone 画面スクリーンショット" loading="lazy" />
+        <figcaption>iPhone 縦画面。上部に HUD、下にプレイ領域をまとめた構成です。</figcaption>
+      </figure>
       <p>
         今回は、ゲーム性の再現だけでなく、
         広告なしでも気持ちよく回遊できるミニゲーム体験を実装するためのトレーニングとして位置づけています。
       </p>
+      <figure class="shot">
+        <img src="./images/brick-blast-desktop.jpg" alt="Brick Blast の広い画面でのスクリーンショット" loading="lazy" />
+        <figcaption>広めの画面では中央に盤面を寄せて、余白込みで全体のバランスが見えるようにしています。</figcaption>
+      </figure>
 
       <div class="actions">
         <a class="btn primary" href="../../apps/2026-02-12-brick-blast/">App</a>
