@@ -150,6 +150,30 @@
       margin-top: 12px;
     }
 
+    .shot {
+      margin: 16px 0;
+      display: grid;
+      gap: 8px;
+    }
+
+    .shot img {
+      width: 100%;
+      display: block;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.64);
+      box-shadow:
+        0 8px 24px rgba(0, 0, 0, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.72);
+      background: rgba(255, 255, 255, 0.55);
+    }
+
+    .shot figcaption {
+      font-size: 11px;
+      line-height: 1.6;
+      color: rgba(0, 0, 0, 0.36);
+      text-align: center;
+    }
+
     .actions {
       margin-top: 14px;
       display: flex;
@@ -216,6 +240,10 @@
         物質が重力で引き合って集まり、現在の天体構造ができていくという話に強く惹かれました。
         そこから、連星のように複数天体が影響し合う挙動をステージ内で動かす発想が生まれました。
       </p>
+      <figure class="shot">
+        <img src="./images/gravity-orbit-pinball-phone.jpg" alt="Gravity Orbit Pinball の iPhone 画面スクリーンショット" loading="lazy" />
+        <figcaption>iPhone 縦画面。重力源、ゴール、ショット状態を 1 画面で見渡せます。</figcaption>
+      </figure>
       <p>
         さらに、ブラックホール近傍で天体が弾き出される現象や、
         プラネットディフェンスのように衝突で軌道を変える世界観にも通じると思い、
@@ -225,6 +253,10 @@
         難しい数式よりもまずは体験として重力を楽しんでもらうことを優先し、
         宇宙のダイナミクスをゲーム感覚で触れられる入り口として作っています。
       </p>
+      <figure class="shot">
+        <img src="./images/gravity-orbit-pinball-desktop.jpg" alt="Gravity Orbit Pinball の広い画面でのスクリーンショット" loading="lazy" />
+        <figcaption>広めの画面では宇宙っぽい余白も含めて、ステージ全体の雰囲気が見えます。</figcaption>
+      </figure>
 
       <div class="actions">
         <a class="btn primary" href="../../apps/2026-02-13-gravity-orbit-pinball/">App</a>
