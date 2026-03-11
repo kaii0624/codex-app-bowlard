@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Care Lens Notes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    :root {
+      --bg: #071018;
+      --bg-soft: rgba(11, 19, 30, 0.82);
+      --panel: rgba(10, 16, 26, 0.72);
+      --line: rgba(255, 232, 194, 0.14);
+      --line-strong: rgba(255, 214, 156, 0.24);
+      --text: rgba(250, 243, 229, 0.92);
+      --muted: rgba(235, 224, 204, 0.66);
+      --soft: rgba(235, 224, 204, 0.38);
+      --amber: #f3bb74;
+      --cyan: #89d6e3;
+      --coral: #d86e62;
+      --shadow: 0 24px 70px rgba(0, 0, 0, 0.36);
+      --radius-xl: 30px;
+      --radius-lg: 24px;
+      --radius-md: 18px;
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      font-family: "Noto Sans JP", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 15% 16%, rgba(243, 187, 116, 0.22), transparent 24%),
+        radial-gradient(circle at 84% 14%, rgba(137, 214, 227, 0.2), transparent 26%),
+        radial-gradient(circle at 22% 74%, rgba(216, 110, 98, 0.16), transparent 18%),
+        linear-gradient(180deg, #0a131e 0%, #071018 45%, #050b12 100%);
+      overflow-x: hidden;
+    }
+
+    .noise,
+    .glow {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .noise {
+      opacity: 0.06;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.85'/%3E%3C/svg%3E");
+      background-size: 180px 180px;
+      mix-blend-mode: soft-light;
+    }
+
+    .glow {
+      background:
+        radial-gradient(circle at 50% -10%, rgba(255, 255, 255, 0.08), transparent 28%),
+        radial-gradient(circle at 50% 100%, rgba(255, 210, 160, 0.08), transparent 28%);
+    }
+
+    .wrap {
+      position: relative;
+      z-index: 1;
+      width: min(100%, 980px);
+      margin: 0 auto;
+      padding: 36px 16px 64px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(7, 13, 21, 0.56);
+      color: var(--soft);
+      font-family: "Sora", sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    .hero {
+      margin-top: 16px;
+      padding: 24px;
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.04), transparent 42%),
+        linear-gradient(180deg, rgba(9, 16, 26, 0.92), rgba(7, 12, 20, 0.78));
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto -8% -24% auto;
+      width: 320px;
+      height: 320px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(137, 214, 227, 0.14), transparent 68%);
+      filter: blur(10px);
+      pointer-events: none;
+    }
+
+    h1 {
+      margin: 12px 0 10px;
+      font-family: "Sora", sans-serif;
+      font-size: clamp(34px, 6vw, 58px);
+      line-height: 0.98;
+      letter-spacing: -0.05em;
+    }
+
+    h1 strong {
+      display: block;
+      color: #fff7e8;
+      font-weight: 700;
+    }
+
+    .lead {
+      width: min(100%, 660px);
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.9;
+      color: var(--muted);
+    }
+
+    .meta {
+      margin: 0 0 12px;
+      font-family: "Sora", sans-serif;
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--soft);
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .chip {
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.03);
+      font-family: "Sora", sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255, 243, 221, 0.74);
+    }
+
+    .section {
+      margin-top: 18px;
+      padding: 22px;
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--line);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    .section-head {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .eyebrow {
+      font-family: "Sora", sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--soft);
+    }
+
+    h2 {
+      margin: 0;
+      font-family: "Sora", sans-serif;
+      font-size: clamp(24px, 4vw, 34px);
+      line-height: 1.08;
+      letter-spacing: -0.04em;
+      color: #fff7e8;
+    }
+
+    .subcopy {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.85;
+      color: var(--muted);
+    }
+
+    .feature {
+      display: grid;
+      gap: 18px;
+      align-items: center;
+      grid-template-columns: 1fr;
+    }
+
+    .feature + .feature {
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .copy {
+      display: grid;
+      gap: 10px;
+    }
+
+    .copy h3 {
+      margin: 0;
+      font-family: "Sora", sans-serif;
+      font-size: 22px;
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+      color: #fff7e8;
+    }
+
+    .copy p {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.85;
+      color: var(--muted);
+    }
+
+    .note-list {
+      display: grid;
+      gap: 10px;
+      margin: 6px 0 0;
+    }
+
+    .note {
+      padding: 12px 14px;
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    figure {
+      margin: 0;
+      display: grid;
+      gap: 10px;
+    }
+
+    .phone {
+      width: min(100%, 290px);
+      margin: 0 auto;
+      padding: 12px;
+      border-radius: 36px;
+      border: 1px solid var(--line-strong);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
+        rgba(4, 9, 15, 0.88);
+      box-shadow:
+        0 24px 60px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    .phone img {
+      width: 100%;
+      display: block;
+      border-radius: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    figcaption {
+      text-align: center;
+      font-size: 12px;
+      line-height: 1.6;
+      color: var(--soft);
+    }
+
+    .stack {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .stack .mini {
+      width: 100%;
+      padding: 10px;
+      border-radius: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(6, 12, 19, 0.78);
+    }
+
+    .stack .mini img {
+      width: 100%;
+      display: block;
+      border-radius: 16px;
+    }
+
+    .actions {
+      margin-top: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 18px;
+      border-radius: 16px;
+      border: 1px solid transparent;
+      text-decoration: none;
+      font-family: "Sora", sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      transition: transform 0.28s var(--ease), border-color 0.28s var(--ease), background 0.28s var(--ease);
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .btn.primary {
+      color: #111;
+      background: linear-gradient(135deg, #f3bb74, #ffd7a4);
+      box-shadow: 0 18px 34px rgba(243, 187, 116, 0.22);
+    }
+
+    .btn.secondary {
+      color: rgba(255, 243, 221, 0.82);
+      border-color: var(--line);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .foot {
+      margin-top: 16px;
+      text-align: center;
+      font-family: "Sora", sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--soft);
+    }
+
+    @media (min-width: 820px) {
+      .feature {
+        grid-template-columns: minmax(0, 1fr) 300px;
+      }
+
+      .feature.reverse {
+        grid-template-columns: 300px minmax(0, 1fr);
+      }
+
+      .feature.reverse .copy {
+        order: 2;
+      }
+
+      .feature.reverse figure {
+        order: 1;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .wrap { padding-inline: 14px; }
+      .hero,
+      .section { padding: 18px; }
+      .stack { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="glow" aria-hidden="true"></div>
+  <div class="noise" aria-hidden="true"></div>
+  <main class="wrap">
+    <div class="badge">article · screenshot tour</div>
+    <section class="hero">
+      <p class="meta">2026-03-10 / app advent note</p>
+      <h1><strong>Care Lens</strong>日常の風景を、別の視点で見直すカメラ。</h1>
+      <p class="lead">
+        Care Lens は、カメラに映った空間へ短い言葉を重ねて、
+        「しんどさにつながりやすい要素」や「別の見え方」を可視化する実験アプリです。
+        診断ではなく、配慮や会話のきっかけをつくることに振っています。
+      </p>
+      <div class="chip-row" aria-label="main features">
+        <span class="chip">Masked JPEG</span>
+        <span class="chip">Gemini Relay</span>
+        <span class="chip">6 View Modes</span>
+        <span class="chip">Guide</span>
+        <span class="chip">Prompt Reference</span>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div class="eyebrow">Feature 01</div>
+        <h2>カメラ画面はできるだけ静かに、ラベルだけを残す</h2>
+        <p class="subcopy">
+          画面上に残るのは、映像と短いラベル、左下の `Masked JPEG` プレビューだけ。
+          状態表示を削って、見る側がまず風景とオーバーレイに集中できる構成にしています。
+        </p>
+      </div>
+      <div class="feature">
+        <div class="copy">
+          <h3>余計な情報を引き算したカメラ UI</h3>
+          <p>
+            起動するとそのままセッションが始まり、カメラまたはデモ画面の上に分析ラベルが重なります。
+            画面下には、送信前にマスクされる縮小画像のプレビューだけを残しました。
+          </p>
+          <div class="note-list">
+            <div class="note">元画像は保存しない前提で、送信対象は低解像度の Masked JPEG のみです。</div>
+            <div class="note">リアルタイム処理ではなく、数秒ごとの軽いスキャンに寄せているので PoC として扱いやすいです。</div>
+          </div>
+        </div>
+        <figure>
+          <div class="phone">
+            <img src="./images/overview-late.jpg" alt="Care Lens のメインカメラ画面" loading="lazy" />
+          </div>
+          <figcaption>メイン画面。映像と Masked JPEG を中心にした最小構成です。</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div class="eyebrow">Feature 02</div>
+        <h2>アプリ内に説明ページを入れて、見え方の意図をずらさない</h2>
+        <p class="subcopy">
+          `Care View` や `High / Medium / Low` が何を意味しているかを、
+          設定からすぐ確認できるガイドページを用意しています。
+        </p>
+      </div>
+      <div class="feature reverse">
+        <div class="copy">
+          <h3>「診断ではない」を UI の中で伝える</h3>
+          <p>
+            このアプリは人を評価するものではなく、環境の情報量や圧迫感に気づくためのレンズです。
+            その前提を guide ページにまとめて、初見でも意味を取り違えにくくしています。
+          </p>
+          <div class="note-list">
+            <div class="note">Care / Object / Baby などのモードの違いもここで読めます。</div>
+            <div class="note">High / Medium / Low は危険判定ではなく、視点の強さや目立ち方の目安として使っています。</div>
+          </div>
+        </div>
+        <figure>
+          <div class="phone">
+            <img src="./images/guide.jpg" alt="Care Lens のガイドページ" loading="lazy" />
+          </div>
+          <figcaption>guide.html では用語と意図を 1 画面ずつ読めます。</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div class="eyebrow">Feature 03</div>
+        <h2>どんな prompt で見ているかも、そのまま見せる</h2>
+        <p class="subcopy">
+          画像に何を求めているかをブラックボックスにせず、
+          各モードの prompt をそのまま読めるページを設定から開けます。
+        </p>
+      </div>
+      <div class="feature">
+        <div class="copy">
+          <h3>モードごとの差分を可視化</h3>
+          <p>
+            Care では環境負荷、Object では物体ラベル、Baby では育児安全、
+            さらに Neg / Hype / Quest の遊びモードまで、視点の切り替えを prompt ごと公開しています。
+          </p>
+          <div class="note-list">
+            <div class="note">「このラベルはなぜ出たのか」を後から追えるので、試作段階の検証にも向きます。</div>
+            <div class="note">Summary を外した現在の仕様に合わせて、返却フォーマットも factors 中心に整理しています。</div>
+          </div>
+        </div>
+        <figure>
+          <div class="phone">
+            <img src="./images/prompts.jpg" alt="Care Lens のプロンプト参照ページ" loading="lazy" />
+          </div>
+          <figcaption>prompts.html で各 view mode の指示文をそのまま確認できます。</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div class="eyebrow">Wrap Up</div>
+        <h2>Care Lens は、正解を出すより「別の見え方」をつくるためのアプリ</h2>
+        <p class="subcopy">
+          派手な診断結果よりも、短いラベルで空間の見え方を少しだけずらす。
+          そのために privacy-first な送信設計と、説明・prompt を見せる透明性をセットにしたのが今回の実装です。
+        </p>
+      </div>
+      <div class="stack" aria-label="article screenshots">
+        <div class="mini">
+          <img src="./images/overview-late.jpg" alt="Care Lens overview screenshot" loading="lazy" />
+        </div>
+        <div class="mini">
+          <img src="./images/prompts.jpg" alt="Care Lens prompts screenshot" loading="lazy" />
+        </div>
+      </div>
+      <div class="actions">
+        <a class="btn primary" href="../../apps/2026-03-10-care-lens/">App</a>
+        <a class="btn secondary" href="../../apps/2026-03-10-care-lens/guide.html">Guide</a>
+        <a class="btn secondary" href="../../apps/2026-03-10-care-lens/prompts.html">Prompts</a>
+        <a class="btn secondary" href="../../">Hub</a>
+      </div>
+    </section>
+
+    <p class="foot">app advent record · care lens article</p>
+  </main>
+</body>
+</html>
