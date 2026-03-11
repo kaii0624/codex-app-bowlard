@@ -146,7 +146,7 @@
 
     .brand {
       display: grid;
-      gap: 8px;
+      gap: 2px;
       min-width: 0;
     }
 
@@ -431,11 +431,12 @@
 
     .summary-card {
       position: absolute;
+      top: calc(env(safe-area-inset-top) + 86px);
       left: 14px;
-      right: 14px;
-      bottom: calc(env(safe-area-inset-bottom) + 128px);
+      right: auto;
+      max-width: min(76vw, 320px);
       z-index: 9;
-      padding: 15px 16px 16px;
+      padding: 14px 15px 15px;
       display: grid;
       gap: 6px;
       border-radius: var(--radius-lg);
@@ -463,6 +464,7 @@
     }
 
     .summary-sub {
+      display: none;
       font-family: "Noto Sans JP", sans-serif;
       font-size: 12px;
       line-height: 1.35;
@@ -472,10 +474,11 @@
 
     .privacy-card {
       position: absolute;
-      left: 14px;
+      left: 50%;
       bottom: calc(env(safe-area-inset-bottom) + 20px);
+      transform: translateX(-50%);
       z-index: 9;
-      width: 112px;
+      width: 136px;
       padding: 8px;
       border-radius: 20px;
       border: 1px solid rgba(255, 222, 165, 0.2);
@@ -498,14 +501,13 @@
 
     .privacy-meta {
       display: grid;
+      justify-items: center;
       gap: 4px;
     }
 
-    .privacy-main,
-    .privacy-sub {
-      font-size: 10px;
+    .privacy-main {
+      font-size: 11px;
       letter-spacing: 0.13em;
-      text-transform: uppercase;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -513,10 +515,6 @@
 
     .privacy-main {
       color: rgba(244, 234, 213, 0.84);
-    }
-
-    .privacy-sub {
-      color: rgba(244, 234, 213, 0.46);
     }
 
     .dock {
@@ -619,15 +617,11 @@
       }
 
       .summary-card {
-        bottom: calc(env(safe-area-inset-bottom) + 122px);
+        max-width: min(80vw, 292px);
       }
 
       .summary-text {
         font-size: 18px;
-      }
-
-      .dock {
-        width: min(60vw, 216px);
       }
     }
   </style>
@@ -645,12 +639,6 @@
         <div class="wordmark">
           <strong>CARE LENS</strong>
           <span>perspective shift</span>
-        </div>
-        <div class="meta-row" aria-live="polite">
-          <span class="chip warn" id="privacyChip">MASK LOCK</span>
-          <span class="chip" id="intervalChip">10S</span>
-          <span class="chip" id="analysisChip">CARE</span>
-          <span class="chip local" id="modeChip">LOCAL</span>
         </div>
       </div>
       <button class="settings-toggle" id="settingsToggle" type="button" aria-expanded="false" aria-controls="settingsPanel">
@@ -701,10 +689,6 @@
 
     <div class="label-layer" id="labelLayer" aria-hidden="true"></div>
 
-    <div class="mask-hint" aria-hidden="true">
-      <div class="mask-pill" id="maskHint">privacy first</div>
-    </div>
-
     <section class="summary-card" aria-live="polite">
       <div class="summary-kicker" id="summaryKicker">Care View</div>
       <div class="summary-text" id="summaryText">思いやりのきっかけ</div>
@@ -714,25 +698,9 @@
     <aside class="privacy-card" aria-live="polite">
       <canvas id="thumbCanvas" width="176" height="264"></canvas>
       <div class="privacy-meta">
-        <div class="privacy-main" id="privacyMain">MASKED JPEG</div>
-        <div class="privacy-sub" id="privacySub">NO SEND YET</div>
+        <div class="privacy-main" id="privacyMain">Masked JPEG</div>
       </div>
     </aside>
-
-    <section class="dock">
-      <div class="dock-actions">
-        <button class="dock-btn primary" id="startButton" type="button">Start</button>
-        <button class="dock-btn ghost" id="stopButton" type="button">Stop</button>
-      </div>
-      <div class="status-card">
-        <div class="status-row">
-          <span class="micro" id="camChip">CAM OFF</span>
-          <span class="micro" id="faceChip">FACE WAIT</span>
-          <span class="micro" id="tickChip">NEXT --</span>
-        </div>
-        <div class="status-line" id="statusLine">camera or demo scene</div>
-      </div>
-    </section>
   </main>
 
   <script type="module">
@@ -1010,7 +978,9 @@
     }
 
     function updateStatus(text) {
-      el.statusLine.textContent = text;
+      if (el.statusLine) {
+        el.statusLine.textContent = text;
+      }
     }
 
     function currentAnalysisConfig() {
@@ -1031,8 +1001,10 @@
       el.negativeModeButton.classList.toggle("active", state.analysisMode === "negative");
       el.hypeModeButton.classList.toggle("active", state.analysisMode === "hype");
       el.questModeButton.classList.toggle("active", state.analysisMode === "quest");
-      el.analysisChip.textContent = config.chip;
       el.summaryKicker.textContent = config.kicker;
+      if (el.analysisChip) {
+        el.analysisChip.textContent = config.chip;
+      }
     }
 
     function currentIntervalOption() {
@@ -1044,25 +1016,36 @@
       el.interval5Button.classList.toggle("active", activeMs === 5000);
       el.interval10Button.classList.toggle("active", activeMs === 10000);
       el.interval20Button.classList.toggle("active", activeMs === 20000);
-      el.intervalChip.textContent = currentIntervalOption().label.toUpperCase();
+      if (el.intervalChip) {
+        el.intervalChip.textContent = currentIntervalOption().label.toUpperCase();
+      }
     }
 
     function setModeChip(mode) {
       state.lastMode = mode;
-      el.modeChip.textContent = mode === "live" ? "LIVE" : "LOCAL";
-      el.modeChip.classList.remove("live", "local");
-      el.modeChip.classList.add(mode === "live" ? "live" : "local");
+      if (el.modeChip) {
+        el.modeChip.textContent = mode === "live" ? "LIVE" : "LOCAL";
+        el.modeChip.classList.remove("live", "local");
+        el.modeChip.classList.add(mode === "live" ? "live" : "local");
+      }
     }
 
     function setCameraChip(label) {
-      el.camChip.textContent = label;
+      if (el.camChip) {
+        el.camChip.textContent = label;
+      }
     }
 
     function setFaceChip(label) {
-      el.faceChip.textContent = label;
+      if (el.faceChip) {
+        el.faceChip.textContent = label;
+      }
     }
 
     function renderCountdown() {
+      if (!el.tickChip) {
+        return;
+      }
       if (!state.running || !state.nextScanAt) {
         el.tickChip.textContent = "NEXT --";
         return;
@@ -1085,7 +1068,9 @@
         clearInterval(state.countdownTimer);
         state.countdownTimer = null;
       }
-      el.tickChip.textContent = "NEXT --";
+      if (el.tickChip) {
+        el.tickChip.textContent = "NEXT --";
+      }
     }
 
     function stopScanTimer() {
@@ -1156,10 +1141,8 @@
       }
     }
 
-    function renderTransportMeta(kind, faceCount) {
-      const sourceLabel = kind === "live" ? "LIVE RELAY" : "LOCAL ONLY";
-      el.privacyMain.textContent = faceCount > 0 ? `MASKED ${faceCount}` : "MASKED JPEG";
-      el.privacySub.textContent = sourceLabel;
+    function renderTransportMeta() {
+      el.privacyMain.textContent = "Masked JPEG";
     }
 
     function computeCoverCrop(srcWidth, srcHeight, dstWidth, dstHeight) {
@@ -1274,9 +1257,11 @@
         maskCtx.stroke();
       });
 
-      el.maskHint.textContent = state.faceBoxes.length > 0
-        ? `mask ${state.faceBoxes.length}`
-        : "privacy first";
+      if (el.maskHint) {
+        el.maskHint.textContent = state.faceBoxes.length > 0
+          ? `mask ${state.faceBoxes.length}`
+          : "privacy first";
+      }
     }
 
     function demoPalette(seed) {
@@ -1637,7 +1622,9 @@
         const result = state.detector.detectForVideo(el.video, performance.now());
         state.faceBoxes = readDetectedBoxes(result, el.video.videoWidth, el.video.videoHeight);
         drawMaskOverlay();
-        el.privacyChip.textContent = state.faceBoxes.length > 0 ? `MASK ${state.faceBoxes.length}` : "MASK READY";
+        if (el.privacyChip) {
+          el.privacyChip.textContent = state.faceBoxes.length > 0 ? `MASK ${state.faceBoxes.length}` : "MASK READY";
+        }
       } catch (error) {
         state.detectorReady = false;
         state.detectorError = error instanceof Error ? error.message : String(error);
@@ -1728,11 +1715,6 @@
       thumbCtx.fillRect(0, 0, width, height);
       const crop = computeCoverCrop(canvas.width, canvas.height, width, height);
       thumbCtx.drawImage(canvas, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, width, height);
-      thumbCtx.fillStyle = "rgba(255, 248, 236, 0.14)";
-      thumbCtx.fillRect(0, height - 36, width, 36);
-      thumbCtx.fillStyle = "rgba(255, 248, 236, 0.8)";
-      thumbCtx.font = "600 16px Space Grotesk";
-      thumbCtx.fillText(state.lastMaskedAt || nowStamp(), 12, height - 12);
     }
 
     async function buildMaskedFrame() {
@@ -2341,14 +2323,6 @@
 
       document.addEventListener("pointerdown", handleOutsidePanel);
 
-      el.startButton.addEventListener("click", () => {
-        void startSession();
-      });
-
-      el.stopButton.addEventListener("click", () => {
-        stopSession();
-      });
-
       el.scanNowButton.addEventListener("click", () => {
         void runScan({ manual: true });
       });
@@ -2470,6 +2444,9 @@
       syncAnalysisButtons();
       syncIntervalButtons();
       renderCountdown();
+      window.setTimeout(() => {
+        void startSession();
+      }, 220);
     }
 
     init().catch((error) => {
