@@ -150,6 +150,30 @@
       margin-top: 12px;
     }
 
+    .shot {
+      margin: 16px 0;
+      display: grid;
+      gap: 8px;
+    }
+
+    .shot img {
+      width: 100%;
+      display: block;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.64);
+      box-shadow:
+        0 8px 24px rgba(0, 0, 0, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.72);
+      background: rgba(255, 255, 255, 0.55);
+    }
+
+    .shot figcaption {
+      font-size: 11px;
+      line-height: 1.6;
+      color: rgba(0, 0, 0, 0.36);
+      text-align: center;
+    }
+
     .actions {
       margin-top: 14px;
       display: flex;
@@ -215,6 +239,10 @@
         最初に作ったのは、ちょうど 2020 年のコロナ禍でした。
         ボーラードの点数計算は想像以上に難しく、どの値をどう変数に格納するかを考え続けながら実装した記憶があります。
       </p>
+      <figure class="shot">
+        <img src="./images/bowlard-phone.jpg" alt="Bowlard の iPhone 画面スクリーンショット" loading="lazy" />
+        <figcaption>iPhone 縦画面。台、スコア、難易度切替を 1 画面に収めています。</figcaption>
+      </figure>
       <p>
         当時は for 文や繰り返し処理を知らず、Ball1、Ball2、Ball3 のように変数を一本ずつ手で定義して、
         コピペしながら書いていました。あの実装には 1 か月ほどかかっています。
@@ -223,6 +251,10 @@
         今回はその実装を、Codex や Claude Code の精度を体感する最初の一歩として作り直しました。
         以前なら長時間かかった部分が、2〜3 個の言葉だけで数行にまとまったことに、強く進化を感じました。
       </p>
+      <figure class="shot">
+        <img src="./images/bowlard-desktop.jpg" alt="Bowlard の広い画面でのスクリーンショット" loading="lazy" />
+        <figcaption>広めの画面でも中央に台を寄せて、スコアボードが崩れないようにしています。</figcaption>
+      </figure>
 
       <div class="actions">
         <a class="btn primary" href="../../apps/bowlard/">App</a>
