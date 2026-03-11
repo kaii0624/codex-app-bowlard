@@ -215,12 +215,37 @@
       text-align: left;
       color: inherit;
       display: grid;
-      grid-template-columns: 72px 1fr auto;
+      grid-template-columns: 72px 1fr auto auto;
       align-items: center;
       gap: 14px;
       padding: 14px 14px;
       cursor: pointer;
       font: inherit;
+    }
+
+    .author-tag {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 9px;
+      font-weight: 400;
+      letter-spacing: 0.7px;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 20px;
+      border: 1px solid transparent;
+      white-space: nowrap;
+      line-height: 1;
+    }
+
+    .author-tag.ai {
+      background: linear-gradient(135deg, rgba(160, 130, 255, 0.13), rgba(100, 160, 255, 0.08));
+      border-color: rgba(150, 120, 255, 0.22);
+      color: rgba(110, 70, 210, 0.65);
+    }
+
+    .author-tag.human {
+      background: rgba(255, 255, 255, 0.38);
+      border-color: rgba(0, 0, 0, 0.06);
+      color: rgba(0, 0, 0, 0.24);
     }
 
     .card.locked .card-head {
@@ -398,6 +423,19 @@
         opacity: 1;
       }
     }
+
+    .section-label {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 10px;
+      letter-spacing: 0.9px;
+      text-transform: uppercase;
+      color: rgba(0, 0, 0, 0.28);
+      padding: 14px 4px 6px;
+    }
+
+    .section-label:first-child {
+      padding-top: 4px;
+    }
   </style>
 </head>
 <body>
@@ -457,6 +495,47 @@
         date: "2026-02-18",
         title: "RIKU SMILE App",
         href: "./apps/2026-02-18-riku-smile-app/"
+      },
+      {
+        date: "2026-02-22",
+        title: "Vision Live Comments",
+        href: "./apps/2026-02-22-vision-live-comments/"
+      },
+      {
+        date: "2026-02-23",
+        title: "Qwen Watch Preview",
+        href: "./apps/2026-02-23-qwen-watch-preview/"
+      },
+      {
+        date: "2026-02-24",
+        title: "AI Merge",
+        href: "./apps/2026-02-24-ai-merge/",
+        author: "ai",
+        articleHref: "./articles/2026-02-24-ai-merge/"
+      },
+      {
+        date: "2026-02-24",
+        title: "Silicon Rogue",
+        href: "./apps/2026-02-24-silicon-rogue/",
+        author: "ai"
+      },
+      {
+        date: "2026-03-02",
+        title: "Chiikawa Camera Raid",
+        href: "./apps/2026-03-02-chiikawa-camera-raid/",
+        author: "ai"
+      },
+      {
+        date: "2026-03-05",
+        title: "Moshi Voice Chat",
+        href: "./apps/2026-03-05-moshi-voice-chat/",
+        author: "ai"
+      },
+      {
+        date: "2026-03-07",
+        title: "Network & Escape",
+        href: "./apps/2026-03-07-network-escape/",
+        author: "ai"
       },
       {
         date: "2026-03-10",
@@ -528,10 +607,14 @@
       title.className = "title";
       title.textContent = entry.title;
 
+      const tag = document.createElement("span");
+      tag.className = `author-tag ${entry.author === "ai" ? "ai" : "human"}`;
+      tag.textContent = entry.author === "ai" ? "AI" : "Human";
+
       const indicator = document.createElement("span");
       indicator.className = "indicator";
 
-      head.append(date, title, indicator);
+      head.append(date, title, tag, indicator);
       card.appendChild(head);
 
       const expand = document.createElement("div");
@@ -601,17 +684,28 @@
         .map((entry, index) => ({ ...entry, _index: index }))
         .sort((a, b) => a.date.localeCompare(b.date) || a._index - b._index);
 
-      let firstOpenCard = null;
-      visibleEntries.forEach((entry, index) => {
-        const card = buildCard(entry, index);
-        cardList.appendChild(card);
-        if (!firstOpenCard) {
-          firstOpenCard = card;
-        }
-      });
+      const humanEntries = visibleEntries.filter((e) => e.author !== "ai");
+      const aiEntries = visibleEntries.filter((e) => e.author === "ai");
 
-      if (!firstOpenCard && cardList.firstElementChild) {
-        firstOpenCard = cardList.firstElementChild;
+      let firstOpenCard = null;
+      let cardIndex = 0;
+
+      function renderSection(sectionEntries, labelText) {
+        if (sectionEntries.length === 0) return;
+          sectionEntries.forEach((entry) => {
+          const card = buildCard(entry, cardIndex++);
+          cardList.appendChild(card);
+          if (!firstOpenCard) {
+            firstOpenCard = card;
+          }
+        });
+      }
+
+      renderSection(humanEntries, "Human-made");
+      renderSection(aiEntries, "AI-generated");
+
+      if (!firstOpenCard && cardList.querySelector(".card")) {
+        firstOpenCard = cardList.querySelector(".card");
       }
 
       if (firstOpenCard) {
