@@ -1,14 +1,1207 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Removed</title>
-  <meta http-equiv="refresh" content="0; url=/" />
-  <meta name="robots" content="noindex" />
-  <script>
-    location.replace("/");
-  </script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>AI進化マージ - AI Evolution 2048</title>
+<meta name="description" content="AIモデルをマージして進化させる2048ゲーム。ElizaからAGIまで、AIの歴史を体験しよう！">
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :root {
+    --bg: #050010;
+    --grid-bg: #0a0a1a;
+    --grid-border: #1a1a3a;
+    --cell-bg: #12122a;
+    --text-primary: #ffffff;
+    --text-score: #00ff88;
+    --accent: #00ff88;
+    --gap: 8px;
+    --radius: 8px;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* ─── Particle canvas ─── */
+  #particle-canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ─── App wrapper ─── */
+  #app {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 12px 8px 20px;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  /* ─── Header ─── */
+  #header {
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
+  #title-block h1 {
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+    color: #fff;
+    text-shadow: 0 0 20px rgba(0,255,136,0.5);
+    line-height: 1.1;
+  }
+
+  #title-block p {
+    font-size: 10px;
+    color: rgba(255,255,255,0.45);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  #score-block {
+    display: flex;
+    gap: 8px;
+  }
+
+  .score-box {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 6px 12px;
+    text-align: center;
+    min-width: 72px;
+    backdrop-filter: blur(4px);
+  }
+
+  .score-label {
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.45);
+    margin-bottom: 2px;
+  }
+
+  .score-value {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text-score);
+    text-shadow: 0 0 12px rgba(0,255,136,0.6);
+    transition: transform 0.15s ease;
+    line-height: 1;
+  }
+
+  .score-value.bump {
+    transform: scale(1.25);
+  }
+
+  /* ─── AdSense placeholder ─── */
+  #adsense-placeholder {
+    width: 100%;
+    max-width: 420px;
+    height: 60px;
+    background: rgba(255,255,255,0.02);
+    border: 1px dashed rgba(255,255,255,0.08);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,0.15);
+    font-size: 10px;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+
+  /* ─── Grid wrapper ─── */
+  #grid-wrapper {
+    width: 100%;
+    max-width: 420px;
+    position: relative;
+  }
+
+  #grid-bg {
+    background: var(--grid-bg);
+    border: 2px solid var(--grid-border);
+    border-radius: 12px;
+    padding: var(--gap);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    gap: var(--gap);
+    aspect-ratio: 1 / 1;
+    box-shadow:
+      0 0 40px rgba(0,0,50,0.8),
+      inset 0 0 30px rgba(0,0,30,0.5);
+  }
+
+  .cell {
+    background: var(--cell-bg);
+    border-radius: var(--radius);
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+
+  /* ─── Tile layer ─── */
+  #tile-layer {
+    position: absolute;
+    top: var(--gap);
+    left: var(--gap);
+    right: var(--gap);
+    bottom: var(--gap);
+    pointer-events: none;
+  }
+
+  .tile {
+    position: absolute;
+    border-radius: var(--radius);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: left 0.1s ease, top 0.1s ease;
+    overflow: hidden;
+    will-change: transform, left, top;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  }
+
+  .tile.new-tile {
+    animation: tileAppear 0.18s ease forwards;
+  }
+
+  .tile.merge-tile {
+    animation: tileMerge 0.18s ease forwards;
+  }
+
+  @keyframes tileAppear {
+    0%   { transform: scale(0); opacity: 0; }
+    70%  { transform: scale(1.1); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  @keyframes tileMerge {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.2); }
+    100% { transform: scale(1); }
+  }
+
+  .tile-emoji {
+    line-height: 1;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  }
+
+  .tile-name {
+    font-weight: 800;
+    color: #fff;
+    text-align: center;
+    line-height: 1;
+    letter-spacing: -0.3px;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+    padding: 0 4px;
+  }
+
+  .tile-year {
+    font-weight: 500;
+    color: rgba(255,255,255,0.55);
+    text-align: center;
+    line-height: 1;
+  }
+
+  /* Special pulse for Claude 3 (2048) */
+  .tile[data-value="2048"] {
+    animation: claudePulse 2s ease-in-out infinite !important;
+  }
+
+  @keyframes claudePulse {
+    0%, 100% { box-shadow: 0 0 12px 2px rgba(220,38,38,0.4), 0 2px 8px rgba(0,0,0,0.5); }
+    50%       { box-shadow: 0 0 30px 8px rgba(220,38,38,0.8), 0 2px 8px rgba(0,0,0,0.5); }
+  }
+
+  /* Glow for high-value tiles */
+  .tile[data-value="4096"]  { box-shadow: 0 0 20px rgba(217,119,6,0.6)  !important; }
+  .tile[data-value="8192"]  { box-shadow: 0 0 24px rgba(124,45,18,0.7)  !important; }
+  .tile[data-value="16384"] { box-shadow: 0 0 30px rgba(76,29,149,0.8)  !important; animation: agiGlow 1.5s ease-in-out infinite !important; }
+  .tile[data-value="32768"] { box-shadow: 0 0 40px rgba(100,100,255,0.9) !important; animation: singGlow 1s ease-in-out infinite !important; }
+  .tile[data-value="65536"] { box-shadow: 0 0 60px rgba(255,255,255,0.8) !important; animation: godGlow 0.8s ease-in-out infinite !important; }
+
+  @keyframes agiGlow {
+    0%, 100% { box-shadow: 0 0 20px rgba(76,29,149,0.7); }
+    50%       { box-shadow: 0 0 50px rgba(76,29,149,1), 0 0 80px rgba(120,60,200,0.5); }
+  }
+  @keyframes singGlow {
+    0%, 100% { box-shadow: 0 0 30px rgba(100,100,255,0.8); }
+    50%       { box-shadow: 0 0 60px rgba(150,150,255,1), 0 0 100px rgba(200,200,255,0.6); }
+  }
+  @keyframes godGlow {
+    0%, 100% { box-shadow: 0 0 40px rgba(255,255,255,0.7); filter: brightness(1); }
+    50%       { box-shadow: 0 0 80px rgba(255,255,255,1), 0 0 120px rgba(255,255,255,0.8); filter: brightness(1.3); }
+  }
+
+  /* ─── Particle burst ─── */
+  .burst {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 100;
+    animation: burstOut 0.5s ease-out forwards;
+  }
+
+  @keyframes burstOut {
+    0%   { opacity: 1; transform: translate(0,0) scale(1); }
+    100% { opacity: 0; transform: translate(var(--bx), var(--by)) scale(0); }
+  }
+
+  /* ─── Controls hint ─── */
+  #controls-hint {
+    max-width: 420px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 10px;
+    margin-bottom: 8px;
+  }
+
+  .arrow-hint {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: rgba(255,255,255,0.3);
+    font-size: 11px;
+  }
+
+  .arrow-key {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 4px;
+    padding: 2px 5px;
+    font-size: 10px;
+    color: rgba(255,255,255,0.5);
+  }
+
+  /* ─── Buttons ─── */
+  #btn-row {
+    max-width: 420px;
+    width: 100%;
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+  }
+
+  .btn {
+    flex: 1;
+    max-width: 200px;
+    padding: 12px 16px;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+    letter-spacing: 0.3px;
+  }
+
+  .btn:active {
+    transform: scale(0.96);
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #00c96b, #00ff88);
+    color: #000;
+    box-shadow: 0 4px 20px rgba(0,255,136,0.3);
+  }
+
+  .btn-primary:hover {
+    box-shadow: 0 4px 30px rgba(0,255,136,0.5);
+  }
+
+  .btn-secondary {
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.7);
+    border: 1px solid rgba(255,255,255,0.12);
+  }
+
+  .btn-secondary:hover {
+    background: rgba(255,255,255,0.12);
+  }
+
+  /* ─── Overlays ─── */
+  .overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .overlay.visible {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .overlay-game-over {
+    background: rgba(5, 0, 16, 0.92);
+    backdrop-filter: blur(8px);
+  }
+
+  .overlay-win {
+    background: rgba(0, 20, 10, 0.92);
+    backdrop-filter: blur(8px);
+  }
+
+  .overlay-title {
+    font-size: 28px;
+    font-weight: 900;
+    margin-bottom: 8px;
+    text-align: center;
+    line-height: 1.2;
+  }
+
+  .overlay-subtitle {
+    font-size: 13px;
+    color: rgba(255,255,255,0.6);
+    margin-bottom: 16px;
+    text-align: center;
+    padding: 0 20px;
+  }
+
+  .overlay-score-display {
+    font-size: 40px;
+    font-weight: 900;
+    color: var(--text-score);
+    text-shadow: 0 0 20px rgba(0,255,136,0.8);
+    margin-bottom: 20px;
+  }
+
+  .overlay-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 80%;
+  }
+
+  .overlay-btn {
+    padding: 14px 20px;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+    text-align: center;
+  }
+
+  .overlay-btn:active {
+    transform: scale(0.97);
+  }
+
+  .overlay-btn-primary {
+    background: linear-gradient(135deg, #00c96b, #00ff88);
+    color: #000;
+    box-shadow: 0 4px 20px rgba(0,255,136,0.4);
+  }
+
+  .overlay-btn-secondary {
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.7);
+    border: 1px solid rgba(255,255,255,0.15);
+  }
+
+  .overlay-btn-share {
+    background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(59,130,246,0.4);
+  }
+
+  /* ─── Toast ─── */
+  #toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-80px);
+    background: rgba(0,255,136,0.15);
+    border: 1px solid rgba(0,255,136,0.3);
+    color: var(--text-score);
+    padding: 10px 20px;
+    border-radius: 50px;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    backdrop-filter: blur(8px);
+    transition: transform 0.3s ease;
+    z-index: 200;
+  }
+
+  #toast.show {
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* ─── Progress bar ─── */
+  #progress-bar-wrapper {
+    max-width: 420px;
+    width: 100%;
+    margin: 6px 0 4px;
+  }
+
+  #progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    color: rgba(255,255,255,0.3);
+    margin-bottom: 3px;
+    letter-spacing: 0.5px;
+  }
+
+  #progress-bar-track {
+    height: 3px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+
+  #progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #00c96b, #00ff88);
+    border-radius: 99px;
+    transition: width 0.4s ease;
+    box-shadow: 0 0 6px rgba(0,255,136,0.6);
+  }
+
+  /* ─── Legend ─── */
+  #legend {
+    max-width: 420px;
+    width: 100%;
+    margin-top: 10px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+  }
+
+  .legend-item {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 6px;
+    padding: 4px 2px;
+    text-align: center;
+    font-size: 8px;
+    color: rgba(255,255,255,0.35);
+    line-height: 1.5;
+  }
+
+  .legend-emoji {
+    font-size: 12px;
+    display: block;
+  }
+
+  /* scrollbar */
+  #app::-webkit-scrollbar { width: 0; }
+</style>
 </head>
-<body></body>
+<body>
+
+<canvas id="particle-canvas"></canvas>
+
+<div id="app">
+  <!-- Header -->
+  <div id="header">
+    <div id="title-block">
+      <h1>AI進化マージ</h1>
+      <p>AI Evolution 2048</p>
+    </div>
+    <div id="score-block">
+      <div class="score-box">
+        <div class="score-label">SCORE</div>
+        <div class="score-value" id="score-display">0</div>
+      </div>
+      <div class="score-box">
+        <div class="score-label">BEST</div>
+        <div class="score-value" id="best-display">0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AdSense placeholder -->
+  <div id="adsense-placeholder"><!-- ADSENSE PLACEHOLDER --></div>
+
+  <!-- Progress -->
+  <div id="progress-bar-wrapper">
+    <div id="progress-label">
+      <span id="progress-current">Eliza (2)</span>
+      <span>最高到達AI</span>
+      <span id="progress-next">Claude 3 (2048)</span>
+    </div>
+    <div id="progress-bar-track">
+      <div id="progress-bar-fill" style="width:0%"></div>
+    </div>
+  </div>
+
+  <!-- Grid -->
+  <div id="grid-wrapper">
+    <div id="grid-bg">
+      <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+      <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+      <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+      <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+    </div>
+    <div id="tile-layer"></div>
+
+    <!-- Game Over overlay -->
+    <div class="overlay overlay-game-over" id="overlay-gameover">
+      <div class="overlay-title">ゲームオーバー 💀</div>
+      <div class="overlay-subtitle" id="gameover-best-label"></div>
+      <div class="overlay-score-display" id="gameover-score"></div>
+      <div class="overlay-buttons">
+        <button class="overlay-btn overlay-btn-share" id="btn-share-gameover" onclick="shareScore()">📤 スコアをシェア</button>
+        <button class="overlay-btn overlay-btn-primary" id="btn-retry" onclick="newGame()">🔄 もう一度</button>
+      </div>
+    </div>
+
+    <!-- Win overlay -->
+    <div class="overlay overlay-win" id="overlay-win">
+      <div class="overlay-title" style="color:#00ff88">🎉 AIの覇権を握った！</div>
+      <div class="overlay-subtitle">Claude 3に到達！さらに先へ進もう</div>
+      <div class="overlay-score-display" id="win-score"></div>
+      <div class="overlay-buttons">
+        <button class="overlay-btn overlay-btn-primary" id="btn-continue" onclick="continueGame()">続ける →</button>
+        <button class="overlay-btn overlay-btn-share" onclick="shareScore()">📤 シェア</button>
+        <button class="overlay-btn overlay-btn-secondary" onclick="newGame()">新しいゲーム</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Controls hint -->
+  <div id="controls-hint">
+    <div class="arrow-hint">
+      <span class="arrow-key">←</span>
+      <span class="arrow-key">↑</span>
+      <span class="arrow-key">→</span>
+      <span class="arrow-key">↓</span>
+      <span>キー / スワイプ</span>
+    </div>
+  </div>
+
+  <!-- Buttons -->
+  <div id="btn-row">
+    <button class="btn btn-primary" onclick="newGame()">新しいゲーム</button>
+    <button class="btn btn-secondary" onclick="shareScore()">📤 シェア</button>
+  </div>
+
+  <!-- Legend -->
+  <div id="legend">
+    <!-- Filled by JS -->
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────────
+// AI LEVELS
+// ─────────────────────────────────────────────────
+const AI_LEVELS = [
+  { value: 2,     name: 'Eliza',    year: '1966',   color: '#374151', emoji: '🤖' },
+  { value: 4,     name: 'Deep Blue',year: '1997',   color: '#1e3a5f', emoji: '♟️' },
+  { value: 8,     name: 'Watson',   year: '2011',   color: '#1e40af', emoji: '💡' },
+  { value: 16,    name: 'Siri',     year: '2011',   color: '#7c3aed', emoji: '🎤' },
+  { value: 32,    name: 'Alexa',    year: '2014',   color: '#1d4ed8', emoji: '🔵' },
+  { value: 64,    name: 'GPT-2',    year: '2019',   color: '#065f46', emoji: '📝' },
+  { value: 128,   name: 'GPT-3',    year: '2020',   color: '#047857', emoji: '✨' },
+  { value: 256,   name: 'ChatGPT', year: '2022',   color: '#059669', emoji: '💬' },
+  { value: 512,   name: 'GPT-4',   year: '2023',   color: '#0284c7', emoji: '🧠' },
+  { value: 1024,  name: 'Gemini',  year: '2023',   color: '#7c3aed', emoji: '💎' },
+  { value: 2048,  name: 'Claude 3',year: '2024',   color: '#dc2626', emoji: '🎭' },
+  { value: 4096,  name: 'GPT-5',   year: '2025',   color: '#d97706', emoji: '⚡' },
+  { value: 8192,  name: 'Claude 4',year: '2025',   color: '#7c2d12', emoji: '🔥' },
+  { value: 16384, name: 'AGI',     year: '20??',   color: '#4c1d95', emoji: '🌟' },
+  { value: 32768, name: '特異点',   year: '近未来',  color: '#1a1a2e', emoji: '∞' },
+  { value: 65536, name: '神',      year: '???',    color: '#000000', emoji: '✨' },
+];
+
+const AI_MAP = {};
+AI_LEVELS.forEach(a => AI_MAP[a.value] = a);
+
+// ─────────────────────────────────────────────────
+// GAME STATE
+// ─────────────────────────────────────────────────
+const GRID_SIZE = 4;
+let board = [];          // 4x4 array of values (0 = empty)
+let score = 0;
+let bestScore = parseInt(localStorage.getItem('ai2048_best') || '0');
+let gameOver = false;
+let won = false;
+let winShown = false;
+let moving = false;
+let highestTile = 2;
+
+// DOM refs
+const tileLayer = document.getElementById('tile-layer');
+const gridBg    = document.getElementById('grid-bg');
+const scoreEl   = document.getElementById('score-display');
+const bestEl    = document.getElementById('best-display');
+const overlayGO = document.getElementById('overlay-gameover');
+const overlayWin= document.getElementById('overlay-win');
+
+// ─────────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────────
+function init() {
+  bestEl.textContent = bestScore;
+  buildLegend();
+  initParticles();
+  newGame();
+}
+
+function newGame() {
+  board = Array.from({length: GRID_SIZE}, () => Array(GRID_SIZE).fill(0));
+  score = 0;
+  gameOver = false;
+  won = false;
+  winShown = false;
+  highestTile = 2;
+  moving = false;
+
+  overlayGO.classList.remove('visible');
+  overlayWin.classList.remove('visible');
+
+  updateScoreDisplay(0);
+  tileLayer.innerHTML = '';
+
+  addRandomTile();
+  addRandomTile();
+  renderBoard();
+  updateProgress();
+}
+
+function continueGame() {
+  overlayWin.classList.remove('visible');
+  winShown = true;
+}
+
+// ─────────────────────────────────────────────────
+// BOARD LOGIC
+// ─────────────────────────────────────────────────
+function addRandomTile() {
+  const empties = [];
+  for (let r = 0; r < GRID_SIZE; r++)
+    for (let c = 0; c < GRID_SIZE; c++)
+      if (board[r][c] === 0) empties.push({r, c});
+  if (empties.length === 0) return null;
+  const {r, c} = empties[Math.floor(Math.random() * empties.length)];
+  board[r][c] = Math.random() < 0.9 ? 2 : 4;
+  return {r, c, value: board[r][c]};
+}
+
+function cloneBoard(b) {
+  return b.map(row => [...row]);
+}
+
+// Slide a single row left, return {newRow, merged, points}
+function slideRow(row) {
+  const filtered = row.filter(v => v !== 0);
+  const result = [];
+  const mergePositions = [];
+  let points = 0;
+  let i = 0;
+  while (i < filtered.length) {
+    if (i + 1 < filtered.length && filtered[i] === filtered[i + 1]) {
+      const merged = filtered[i] * 2;
+      result.push(merged);
+      mergePositions.push(result.length - 1);
+      points += merged;
+      i += 2;
+    } else {
+      result.push(filtered[i]);
+      i++;
+    }
+  }
+  while (result.length < GRID_SIZE) result.push(0);
+  return {newRow: result, mergePositions, points};
+}
+
+// returns {newBoard, mergeInfos, points, moved}
+function applyMove(direction) {
+  let b = cloneBoard(board);
+  let totalPoints = 0;
+  let moved = false;
+  const mergeInfos = []; // {rowIdx, colIdx, value}
+
+  if (direction === 'left') {
+    // row i, col = mergePos
+    for (let i = 0; i < GRID_SIZE; i++) {
+      const row = b[i];
+      const {newRow, mergePositions, points} = slideRow(row);
+      if (row.join(',') !== newRow.join(',')) moved = true;
+      totalPoints += points;
+      mergePositions.forEach(mp => mergeInfos.push({rowIdx: i, colIdx: mp, value: newRow[mp]}));
+      b[i] = newRow;
+    }
+  } else if (direction === 'right') {
+    // reversed row: mergePos in reversed = (GRID_SIZE-1-mp) in original
+    for (let i = 0; i < GRID_SIZE; i++) {
+      const row = [...b[i]].reverse();
+      const {newRow, mergePositions, points} = slideRow(row);
+      const origRow = [...b[i]];
+      const newOrigRow = [...newRow].reverse();
+      if (origRow.join(',') !== newOrigRow.join(',')) moved = true;
+      totalPoints += points;
+      mergePositions.forEach(mp => {
+        const realCol = GRID_SIZE - 1 - mp;
+        mergeInfos.push({rowIdx: i, colIdx: realCol, value: newRow[mp]});
+      });
+      b[i] = newOrigRow;
+    }
+  } else if (direction === 'up') {
+    // column i, row = mergePos
+    for (let i = 0; i < GRID_SIZE; i++) {
+      const col = b.map(row => row[i]);
+      const {newRow, mergePositions, points} = slideRow(col);
+      if (col.join(',') !== newRow.join(',')) moved = true;
+      totalPoints += points;
+      mergePositions.forEach(mp => mergeInfos.push({rowIdx: mp, colIdx: i, value: newRow[mp]}));
+      newRow.forEach((v, r) => b[r][i] = v);
+    }
+  } else if (direction === 'down') {
+    // reversed column: mergePos in reversed = (GRID_SIZE-1-mp) in original row
+    for (let i = 0; i < GRID_SIZE; i++) {
+      const col = b.map(row => row[i]).reverse();
+      const {newRow, mergePositions, points} = slideRow(col);
+      const origCol = b.map(row => row[i]);
+      const newOrigCol = [...newRow].reverse();
+      if (origCol.join(',') !== newOrigCol.join(',')) moved = true;
+      totalPoints += points;
+      mergePositions.forEach(mp => {
+        const realRow = GRID_SIZE - 1 - mp;
+        mergeInfos.push({rowIdx: realRow, colIdx: i, value: newRow[mp]});
+      });
+      newOrigCol.forEach((v, r) => b[r][i] = v);
+    }
+  }
+
+  return {newBoard: b, mergeInfos, points: totalPoints, moved};
+}
+
+function hasValidMoves() {
+  // Any empty cell?
+  for (let r = 0; r < GRID_SIZE; r++)
+    for (let c = 0; c < GRID_SIZE; c++)
+      if (board[r][c] === 0) return true;
+  // Adjacent same values?
+  for (let r = 0; r < GRID_SIZE; r++)
+    for (let c = 0; c < GRID_SIZE; c++) {
+      const v = board[r][c];
+      if (c+1 < GRID_SIZE && board[r][c+1] === v) return true;
+      if (r+1 < GRID_SIZE && board[r+1][c] === v) return true;
+    }
+  return false;
+}
+
+function getHighestTile() {
+  let max = 0;
+  for (let r = 0; r < GRID_SIZE; r++)
+    for (let c = 0; c < GRID_SIZE; c++)
+      max = Math.max(max, board[r][c]);
+  return max;
+}
+
+// ─────────────────────────────────────────────────
+// MOVE HANDLER
+// ─────────────────────────────────────────────────
+function move(direction) {
+  if (gameOver || moving) return;
+
+  const {newBoard, mergeInfos, points, moved} = applyMove(direction);
+  if (!moved) return;
+
+  moving = true;
+  board = newBoard;
+
+  // Update score
+  if (points > 0) {
+    score += points;
+    updateScoreDisplay(score);
+    if (score > bestScore) {
+      bestScore = score;
+      localStorage.setItem('ai2048_best', bestScore);
+      bestEl.textContent = bestScore;
+    }
+  }
+
+  // Spawn new tile
+  const newTile = addRandomTile();
+
+  // Update highest
+  highestTile = getHighestTile();
+  updateProgress();
+
+  // Render
+  renderBoard(mergeInfos, newTile ? [{r: newTile.r, c: newTile.c}] : []);
+
+  // Trigger bursts for merges
+  mergeInfos.forEach(mi => {
+    const ai = AI_MAP[mi.value];
+    if (ai) spawnBurst(mi.rowIdx, mi.colIdx, ai.color);
+  });
+
+  // Check win
+  if (!winShown && !won && highestTile >= 2048) {
+    won = true;
+    setTimeout(() => {
+      document.getElementById('win-score').textContent = score.toLocaleString();
+      overlayWin.classList.add('visible');
+    }, 400);
+  }
+
+  // Allow next move after animation
+  setTimeout(() => {
+    moving = false;
+
+    // Check game over
+    if (!hasValidMoves()) {
+      gameOver = true;
+      setTimeout(() => {
+        document.getElementById('gameover-score').textContent = score.toLocaleString();
+        const ai = AI_MAP[highestTile] || {name: highestTile};
+        document.getElementById('gameover-best-label').textContent =
+          `最高AI: ${ai.emoji || ''} ${ai.name || highestTile}`;
+        overlayGO.classList.add('visible');
+      }, 200);
+    }
+  }, 160);
+}
+
+// ─────────────────────────────────────────────────
+// RENDERING
+// ─────────────────────────────────────────────────
+function getTileSize() {
+  const grid = gridBg.getBoundingClientRect();
+  // Available inner width minus gaps
+  const gap = 8;
+  return (grid.width - gap * 2 - gap * (GRID_SIZE - 1)) / GRID_SIZE;
+}
+
+function getTilePos(row, col) {
+  const size = getTileSize();
+  const gap = 8;
+  return {
+    left: col * (size + gap),
+    top:  row * (size + gap),
+    size
+  };
+}
+
+function renderBoard(mergeInfos = [], newTiles = []) {
+  tileLayer.innerHTML = '';
+
+  const mergeSet = new Set(mergeInfos.map(m => `${m.rowIdx},${m.colIdx}`));
+  const newSet   = new Set(newTiles.map(t => `${t.r},${t.c}`));
+
+  for (let r = 0; r < GRID_SIZE; r++) {
+    for (let c = 0; c < GRID_SIZE; c++) {
+      const val = board[r][c];
+      if (val === 0) continue;
+      const {left, top, size} = getTilePos(r, c);
+      const tile = createTileEl(val, left, top, size);
+      const key = `${r},${c}`;
+      if (newSet.has(key)) {
+        tile.classList.add('new-tile');
+      } else if (mergeSet.has(key)) {
+        tile.classList.add('merge-tile');
+      }
+      tileLayer.appendChild(tile);
+    }
+  }
+}
+
+function createTileEl(value, left, top, size) {
+  const ai = AI_MAP[value] || {name: value, year: '', color: '#374151', emoji: '?'};
+  const tile = document.createElement('div');
+  tile.className = 'tile';
+  tile.dataset.value = value;
+
+  tile.style.left   = left + 'px';
+  tile.style.top    = top  + 'px';
+  tile.style.width  = size + 'px';
+  tile.style.height = size + 'px';
+
+  // Gradient
+  const c = ai.color;
+  const lighter = lightenColor(c, 40);
+  tile.style.background = `radial-gradient(circle at 35% 35%, ${lighter}, ${c})`;
+
+  // Font sizes based on tile size
+  const emojiSize = size > 80 ? 32 : size > 60 ? 24 : 18;
+  const nameSize  = size > 80 ? 11 : size > 60 ? 9  : 7;
+  const yearSize  = size > 80 ? 9  : size > 60 ? 8  : 6;
+
+  // Emoji
+  const emojiEl = document.createElement('div');
+  emojiEl.className = 'tile-emoji';
+  emojiEl.style.fontSize = emojiSize + 'px';
+  emojiEl.textContent = ai.emoji;
+
+  // Name
+  const nameEl = document.createElement('div');
+  nameEl.className = 'tile-name';
+  nameEl.style.fontSize = nameSize + 'px';
+  nameEl.style.marginTop = '2px';
+  nameEl.textContent = ai.name;
+
+  // Year
+  const yearEl = document.createElement('div');
+  yearEl.className = 'tile-year';
+  yearEl.style.fontSize = yearSize + 'px';
+  yearEl.style.marginTop = '1px';
+  yearEl.textContent = ai.year;
+
+  tile.appendChild(emojiEl);
+  tile.appendChild(nameEl);
+  tile.appendChild(yearEl);
+
+  return tile;
+}
+
+function lightenColor(hex, amount) {
+  try {
+    let r = parseInt(hex.slice(1,3), 16);
+    let g = parseInt(hex.slice(3,5), 16);
+    let b = parseInt(hex.slice(5,7), 16);
+    r = Math.min(255, r + amount);
+    g = Math.min(255, g + amount);
+    b = Math.min(255, b + amount);
+    return `rgb(${r},${g},${b})`;
+  } catch(e) {
+    return hex;
+  }
+}
+
+// ─────────────────────────────────────────────────
+// BURST PARTICLES
+// ─────────────────────────────────────────────────
+function spawnBurst(row, col, color) {
+  const {left, top, size} = getTilePos(row, col);
+  const cx = left + size / 2;
+  const cy = top  + size / 2;
+
+  const count = 8;
+  for (let i = 0; i < count; i++) {
+    const burst = document.createElement('div');
+    burst.className = 'burst';
+    const angle = (i / count) * Math.PI * 2;
+    const dist = 24 + Math.random() * 20;
+    burst.style.setProperty('--bx', Math.cos(angle) * dist + 'px');
+    burst.style.setProperty('--by', Math.sin(angle) * dist + 'px');
+    burst.style.left = cx + 'px';
+    burst.style.top  = cy + 'px';
+    burst.style.background = color;
+    burst.style.width  = (3 + Math.random() * 4) + 'px';
+    burst.style.height = burst.style.width;
+    tileLayer.appendChild(burst);
+    setTimeout(() => burst.remove(), 550);
+  }
+}
+
+// ─────────────────────────────────────────────────
+// SCORE UI
+// ─────────────────────────────────────────────────
+function updateScoreDisplay(val) {
+  scoreEl.textContent = val.toLocaleString();
+  scoreEl.classList.remove('bump');
+  void scoreEl.offsetWidth; // reflow
+  scoreEl.classList.add('bump');
+  setTimeout(() => scoreEl.classList.remove('bump'), 200);
+}
+
+// ─────────────────────────────────────────────────
+// PROGRESS BAR
+// ─────────────────────────────────────────────────
+function updateProgress() {
+  const maxVal = 65536;
+  const pct = Math.min(100, (Math.log2(highestTile) / Math.log2(maxVal)) * 100);
+  document.getElementById('progress-bar-fill').style.width = pct + '%';
+
+  const ai = AI_MAP[highestTile];
+  if (ai) {
+    document.getElementById('progress-current').textContent = `${ai.emoji} ${ai.name}`;
+  }
+}
+
+// ─────────────────────────────────────────────────
+// SHARE
+// ─────────────────────────────────────────────────
+function shareScore() {
+  const ai = AI_MAP[highestTile] || {name: String(highestTile), emoji: '🤖'};
+  const text = `AI進化マージ 🤖\nスコア: ${score.toLocaleString()}\n${ai.emoji} ${ai.name}まで進化した！\n#AI進化マージ #AI2048`;
+
+  if (navigator.share) {
+    navigator.share({
+      title: 'AI進化マージ',
+      text: text,
+      url: location.href
+    }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(text)
+      .then(() => showToast('クリップボードにコピーしました！'))
+      .catch(() => {
+        // Fallback: prompt
+        window.prompt('コピーしてシェアしよう:', text);
+      });
+  }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ─────────────────────────────────────────────────
+// LEGEND
+// ─────────────────────────────────────────────────
+function buildLegend() {
+  const legend = document.getElementById('legend');
+  legend.innerHTML = '';
+  AI_LEVELS.slice(0, 16).forEach(ai => {
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    item.style.borderColor = ai.color + '44';
+    item.innerHTML = `<span class="legend-emoji">${ai.emoji}</span>${ai.name}`;
+    item.title = `${ai.name} (${ai.year}) = ${ai.value}`;
+    legend.appendChild(item);
+  });
+}
+
+// ─────────────────────────────────────────────────
+// KEYBOARD
+// ─────────────────────────────────────────────────
+const KEY_MAP = {
+  ArrowLeft:  'left',
+  ArrowRight: 'right',
+  ArrowUp:    'up',
+  ArrowDown:  'down',
+  a: 'left', d: 'right', w: 'up', s: 'down',
+  A: 'left', D: 'right', W: 'up', S: 'down',
+};
+
+document.addEventListener('keydown', e => {
+  const dir = KEY_MAP[e.key];
+  if (dir) {
+    e.preventDefault();
+    move(dir);
+  }
+});
+
+// ─────────────────────────────────────────────────
+// TOUCH / SWIPE
+// ─────────────────────────────────────────────────
+let touchStartX, touchStartY;
+const SWIPE_THRESHOLD = 30;
+
+document.addEventListener('touchstart', e => {
+  if (e.target.closest('button')) return;
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+}, {passive: true});
+
+document.addEventListener('touchend', e => {
+  if (e.target.closest('button') || touchStartX == null) return;
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  const dy = e.changedTouches[0].clientY - touchStartY;
+  const absDx = Math.abs(dx);
+  const absDy = Math.abs(dy);
+  if (Math.max(absDx, absDy) < SWIPE_THRESHOLD) return;
+  e.preventDefault();
+  if (absDx > absDy) {
+    move(dx > 0 ? 'right' : 'left');
+  } else {
+    move(dy > 0 ? 'down' : 'up');
+  }
+  touchStartX = touchStartY = null;
+}, {passive: false});
+
+// Prevent page scroll on swipe
+document.addEventListener('touchmove', e => {
+  if (!e.target.closest('.btn') && !e.target.closest('.overlay-btn')) {
+    e.preventDefault();
+  }
+}, {passive: false});
+
+// ─────────────────────────────────────────────────
+// MATRIX PARTICLE BACKGROUND
+// ─────────────────────────────────────────────────
+function initParticles() {
+  const canvas = document.getElementById('particle-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, drops;
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789αβγδAI⚡🧠∞'.split('');
+
+  function resize() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+    const cols = Math.floor(W / 14);
+    drops = Array(cols).fill(0).map(() => Math.random() * -50);
+  }
+
+  function draw() {
+    ctx.fillStyle = 'rgba(5, 0, 16, 0.05)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.font = '11px monospace';
+
+    for (let i = 0; i < drops.length; i++) {
+      const char = chars[Math.floor(Math.random() * chars.length)];
+      const alpha = 0.03 + Math.random() * 0.07;
+      ctx.fillStyle = `rgba(0, 255, 136, ${alpha})`;
+      ctx.fillText(char, i * 14, drops[i] * 14);
+      if (drops[i] * 14 > H && Math.random() > 0.975) drops[i] = 0;
+      drops[i] += 0.3 + Math.random() * 0.2;
+    }
+  }
+
+  resize();
+  window.addEventListener('resize', () => {
+    resize();
+    renderBoard();
+  });
+  setInterval(draw, 60);
+}
+
+// ─────────────────────────────────────────────────
+// START
+// ─────────────────────────────────────────────────
+window.addEventListener('load', init);
+</script>
+</body>
 </html>
