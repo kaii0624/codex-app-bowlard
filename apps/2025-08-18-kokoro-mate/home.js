@@ -167,40 +167,75 @@ class HomeManager {
         <div class="spotlight"></div>
         <div class="particle-container" id="particles"></div>
         <div class="status-bar">
-          <button class="home-btn" id="return-home">🏠</button>
-          <div class="stage-display">📍 <span id="stage-name">Stage 1: 自己認識の門</span></div>
+          <button class="home-btn" id="return-home">‹</button>
+          <div class="stage-display"><span id="stage-name">Stage 1: 自己認識の門</span></div>
+          <div class="q-counter">Q<span id="q-number">1</span>/100</div>
         </div>
         <div class="battle-stage">
-          <div class="battle-area">
-            <div class="enemy-container" id="enemy-container">
-              <div class="enemy-sprite" id="enemy-sprite">🎭</div>
-              <div class="enemy-info"><div class="enemy-name" id="enemy-name">仮面の門番</div><div class="enemy-level">Lv.<span id="enemy-level">1</span></div></div>
-              <div class="enemy-hp-bar"><div class="enemy-hp-fill" id="enemy-hp" style="width:100%"></div>
-                <div class="enemy-hp-text"><span id="enemy-hp-current">100</span>/<span id="enemy-hp-max">100</span></div></div>
-            </div>
-            <div class="question-card">
-              <div class="question-header">
-                <div class="question-number">質問 <span id="q-number">1</span>/100</div>
-                <div class="question-category" id="question-category">性格診断</div>
+          <div class="battle-row s1">
+            <div class="player-side">
+              <div class="aw" id="aura-wrapper">
+                <div class="ar" style="width:62px;height:62px;border-width:1.5px;animation-delay:0s;"></div>
+                <div class="ar" style="width:80px;height:80px;border-width:1px;animation-delay:.5s;"></div>
+                <div class="ar" style="width:98px;height:98px;border-width:1px;animation-delay:1s;"></div>
+                <img class="pi" id="player-char" src="./char/character1.png" alt="キャラクター"/>
               </div>
-              <div class="question-text" id="question">大勢の人がいるパーティーでは、エネルギーを得る</div>
-              <div class="answer-scale">
-                <button class="scale-btn strong-disagree" data-value="1" id="btn-1"><span class="scale-icon">😞</span><span class="scale-text">全くそう<br>思わない</span></button>
-                <button class="scale-btn disagree"      data-value="2" id="btn-2"><span class="scale-icon">🙁</span><span class="scale-text">あまり<br>思わない</span></button>
-                <button class="scale-btn neutral"       data-value="3" id="btn-3"><span class="scale-icon">😐</span><span class="scale-text">どちら<br>でもない</span></button>
-                <button class="scale-btn agree"         data-value="4" id="btn-4"><span class="scale-icon">🙂</span><span class="scale-text">やや<br>そう思う</span></button>
-                <button class="scale-btn strong-agree" data-value="5" id="btn-5"><span class="scale-icon">😄</span><span class="scale-text">とても<br>そう思う</span></button>
-              </div>
-              <div class="time-gauge"><div class="time-remaining" id="time-remaining"></div></div>
+              <div class="apct" id="awake-pct">覚醒度 0%</div>
+              <div class="agb"><div class="agbg"><div class="agfg" id="awake-bar" style="width:0%"></div></div></div>
             </div>
+            <div class="az" id="action-zone">
+              <div class="beam"></div>
+              <div class="bimpact"></div>
+              <div class="rip r1"></div><div class="rip r2"></div><div class="rip r3"></div>
+              <div class="feather f1"></div><div class="feather f2"></div><div class="feather f3"></div>
+              <div class="feather f4"></div><div class="feather f5"></div>
+              <div class="son sn1"></div><div class="son sn2"></div><div class="sctr"></div>
+              <svg class="blt" width="18" height="70" viewBox="0 0 18 70" aria-hidden="true">
+                <polyline points="9,0 3,28 10,28 2,70" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>
+              </svg>
+              <div class="bgl"></div>
+              <div class="bst bs1"></div><div class="bst bs2"></div><div class="bst bs3"></div>
+              <div class="bcore"></div>
+              <div class="pt p1"></div><div class="pt p2"></div><div class="pt p3"></div>
+              <div class="pt p4"></div><div class="pt p5"></div><div class="pt p6"></div>
+              <div class="pt p7"></div><div class="pt p8"></div>
+              <div class="csp cs1"></div><div class="csp cs2"></div><div class="csp cs3"></div>
+              <div class="csp cs4"></div><div class="csp cs5"></div>
+            </div>
+            <div class="enemy-side">
+              <div class="ew" id="enemy-wrapper">
+                <div class="enemy-sprite" id="enemy-sprite">🎭</div>
+                <div class="dmg" id="dmg-number">-30</div>
+              </div>
+              <span class="boss-tag" id="boss-tag" style="display:none">BOSS</span>
+              <span class="enemy-name" id="enemy-name">自己認識の門番</span>
+              <span class="enemy-level-wrap">Lv.<span id="enemy-level">1</span></span>
+              <div class="enemy-hp-bar">
+                <span class="hp-lbl">HP</span>
+                <div class="hp-bg"><div class="enemy-hp-fill" id="enemy-hp" style="width:100%"></div></div>
+                <span class="hp-val"><span id="enemy-hp-current">200</span>/<span id="enemy-hp-max">200</span></span>
+              </div>
+            </div>
+          </div>
+          <div class="question-card">
+            <div class="question-header">
+              <div class="question-category" id="question-category">性格診断</div>
+            </div>
+            <div class="question-text" id="question">大勢の人がいるパーティーでは、エネルギーを得る</div>
+            <div class="seg-wrap">
+              <button class="seg" id="btn-5" data-value="5">とても</button>
+              <button class="seg" id="btn-4" data-value="4">やや</button>
+              <button class="seg" id="btn-3" data-value="3">どちらでも</button>
+              <button class="seg" id="btn-2" data-value="2">あまり</button>
+              <button class="seg" id="btn-1" data-value="1">全く</button>
+            </div>
+            <div class="time-gauge" style="display:none"><div class="time-remaining" id="time-remaining"></div></div>
           </div>
         </div>
         <div class="audience">
           <div class="audience-member" style="--i:0"></div><div class="audience-member" style="--i:1"></div>
           <div class="audience-member" style="--i:2"></div><div class="audience-member" style="--i:3"></div>
-          <div class="audience-member" style="--i:4"></div><div class="audience-member" style="--i:5"></div>
-          <div class="audience-member" style="--i:6"></div><div class="audience-member" style="--i:7"></div>
-          <div class="audience-member" style="--i:8"></div><div class="audience-member" style="--i:9"></div>
+          <div class="audience-member" style="--i:4"></div>
         </div>
       </div>
       <div class="character-modal" id="character-modal">
