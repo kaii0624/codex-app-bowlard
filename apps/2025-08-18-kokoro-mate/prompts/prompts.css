@@ -1,0 +1,511 @@
+/* prompts/prompts.css - 学習プロンプト画面スタイル */
+
+.prompts-container {
+    min-height: 100vh;
+    max-height: 100vh;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* スクロール可能なコンテンツエリア */
+.prompts-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 20px 20px 20px;
+    scroll-behavior: smooth;
+}
+
+.prompts-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.prompts-content::-webkit-scrollbar-track {
+    background: rgba(255,255,255,0.1);
+    border-radius: 3px;
+}
+
+.prompts-content::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.3);
+    border-radius: 3px;
+}
+
+.prompts-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.5);
+}
+
+/* ヘッダー */
+.prompts-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px;
+    background: rgba(0,0,0,0.1);
+    backdrop-filter: blur(10px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.back-btn, .export-btn {
+    width: 40px;
+    height: 40px;
+    background: rgba(255,255,255,0.2);
+    border: none;
+    border-radius: 50%;
+    color: #FFF;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.back-btn:active, .export-btn:active {
+    transform: scale(0.9);
+    background: rgba(255,255,255,0.3);
+}
+
+.prompts-title {
+    color: #FFF;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.unlock-count {
+    background: rgba(255,255,255,0.2);
+    padding: 5px 15px;
+    border-radius: 20px;
+    color: #FFF;
+    font-size: 14px;
+}
+
+.unlock-count span {
+    font-weight: bold;
+    font-size: 18px;
+}
+
+/* セクションタイトル */
+.section-title {
+    color: #FFF;
+    font-size: 20px;
+    font-weight: bold;
+    margin: 20px 0 15px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    background: rgba(0,0,0,0.3);
+    padding: 12px 16px;
+    border-radius: 10px;
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+/* イントロセクション */
+.prompts-intro {
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.prompts-intro p {
+    color: #FFF;
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 8px;
+}
+
+.prompts-intro p:last-child {
+    margin-bottom: 0;
+}
+
+/* セクション区切り */
+.section-divider {
+    margin: 30px 0 20px 0;
+    text-align: center;
+}
+
+.section-divider h2 {
+    color: #FFF;
+    font-size: 20px;
+    font-weight: bold;
+    margin: 20px 0 15px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    background: rgba(0,0,0,0.3);
+    padding: 12px 16px;
+    border-radius: 10px;
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+.section-divider p {
+    color: rgba(255,255,255,0.8);
+    font-size: 14px;
+    margin-top: 10px;
+}
+
+/* Stepプロンプトリスト */
+.step-prompts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* Stepプロンプトカード（診断結果スタイルベース） */
+.step-prompt-card {
+    background: rgba(255,255,255,0.12);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    padding: 16px;
+    border-left: 4px solid #FFD700;
+    transition: all 0.3s ease;
+}
+
+.step-prompt-card:hover {
+    background: rgba(255,255,255,0.18);
+    transform: translateY(-2px);
+}
+
+/* アンロック状態 */
+.step-prompt-card.unlocked {
+    border-left-color: #4CAF50;
+}
+
+/* ロック状態 */
+.step-prompt-card.locked {
+    background: rgba(255,255,255,0.08);
+    border-left-color: #FF9800;
+    opacity: 0.7;
+}
+
+/* プロンプトヘッダー */
+.step-prompt-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.step-info {
+    flex: 1;
+}
+
+.step-number {
+    background: #667eea;
+    color: #FFF;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+    display: inline-block;
+    margin-bottom: 8px;
+}
+
+.step-prompt-card.locked .step-number {
+    background: #FF9800;
+}
+
+.step-theme {
+    color: #FFF;
+    font-size: 16px;
+    line-height: 1.5;
+    margin-bottom: 8px;
+}
+
+.step-prompt-card.locked .step-theme {
+    color: rgba(255,255,255,0.6);
+    font-style: italic;
+}
+
+/* プロンプトコンテンツ */
+.step-prompt-content {
+    background: rgba(0,0,0,0.3);
+    border-radius: 10px;
+    padding: 15px;
+    margin: 15px 0;
+}
+
+.step-prompt-content pre {
+    color: #FFF;
+    font-size: 13px;
+    line-height: 1.5;
+    margin: 0;
+    white-space: pre-wrap;
+    font-family: 'Courier New', monospace;
+}
+
+/* メタ情報 */
+.step-prompt-meta {
+    color: rgba(255,255,255,0.7);
+    font-size: 12px;
+    text-align: right;
+    margin-top: 10px;
+}
+
+/* コピーボタン */
+.copy-btn {
+    background: #FFD700;
+    color: #333;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.copy-btn:active {
+    transform: scale(0.9);
+}
+
+/* ロックアイコン */
+.lock-icon {
+    font-size: 24px;
+    color: #FF9800;
+}
+
+/* ロックメッセージ */
+.locked-message {
+    text-align: center;
+    padding: 20px;
+    color: rgba(255,255,255,0.8);
+}
+
+.locked-message p {
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.progress-hint {
+    background: rgba(255,152,0,0.2);
+    color: #FFF;
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-size: 11px;
+    display: inline-block;
+    margin-top: 8px;
+}
+
+/* データなしメッセージ */
+.no-prompts-message {
+    text-align: center;
+    padding: 60px 20px;
+    color: #FFF;
+}
+
+.no-prompts-icon {
+    font-size: 80px;
+    margin-bottom: 20px;
+}
+
+.no-prompts-message h2 {
+    font-size: 24px;
+    margin-bottom: 15px;
+}
+
+.no-prompts-message p {
+    font-size: 16px;
+    opacity: 0.9;
+    margin-bottom: 30px;
+}
+
+/* ===== レスポンシブ対応 ===== */
+
+/* Large Mobile (480px - 768px) */
+@media (min-width: 480px) {
+    .prompts-content {
+        padding: 0 20px 20px 20px;
+    }
+    
+    .prompts-header {
+        padding: 25px 20px;
+    }
+    
+    .prompts-title {
+        font-size: 28px;
+    }
+    
+    .step-prompts-list {
+        gap: 20px;
+    }
+    
+    .step-prompt-card {
+        padding: 20px;
+    }
+    
+    .step-theme {
+        font-size: 18px;
+    }
+    
+    .step-prompt-content pre {
+        font-size: 14px;
+    }
+}
+
+/* Tablet (768px - 1024px) */
+@media (min-width: 768px) {
+    .prompts-container {
+        padding: env(safe-area-inset-top) 30px env(safe-area-inset-bottom) 30px;
+    }
+    
+    .prompts-content {
+        padding: 0 30px 30px 30px;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .prompts-header {
+        padding: 30px 20px;
+    }
+    
+    .prompts-title {
+        font-size: 32px;
+    }
+    
+    .section-divider h2 {
+        font-size: 22px;
+    }
+    
+    .step-prompts-list {
+        gap: 25px;
+    }
+    
+    .step-prompt-card {
+        padding: 25px;
+    }
+    
+    .step-number {
+        padding: 6px 12px;
+        font-size: 14px;
+    }
+    
+    .step-theme {
+        font-size: 20px;
+    }
+    
+    .step-prompt-content {
+        padding: 20px;
+    }
+    
+    .step-prompt-content pre {
+        font-size: 15px;
+        line-height: 1.6;
+    }
+    
+    .copy-btn {
+        padding: 6px 12px;
+        font-size: 14px;
+    }
+}
+
+/* Desktop (1024px+) */
+@media (min-width: 1024px) {
+    .prompts-content {
+        padding: 0 40px 40px 40px;
+        max-width: 1000px;
+    }
+    
+    .prompts-header {
+        padding: 35px 30px;
+    }
+    
+    .prompts-title {
+        font-size: 36px;
+    }
+    
+    .section-divider h2 {
+        font-size: 24px;
+    }
+    
+    .step-prompts-list {
+        gap: 30px;
+    }
+    
+    .step-prompt-card {
+        padding: 30px;
+        transition: transform 0.2s ease;
+    }
+    
+    .step-prompt-card:hover {
+        transform: translateY(-3px);
+    }
+    
+    .step-number {
+        padding: 8px 16px;
+        font-size: 16px;
+    }
+    
+    .step-theme {
+        font-size: 22px;
+    }
+    
+    .step-prompt-content {
+        padding: 25px;
+    }
+    
+    .step-prompt-content pre {
+        font-size: 16px;
+        line-height: 1.7;
+    }
+    
+    .copy-btn {
+        padding: 8px 16px;
+        font-size: 16px;
+    }
+    
+    .locked-message {
+        padding: 30px;
+    }
+    
+    .locked-message p {
+        font-size: 16px;
+    }
+}
+
+/* Large Desktop (1440px+) */
+@media (min-width: 1440px) {
+    .prompts-content {
+        max-width: 1200px;
+        padding: 0 50px 50px 50px;
+    }
+    
+    .step-prompt-card {
+        padding: 35px;
+    }
+}
+
+/* Landscape (low height) */
+@media (orientation: landscape) and (max-height: 500px) {
+    .prompts-header {
+        padding: 15px 20px;
+    }
+    
+    .prompts-title {
+        font-size: 20px;
+    }
+    
+    .step-prompt-card {
+        padding: 15px;
+        margin-bottom: 10px;
+    }
+    
+    .step-theme {
+        font-size: 14px;
+    }
+    
+    .step-prompt-content pre {
+        font-size: 12px;
+    }
+}

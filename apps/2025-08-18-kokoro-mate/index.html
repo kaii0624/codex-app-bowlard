@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  />
+  <title>決め切るAI - 心理プロファイリングRPG</title>
+
+  <!-- ホーム画面用だけは静的ロード（他は home.js が動的に読む） -->
+  <link rel="stylesheet" href="./home.css" />
+
+  <!-- iOS 100vh対策（任意だけどおすすめ） -->
+  <script>
+    const setVH = () =>
+      document.documentElement.style.setProperty(
+        "--vh",
+        `${window.innerHeight * 0.01}px`
+      );
+    window.addEventListener("resize", setVH);
+    setVH();
+  </script>
+
+  <style>
+    /* 初期状態でホームだけ見せる（チラつき防止） */
+    .screen { display: none; }
+    #home-screen.screen { display: block; }
+  </style>
+</head>
+<body>
+  <!-- ====== ホーム画面 ====== -->
+  <div id="home-screen" class="screen active">
+    <div class="home-container">
+      <!-- パーティクル背景 -->
+      <div class="home-particles"></div>
+
+      <!-- タイトルセクション -->
+      <section class="title-section">
+        <div class="app-logo">
+          <img src="./logo.png" alt="ロゴ" class="logo-image" />
+        </div>
+        <span class="version-tag">v1.0.0</span>
+      </section>
+
+      <!-- プレイヤー情報 -->
+      <section class="player-info">
+        <!-- Lv.表示と問題完了数表示は削除 -->
+      </section>
+
+      <!-- メインメニュー -->
+      <section class="main-menu">
+        <button id="btn-training" class="menu-btn training-btn">
+          <div class="btn-icon">🎭</div>
+          <div class="btn-content">
+            <div class="btn-title">育成</div>
+            <div class="btn-description">心理診断を進めて仲間を集めよう</div>
+          </div>
+          <div id="training-badge" class="btn-badge">新規</div>
+        </button>
+
+        <div class="menu-btn battle-btn" style="opacity:.5; cursor:not-allowed;">
+          <div class="btn-icon">⚔️</div>
+          <div class="btn-content">
+            <div class="btn-title">バトル</div>
+            <div class="btn-description">Coming Soon...</div>
+          </div>
+          <div class="btn-lock">🔒</div>
+        </div>
+
+        <div class="sub-menu">
+          <button id="btn-results" class="sub-btn">
+            <div class="sub-icon">📊</div>
+            <div class="sub-title">診断結果</div>
+          </button>
+          <button id="btn-prompts" class="sub-btn">
+            <div class="sub-icon">📝</div>
+            <div class="sub-title">学習プロンプト</div>
+          </button>
+        </div>
+      </section>
+
+      <!-- フッター -->
+      <footer class="home-footer">
+        <!-- 設定・ヘルプボタンは削除 -->
+      </footer>
+    </div>
+  </div>
+
+  <!-- ====== ゲーム画面（中身は home.js が挿入） ====== -->
+  <div id="game-screen" class="screen"></div>
+
+  <!-- ====== 結果画面（resultsManager が描画） ====== -->
+  <div id="results-screen" class="screen"></div>
+
+  <!-- ====== プロンプト画面（promptsManager が描画） ====== -->
+  <div id="prompts-screen" class="screen"></div>
+
+  <!-- アプリ本体 -->
+  <script type="module" src="./home.js"></script>
+</body>
+</html>

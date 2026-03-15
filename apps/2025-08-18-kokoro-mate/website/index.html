@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MBTI診断ゲーム｜100問で性格タイプ発見｜決め切るAI</title>
+    <meta name="description" content="無料のMBTI性格診断ゲーム。100の質問に答えながらAIキャラクターを育成し、あなたの本当の性格タイプを発見しよう。ゲーム感覚で楽しく自己分析ができます。">
+    <meta property="og:title" content="MBTI診断ゲーム｜100問で性格タイプ発見｜決め切るAI">
+    <meta property="og:description" content="AIと一緒に性格診断！100問ゲームで自分を知ろう">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="MBTI診断ゲーム｜100問で性格タイプ発見｜決め切るAI">
+    <meta name="twitter:description" content="AIと一緒に性格診断！100問ゲームで自分を知ろう">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header__content">
+                <div class="header__logo">
+                    <h1 class="logo">決め切るAI</h1>
+                </div>
+                <nav class="header__nav" id="nav">
+                    <ul class="nav__list">
+                        <li class="nav__item"><a href="#features" class="nav__link">診断の特徴</a></li>
+                        <li class="nav__item"><a href="#how-it-works" class="nav__link">使い方</a></li>
+                        <li class="nav__item"><a href="#pricing" class="nav__link">料金</a></li>
+                        <li class="nav__item"><a href="#faq" class="nav__link">よくある質問</a></li>
+                    </ul>
+                </nav>
+                <div class="header__cta">
+                    <a href="../index.html" class="btn btn--primary">無料で診断開始</a>
+                </div>
+                <button class="header__hamburger" id="hamburger" aria-label="メニューを開く">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero__content">
+                <div class="hero__text">
+                    <div class="badge">完全無料</div>
+                    <h1 class="hero__title">100問でMBTI性格診断！<br>決め切るAI育成ゲーム</h1>
+                    <p class="hero__subtitle">AIと一緒に性格の謎を解き明かす！100の質問に答えながら、あなたの本当の性格タイプを発見し、決断力のあるAIパートナーを育てよう。</p>
+                    <div class="hero__cta">
+                        <a href="../index.html" class="btn btn--primary btn--large">無料で診断開始</a>
+                        <a href="#features" class="btn btn--secondary">ゲームを見る</a>
+                    </div>
+                    <div class="hero__social-proof">
+                        <span class="social-proof">✨ 累計診断回数10,000回突破！</span>
+                    </div>
+                </div>
+                <div class="hero__visual">
+                    <div class="hero__visual-content">
+                        <div class="visual-card">
+                            <div class="visual-card__header">MBTI診断中...</div>
+                            <div class="visual-card__body">
+                                <div class="character-grid">
+                                    <div class="character-icon">🤖</div>
+                                    <div class="character-icon">👨‍💼</div>
+                                    <div class="character-icon">🛡️</div>
+                                    <div class="character-icon">⚡</div>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-bar__fill"></div>
+                                </div>
+                                <p class="visual-card__text">質問 47/100</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="hero__background">
+            <div class="gradient-shape gradient-shape--1"></div>
+            <div class="gradient-shape gradient-shape--2"></div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="section" id="features">
+        <div class="container">
+            <h2 class="section__title">3つの特徴</h2>
+            <div class="benefits">
+                <div class="benefit">
+                    <div class="benefit__icon">
+                        <span class="icon">🎮</span>
+                    </div>
+                    <h3 class="benefit__title">楽しく性格発見</h3>
+                    <p class="benefit__description">ゲーム感覚で100問に答えるだけで、詳細なMBTI診断結果が分かります</p>
+                    <ul class="benefit__list">
+                        <li>ストーリー仕立てで飽きない</li>
+                        <li>AI仲間が段階的に増加</li>
+                        <li>視覚的に楽しい演出</li>
+                    </ul>
+                </div>
+                <div class="benefit">
+                    <div class="benefit__icon">
+                        <span class="icon">🤝</span>
+                    </div>
+                    <h3 class="benefit__title">AIと共に成長</h3>
+                    <p class="benefit__description">質問に答えるたびにAIキャラクターが進化し、新しい仲間が加わります</p>
+                    <ul class="benefit__list">
+                        <li>10問ごとに新キャラ登場</li>
+                        <li>ボス戦で達成感UP</li>
+                        <li>育成ゲーム要素で継続</li>
+                    </ul>
+                </div>
+                <div class="benefit">
+                    <div class="benefit__icon">
+                        <span class="icon">🔬</span>
+                    </div>
+                    <h3 class="benefit__title">科学的な診断</h3>
+                    <p class="benefit__description">MBTI理論に基づいた本格的な性格診断で、あなたの強みと特性を発見</p>
+                    <ul class="benefit__list">
+                        <li>16タイプの詳細分析</li>
+                        <li>信頼性の高い結果</li>
+                        <li>自己理解が深まる</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section class="section section--bg" id="how-it-works">
+        <div class="container">
+            <h2 class="section__title">使い方</h2>
+            <p class="section__subtitle">4つのステップで簡単に診断完了</p>
+            <div class="steps">
+                <div class="step">
+                    <div class="step__number">1</div>
+                    <h3 class="step__title">スタート</h3>
+                    <p class="step__description">「診断開始」ボタンを押して、AIと一緒に冒険をスタート</p>
+                </div>
+                <div class="step">
+                    <div class="step__number">2</div>
+                    <h3 class="step__title">質問回答</h3>
+                    <p class="step__description">100の質問に直感で答えながら、AIキャラクターを育成</p>
+                </div>
+                <div class="step">
+                    <div class="step__number">3</div>
+                    <h3 class="step__title">ボス戦</h3>
+                    <p class="step__description">10問ごとにボスが登場！倒すと新しい仲間が加わります</p>
+                </div>
+                <div class="step">
+                    <div class="step__number">4</div>
+                    <h3 class="step__title">結果確認</h3>
+                    <p class="step__description">全問完了でMBTI診断結果と育てたAIチームを確認</p>
+                </div>
+            </div>
+            <div class="steps__note">
+                <p><strong>所要時間：</strong>15-20分　<strong>推奨環境：</strong>Chrome、Safari、Edge最新版</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Course Section -->
+    <section class="section" id="course">
+        <div class="container">
+            <h2 class="section__title">診断コース</h2>
+            <div class="cards">
+                <div class="card">
+                    <div class="card__badge">人気</div>
+                    <div class="card__header">
+                        <h3 class="card__title">基本診断コース</h3>
+                        <p class="card__target">個人利用</p>
+                    </div>
+                    <div class="card__body">
+                        <p class="card__goal">MBTI16タイプの詳細診断結果とAIチーム育成</p>
+                        <div class="card__details">
+                            <p class="card__duration">所要時間: 15-20分</p>
+                            <p class="card__price">完全無料</p>
+                        </div>
+                    </div>
+                    <div class="card__footer">
+                        <a href="../index.html" class="btn btn--primary btn--full">今すぐ開始</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Success Stories Section -->
+    <section class="section section--bg" id="success-stories">
+        <div class="container">
+            <h2 class="section__title">成功事例</h2>
+            <div class="testimonials">
+                <div class="testimonial">
+                    <div class="testimonial__quote">
+                        <p>「ゲーム感覚で楽しく診断でき、チーム理解が格段に深まりました」</p>
+                    </div>
+                    <div class="testimonial__author">
+                        <div class="testimonial__details">
+                            <p class="testimonial__name">人事課長・田中様</p>
+                            <p class="testimonial__company">都内IT企業・人事部</p>
+                        </div>
+                    </div>
+                    <div class="testimonial__metrics">
+                        <span class="metric">参加率95%達成</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="section" id="pricing">
+        <div class="container">
+            <h2 class="section__title">料金プラン</h2>
+            <p class="section__subtitle">完全無料でご利用いただけます</p>
+            <div class="pricing-cards">
+                <div class="pricing-card">
+                    <div class="pricing-card__header">
+                        <h3 class="pricing-card__title">無料プラン</h3>
+                        <div class="pricing-card__price">
+                            <span class="price">¥0</span>
+                            <span class="period">永続無料</span>
+                        </div>
+                    </div>
+                    <div class="pricing-card__features">
+                        <ul>
+                            <li>✓ 基本MBTI診断</li>
+                            <li>✓ AIキャラ育成</li>
+                            <li>✓ 結果レポート</li>
+                            <li>✓ 全100問の質問</li>
+                            <li>✓ 16タイプ詳細分析</li>
+                            <li>✓ データ保存機能</li>
+                        </ul>
+                    </div>
+                    <div class="pricing-card__footer">
+                        <a href="../index.html" class="btn btn--primary btn--full">今すぐ開始</a>
+                    </div>
+                </div>
+            </div>
+            <div class="pricing-note">
+                <p>※ 完全無料でご利用いただけます。追加料金は一切かかりません。</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="section section--bg" id="faq">
+        <div class="container">
+            <h2 class="section__title">よくある質問</h2>
+            <div class="faq">
+                <div class="faq__item">
+                    <div class="faq__question">
+                        <h3>無料体験では何ができますか？</h3>
+                        <span class="faq__icon">+</span>
+                    </div>
+                    <div class="faq__answer">
+                        <p>全ての機能を無料でご利用いただけます。100問の診断、AI育成、詳細結果まで全て含まれています。</p>
+                    </div>
+                </div>
+                <div class="faq__item">
+                    <div class="faq__question">
+                        <h3>解約はいつでも可能ですか？</h3>
+                        <span class="faq__icon">+</span>
+                    </div>
+                    <div class="faq__answer">
+                        <p>会員登録不要のため、解約手続きはありません。いつでも自由にご利用いただけます。</p>
+                    </div>
+                </div>
+                <div class="faq__item">
+                    <div class="faq__question">
+                        <h3>診断にはどのくらい時間がかかりますか？</h3>
+                        <span class="faq__icon">+</span>
+                    </div>
+                    <div class="faq__answer">
+                        <p>約15-20分程度です。途中保存機能があるので、休憩しながら進めることも可能です。</p>
+                    </div>
+                </div>
+                <div class="faq__item">
+                    <div class="faq__question">
+                        <h3>スマートフォンでも利用できますか？</h3>
+                        <span class="faq__icon">+</span>
+                    </div>
+                    <div class="faq__answer">
+                        <p>はい、スマートフォン・タブレット・PCすべてに対応しています。</p>
+                    </div>
+                </div>
+                <div class="faq__item">
+                    <div class="faq__question">
+                        <h3>診断結果の信頼性は？</h3>
+                        <span class="faq__icon">+</span>
+                    </div>
+                    <div class="faq__answer">
+                        <p>MBTI理論に基づいた科学的な診断手法を採用しており、高い信頼性を保っています。</p>
+                    </div>
+                </div>
+                <div class="faq__item">
+                    <div class="faq__question">
+                        <h3>個人情報の取り扱いは？</h3>
+                        <span class="faq__icon">+</span>
+                    </div>
+                    <div class="faq__answer">
+                        <p>診断結果はブラウザ内のみに保存され、外部に送信されることはありません。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- App Download Section -->
+    <section class="section" id="download">
+        <div class="container">
+            <h2 class="section__title">対応環境</h2>
+            <p class="section__subtitle">Chrome、Safari、Edge、Firefox最新版（iOS、Android対応）</p>
+            <div class="download">
+                <p class="download__text">ブラウザで直接アクセス可能。アプリダウンロード不要で今すぐ開始できます。</p>
+                <div class="download__buttons">
+                    <a href="../index.html" class="btn btn--primary">ブラウザで開始</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="container">
+            <div class="cta">
+                <h2 class="cta__title">今すぐMBTI診断を始めよう！</h2>
+                <p class="cta__subtitle">AIと一緒にあなたの性格タイプを発見する冒険を始めませんか？</p>
+                <a href="../index.html" class="btn btn--primary btn--large">無料で診断開始</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer__content">
+                <div class="footer__section">
+                    <h4 class="footer__title">サービス</h4>
+                    <ul class="footer__list">
+                        <li><a href="#features">診断の特徴</a></li>
+                        <li><a href="#how-it-works">使い方</a></li>
+                        <li><a href="../index.html">診断開始</a></li>
+                    </ul>
+                </div>
+                <div class="footer__section">
+                    <h4 class="footer__title">サポート</h4>
+                    <ul class="footer__list">
+                        <li><a href="#faq">よくある質問</a></li>
+                        <li><a href="#download">対応環境</a></li>
+                        <li><a href="mailto:support@example.com">お問い合わせ</a></li>
+                    </ul>
+                </div>
+                <div class="footer__section">
+                    <h4 class="footer__title">会社情報</h4>
+                    <ul class="footer__list">
+                        <li><a href="#about">会社概要</a></li>
+                        <li><a href="#news">お知らせ</a></li>
+                    </ul>
+                </div>
+                <div class="footer__section">
+                    <h4 class="footer__title">法務</h4>
+                    <ul class="footer__list">
+                        <li><a href="#terms">利用規約</a></li>
+                        <li><a href="#privacy">プライバシーポリシー</a></li>
+                        <li><a href="#commerce">特定商取引法</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer__bottom">
+                <p class="footer__copyright">&copy; 2024 決め切るAI. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

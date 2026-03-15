@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ペルソナクエスト - 100問性格診断RPG</title>
+</head>
+<body>
+    <div class="stage-container">
+        <!-- エフェクト要素 -->
+        <div class="spotlight"></div>
+        <div class="particle-container" id="particles"></div>
+        
+        <!-- ステータスバー上部 -->
+        <div class="status-bar">
+            <button class="home-btn" id="return-home">🏠</button>
+            <div class="stage-display">
+                📍 <span id="stage-name">Stage 1: 自己認識の門</span>
+            </div>
+        </div>
+        
+        <!-- メインバトルステージ -->
+        <div class="battle-stage">
+            <!-- バトルエリア -->
+            <div class="battle-area">
+                <!-- 敵キャラクター -->
+                <div class="enemy-container" id="enemy-container">
+                    <div class="enemy-sprite" id="enemy-sprite">🎭</div>
+                    <div class="enemy-info">
+                        <div class="enemy-name" id="enemy-name">仮面の門番</div>
+                        <div class="enemy-level">Lv.<span id="enemy-level">1</span></div>
+                    </div>
+                    <div class="enemy-hp-bar">
+                        <div class="enemy-hp-fill" id="enemy-hp" style="width: 100%"></div>
+                        <div class="enemy-hp-text"><span id="enemy-hp-current">100</span>/<span id="enemy-hp-max">100</span></div>
+                    </div>
+                </div>
+                
+                <!-- 質問カード（5段階選択式） -->
+                <div class="question-card">
+                    <div class="question-header">
+                        <div class="question-number">質問 <span id="q-number">1</span>/100</div>
+                        <div class="question-category" id="question-category">性格診断</div>
+                    </div>
+                    <div class="question-text" id="question">
+                        大勢の人がいるパーティーでは、エネルギーを得る
+                    </div>
+                    
+                    <!-- 5段階選択ボタン -->
+                    <div class="answer-scale">
+                        <button class="scale-btn strong-agree" data-value="5" id="btn-5">
+                            <span class="scale-icon">😄</span>
+                            <span class="scale-text">とてもそう思う</span>
+                        </button>
+                        <button class="scale-btn agree" data-value="4" id="btn-4">
+                            <span class="scale-icon">🙂</span>
+                            <span class="scale-text">ややそう思う</span>
+                        </button>
+                        <button class="scale-btn neutral" data-value="3" id="btn-3">
+                            <span class="scale-icon">😐</span>
+                            <span class="scale-text">どちらでもない</span>
+                        </button>
+                        <button class="scale-btn disagree" data-value="2" id="btn-2">
+                            <span class="scale-icon">🙁</span>
+                            <span class="scale-text">あまり思わない</span>
+                        </button>
+                        <button class="scale-btn strong-disagree" data-value="1" id="btn-1">
+                            <span class="scale-icon">😞</span>
+                            <span class="scale-text">全く思わない</span>
+                        </button>
+                    </div>
+                    
+                    <!-- 回答時間ゲージ -->
+                    <div class="time-gauge">
+                        <div class="time-remaining" id="time-remaining"></div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+        
+        
+        <!-- 観客席 -->
+        <div class="audience">
+            <div class="audience-member" style="--i: 0"></div>
+            <div class="audience-member" style="--i: 1"></div>
+            <div class="audience-member" style="--i: 2"></div>
+            <div class="audience-member" style="--i: 3"></div>
+            <div class="audience-member" style="--i: 4"></div>
+            <div class="audience-member" style="--i: 5"></div>
+            <div class="audience-member" style="--i: 6"></div>
+            <div class="audience-member" style="--i: 7"></div>
+            <div class="audience-member" style="--i: 8"></div>
+            <div class="audience-member" style="--i: 9"></div>
+        </div>
+    </div>
+    
+    <!-- キャラクター獲得モーダル -->
+    <div class="character-modal" id="character-modal">
+        <div class="character-card">
+            <div class="character-rarity" id="character-rarity">★★★</div>
+            <div class="character-emoji" id="character-emoji">🎨</div>
+            <div class="character-name" id="character-name">アーティスト</div>
+            <div class="character-title" id="character-title">創造の探求者</div>
+            <div class="character-stats">
+                <div class="stat-item">
+                    <span class="stat-label">攻撃力:</span>
+                    <span class="stat-value" id="character-attack">100</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">防御力:</span>
+                    <span class="stat-value" id="character-defense">80</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">特殊能力:</span>
+                    <span class="stat-value" id="character-skill">創造の一撃</span>
+                </div>
+            </div>
+            <div class="character-description" id="character-description">
+                創造性と感性を武器に戦う芸術家タイプ。独創的な発想で敵を翻弄する。
+            </div>
+            <button class="continue-btn" id="continue-btn">
+                仲間に加える！
+            </button>
+        </div>
+    </div>
+    
+    <!-- 結果画面モーダル -->
+    <div class="result-modal" id="result-modal">
+        <div class="result-card">
+            <h2 class="result-title">🎊 診断完了！ 🎊</h2>
+            <div class="result-content">
+                <div class="mbti-result">
+                    <h3>MBTIタイプ</h3>
+                    <div class="mbti-type" id="mbti-type">INTJ</div>
+                    <div class="mbti-name" id="mbti-name">建築家</div>
+                </div>
+                <div class="personality-radar">
+                    <canvas id="radar-chart"></canvas>
+                </div>
+                <div class="trait-scores">
+                    <h3>性格特性スコア</h3>
+                    <div class="trait-list" id="trait-list"></div>
+                </div>
+                <div class="final-stats">
+                    <div class="stat">仲間: <span id="final-party">0</span>人</div>
+                </div>
+            </div>
+            <button class="restart-btn" id="restart-btn">ホームに戻る</button>
+        </div>
+    </div>
+</body>
+</html>

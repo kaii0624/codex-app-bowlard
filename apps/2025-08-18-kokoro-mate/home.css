@@ -1,0 +1,503 @@
+/* home.css - ホーム画面スタイル（スマホ縦長対応・堅牢化済み） */
+
+/* ===== Reset & base ===== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: #000;
+    overflow: hidden;
+    touch-action: pan-y;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* ===== Screen management (全画面切替) ===== */
+.screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    /* モバイルSafari対策: JSで --vh を設定していない場合は 1vh を使う */
+    height: 100vh;
+    height: calc(var(--vh, 1vh) * 100);
+    display: none;
+    z-index: 0; /* 非アクティブは後ろ */
+}
+
+.screen.active {
+    display: block;
+    animation: screenFadeIn 0.5s ease-out;
+    z-index: 10; /* アクティブを常に最前面へ */
+}
+
+/* 非アクティブ画面がタップを奪わないようにする */
+.screen:not(.active) {
+    pointer-events: none;
+}
+
+@keyframes screenFadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+/* ===== Home layout ===== */
+.home-container {
+    width: 100vw;
+    height: 100vh;
+    height: calc(var(--vh, 1vh) * 100);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* ===== Particles ===== */
+.home-particles {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.home-particles::before,
+.home-particles::after {
+    content: '';
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+    border-radius: 50%;
+    animation: float 20s infinite ease-in-out;
+}
+
+.home-particles::before {
+    top: 10%;
+    left: -100px;
+    animation-duration: 25s;
+}
+
+.home-particles::after {
+    bottom: 10%;
+    right: -100px;
+    animation-delay: 5s;
+}
+
+@keyframes float {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33%      { transform: translate(100px, -100px) scale(1.1); }
+    66%      { transform: translate(-100px, 100px) scale(0.9); }
+}
+
+/* ===== Title section ===== */
+.title-section {
+    position: relative;
+    z-index: 2;
+    padding: 40px 20px 30px;
+    text-align: center;
+}
+
+.app-logo {
+    position: relative;
+    width: 100%;
+    margin: 0 auto 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 20px;
+}
+
+.logo-image {
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 10px 30px rgba(0,0,0,0.3));
+    animation: logoPulse 3s ease-in-out infinite;
+}
+
+@keyframes logoPulse {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.05); }
+}
+
+.version-tag {
+    display: inline-block;
+    padding: 4px 12px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 20px;
+    color: #FFF;
+    font-size: 12px;
+    margin-top: 10px;
+}
+
+/* ===== Player info ===== */
+.player-info {
+    position: relative;
+    z-index: 2;
+    padding: 0 20px;
+    margin-bottom: 30px;
+    /* Lv.表示と問題完了数表示は削除済み */
+}
+
+/* ===== Main menu ===== */
+.main-menu {
+    position: relative;
+    z-index: 2;
+    padding: 0 20px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.menu-btn {
+    position: relative;
+    width: 100%;
+    background: rgba(255,255,255,0.95);
+    border: none;
+    border-radius: 20px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.menu-btn:active { transform: scale(0.98); }
+
+.menu-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-icon {
+    font-size: 40px;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-content { flex: 1; text-align: left; }
+
+.btn-title {
+    font-size: 20px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 5px;
+}
+
+.btn-description {
+    font-size: 13px;
+    color: #666;
+    line-height: 1.4;
+}
+
+.btn-badge {
+    position: absolute;
+    top: -5px;
+    right: 15px;
+    background: #FF4444;
+    color: #FFF;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: bold;
+    animation: badgePulse 2s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.1); }
+}
+
+.btn-lock { font-size: 24px; opacity: 0.5; }
+
+.training-btn {
+    background: linear-gradient(135deg, #FFF 0%, #F0F0FF 100%);
+}
+
+.training-btn:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+}
+
+.battle-btn {
+    background: linear-gradient(135deg, #F5F5F5 0%, #E0E0E0 100%);
+}
+
+/* ===== Sub menu ===== */
+.sub-menu {
+    display: flex;
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.sub-btn {
+    flex: 1;
+    background: rgba(255,255,255,0.9);
+    border: none;
+    border-radius: 15px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 3px 15px rgba(0,0,0,0.15);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.sub-btn:active { transform: scale(0.95); }
+
+.sub-icon  { font-size: 28px; }
+.sub-title { font-size: 13px; font-weight: bold; color: #333; }
+
+/* ===== Footer ===== */
+.home-footer {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    padding: 20px;
+    margin-top: auto;
+}
+
+/* 設定・ヘルプボタンは削除済み */
+
+/* ===== モバイルファーストレスポンシブ対応 ===== */
+
+/* Small Mobile (320px - 480px) - デフォルト */
+/* モバイル用パーティクル最適化 */
+.home-particles {
+    opacity: 0.3;
+}
+
+.home-particles::before,
+.home-particles::after {
+    width: 100px;
+    height: 100px;
+    background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%);
+}
+
+/* Large Mobile (480px - 768px) */
+@media (min-width: 480px) {
+    .home-container {
+        padding: 20px;
+    }
+    
+    .home-particles {
+        opacity: 0.5;
+    }
+    
+    .home-particles::before,
+    .home-particles::after {
+        width: 150px;
+        height: 150px;
+        background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+    }
+    
+    .app-logo {
+        padding: 0 30px;
+    }
+    
+    .title-main {
+        font-size: 36px;
+    }
+    
+    .menu-btn {
+        padding: 20px 25px;
+        font-size: 18px;
+    }
+    
+    .btn-title {
+        font-size: 22px;
+    }
+    
+    .btn-description {
+        font-size: 16px;
+    }
+    
+    .sub-btn {
+        padding: 18px;
+    }
+    
+    .sub-title {
+        font-size: 16px;
+    }
+}
+
+/* Tablet (768px - 1024px) */
+@media (min-width: 768px) {
+    .home-container {
+        max-width: 600px;
+        margin: 0 auto;
+        box-shadow: 0 0 50px rgba(0,0,0,0.3);
+        padding: 30px;
+    }
+    
+    .home-particles {
+        opacity: 0.7;
+    }
+    
+    .home-particles::before,
+    .home-particles::after {
+        width: 180px;
+        height: 180px;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+    }
+    
+    .title-section {
+        padding: 40px 20px;
+    }
+    
+    .app-logo {
+        padding: 0 40px;
+    }
+    
+    .title-main {
+        font-size: 42px;
+    }
+    
+    .title-sub {
+        font-size: 18px;
+    }
+    
+    /* プレイヤー情報表示は削除済み */
+    
+    .menu-btn {
+        padding: 25px 30px;
+        font-size: 20px;
+    }
+    
+    .btn-title {
+        font-size: 24px;
+    }
+    
+    .btn-description {
+        font-size: 18px;
+    }
+    
+    .sub-menu {
+        gap: 20px;
+    }
+    
+    .sub-btn {
+        padding: 20px;
+    }
+    
+    .sub-icon {
+        font-size: 28px;
+    }
+    
+    .sub-title {
+        font-size: 18px;
+    }
+}
+
+/* Desktop (1024px+) */
+@media (min-width: 1024px) {
+    .home-container {
+        max-width: 700px;
+        padding: 40px;
+    }
+    
+    .home-particles {
+        opacity: 1;
+    }
+    
+    .home-particles::before,
+    .home-particles::after {
+        width: 200px;
+        height: 200px;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+    }
+    
+    .title-section {
+        padding: 50px 20px;
+    }
+    
+    .app-logo {
+        padding: 0 60px;
+    }
+    
+    .title-main {
+        font-size: 48px;
+    }
+    
+    .title-sub {
+        font-size: 20px;
+    }
+    
+    .menu-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 35px rgba(0,0,0,0.4);
+    }
+    
+    .sub-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+    }
+}
+
+/* Large Desktop (1440px+) */
+@media (min-width: 1440px) {
+    .home-container {
+        max-width: 800px;
+    }
+}
+
+/* Landscape (low height) */
+@media (orientation: landscape) and (max-height: 500px) {
+    .title-section { 
+        padding: 15px 20px; 
+    }
+    
+    .app-logo { 
+        padding: 0 40px;
+    }
+    
+    .title-main { 
+        font-size: 24px; 
+    }
+    
+    .title-sub {
+        font-size: 12px;
+    }
+    
+    /* プレイヤー情報は削除済み */
+    
+    .menu-btn { 
+        padding: 12px 15px; 
+        font-size: 16px;
+    }
+    
+    .btn-title {
+        font-size: 18px;
+    }
+    
+    .btn-description {
+        font-size: 14px;
+    }
+    
+    .sub-btn {
+        padding: 12px;
+    }
+    
+    .sub-title {
+        font-size: 14px;
+    }
+}

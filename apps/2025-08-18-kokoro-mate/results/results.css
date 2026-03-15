@@ -1,0 +1,1018 @@
+/* results/results.css - 診断結果画面スタイル */
+
+.results-container {
+    min-height: 100vh;
+    max-height: 100vh;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* スクロール可能なコンテンツエリア */
+.results-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 20px 20px 20px;
+    scroll-behavior: smooth;
+}
+
+.results-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.results-content::-webkit-scrollbar-track {
+    background: rgba(255,255,255,0.1);
+    border-radius: 3px;
+}
+
+.results-content::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.3);
+    border-radius: 3px;
+}
+
+.results-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.5);
+}
+
+/* ヘッダー */
+.results-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px;
+    background: rgba(0,0,0,0.1);
+    backdrop-filter: blur(10px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.back-btn, .export-btn {
+    width: 40px;
+    height: 40px;
+    background: rgba(255,255,255,0.2);
+    border: none;
+    border-radius: 50%;
+    color: #FFF;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.back-btn:active, .export-btn:active {
+    transform: scale(0.9);
+    background: rgba(255,255,255,0.3);
+}
+
+.results-title {
+    color: #FFF;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+/* セクションタイトル */
+.section-title {
+    color: #FFF;
+    font-size: 20px;
+    font-weight: bold;
+    margin: 20px 0 15px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    background: rgba(0,0,0,0.3);
+    padding: 12px 16px;
+    border-radius: 10px;
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+/* サマリーカード */
+.summary-card {
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.summary-icon {
+    font-size: 30px;
+}
+
+.summary-info {
+    flex: 1;
+}
+
+.summary-label {
+    color: rgba(255,255,255,0.8);
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+
+.summary-value {
+    color: #FFF;
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.summary-bar {
+    height: 6px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.summary-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #FFD700, #FFA500);
+    border-radius: 3px;
+    transition: width 0.5s ease;
+}
+
+/* カード共通スタイル */
+.progress-card,
+.mbti-card,
+.party-card,
+.personality-card,
+.party-card,
+.stats-card,
+.history-card {
+    background: rgba(255,255,255,0.95);
+    border-radius: 20px;
+    padding: 20px;
+    margin: 20px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+}
+
+/* 仲間カード専用スタイル */
+.party-card {
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+/* プログレスカード */
+.progress-card {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.progress-icon {
+    font-size: 48px;
+}
+
+.progress-info {
+    flex: 1;
+}
+
+.progress-label {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+
+.progress-value {
+    color: #333;
+    font-size: 28px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.progress-bar-container {
+    height: 10px;
+    background: #E0E0E0;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    border-radius: 10px;
+    transition: width 0.5s ease;
+}
+
+/* MBTI カード */
+.mbti-content {
+    text-align: center;
+    margin: 20px 0;
+}
+
+.mbti-type {
+    font-size: 48px;
+    font-weight: bold;
+    color: #667eea;
+    margin-bottom: 10px;
+}
+
+.mbti-name {
+    font-size: 24px;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.mbti-description {
+    color: #666;
+    line-height: 1.6;
+}
+
+.mbti-traits {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.mbti-traits .trait {
+    padding: 10px;
+    background: #F5F5F5;
+    border-radius: 10px;
+    text-align: center;
+    color: #999;
+    font-size: 14px;
+}
+
+.mbti-traits .trait.active {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #FFF;
+    font-weight: bold;
+}
+
+/* 性格特性カード */
+.card-title {
+    color: #333;
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+.radar-chart-container {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+.trait-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.trait-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.trait-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.trait-icon {
+    font-size: 20px;
+}
+
+.trait-name {
+    flex: 1;
+    color: #333;
+    font-weight: 500;
+}
+
+.trait-score {
+    color: #667eea;
+    font-weight: bold;
+}
+
+.trait-bar {
+    height: 8px;
+    background: #E0E0E0;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.trait-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    border-radius: 10px;
+    transition: width 0.5s ease;
+}
+
+/* パーティーカード */
+.party-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 15px;
+}
+
+.party-member-card {
+    background: rgba(255,255,255,0.9);
+    border-radius: 15px;
+    padding: 15px;
+    text-align: center;
+    transition: transform 0.3s;
+    border: 1px solid rgba(255,255,255,0.3);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.party-member-card:active {
+    transform: scale(0.95);
+}
+
+.member-image-container {
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.member-image {
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.member-name {
+    color: #333;
+    font-size: 12px;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.member-power {
+    color: #666;
+    font-size: 11px;
+}
+
+.no-party {
+    text-align: center;
+    color: #999;
+    padding: 40px;
+}
+
+/* 統計カード */
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.stat-item {
+    background: #F5F5F5;
+    border-radius: 10px;
+    padding: 15px;
+    text-align: center;
+}
+
+.stat-label {
+    color: #666;
+    font-size: 12px;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.stat-value {
+    color: #333;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+/* 履歴カード */
+.history-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.history-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    background: #F5F5F5;
+    border-radius: 10px;
+    margin-bottom: 8px;
+}
+
+.history-number {
+    color: #667eea;
+    font-weight: bold;
+}
+
+.history-value {
+    color: #333;
+}
+
+.no-history {
+    text-align: center;
+    color: #999;
+    padding: 40px;
+}
+
+/* データなしメッセージ */
+.no-data-message {
+    text-align: center;
+    padding: 60px 20px;
+    color: #FFF;
+}
+
+.no-data-icon {
+    font-size: 80px;
+    margin-bottom: 20px;
+}
+
+.no-data-message h2 {
+    font-size: 24px;
+    margin-bottom: 15px;
+}
+
+.no-data-message p {
+    font-size: 16px;
+    opacity: 0.9;
+    margin-bottom: 30px;
+}
+
+.start-btn {
+    padding: 15px 40px;
+    background: #FFF;
+    color: #667eea;
+    border: none;
+    border-radius: 30px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.3s;
+}
+
+.start-btn:active {
+    transform: scale(0.95);
+}
+
+/* 質問詳細カード */
+.detailed-results {
+    margin-top: 20px;
+}
+
+.questions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.question-detail-card {
+    background: rgba(255,255,255,0.12);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    padding: 16px;
+    border-left: 4px solid #FFD700;
+    transition: all 0.3s ease;
+}
+
+.question-detail-card:hover {
+    background: rgba(255,255,255,0.18);
+    transform: translateY(-2px);
+}
+
+.question-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.question-number {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.step-indicator {
+    background: #667eea;
+    color: #FFF;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.question-index {
+    background: rgba(255,255,255,0.2);
+    color: #FFF;
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-size: 11px;
+}
+
+.global-number {
+    color: rgba(255,255,255,0.7);
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.answer-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.answer-emoji {
+    font-size: 24px;
+}
+
+.answer-value {
+    background: #FFD700;
+    color: #333;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.question-content {
+    margin-bottom: 12px;
+}
+
+.question-text {
+    color: #FFF;
+    font-size: 16px;
+    line-height: 1.5;
+    margin-bottom: 8px;
+}
+
+.answer-text {
+    color: #FFD700;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.question-metadata {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.category-tag, .type-tag {
+    background: rgba(255,255,255,0.2);
+    color: #FFF;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+}
+
+.type-tag {
+    background: rgba(102, 126, 234, 0.3);
+}
+
+.traits-info {
+    color: rgba(255,255,255,0.8);
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+/* パーティーメンバー */
+.party-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+    margin-top: 15px;
+}
+
+.party-member-card {
+    background: rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.party-member-card:hover {
+    background: rgba(255,255,255,0.2);
+    transform: scale(1.05);
+}
+
+.member-image {
+    width: 40px;
+    height: 40px;
+}
+
+.member-name {
+    color: #FFF;
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.member-power {
+    color: #FFD700;
+    font-size: 12px;
+}
+
+/* データなしメッセージ */
+.no-answers {
+    text-align: center;
+    color: rgba(255,255,255,0.7);
+    font-size: 16px;
+    padding: 40px 20px;
+}
+
+/* ===== モバイルファーストレスポンシブ対応 ===== */
+
+/* Small Mobile (320px - 480px) - デフォルト（既存スタイルベース） */
+.results-content {
+    padding: 0 15px 15px 15px;
+}
+
+.results-header h1 {
+    font-size: 24px;
+}
+
+.home-button {
+    padding: 10px 20px;
+    font-size: 14px;
+    bottom: 10px;
+    right: 10px;
+}
+
+.mbti-card {
+    margin-bottom: 15px;
+    padding: 20px;
+}
+
+.mbti-type {
+    font-size: 36px;
+}
+
+.mbti-name {
+    font-size: 18px;
+}
+
+.mbti-description {
+    font-size: 14px;
+}
+
+.traits-grid {
+    gap: 8px;
+}
+
+.trait-item {
+    padding: 8px 12px;
+}
+
+.trait-name {
+    font-size: 12px;
+}
+
+.trait-value {
+    font-size: 14px;
+}
+
+.party-grid {
+    gap: 8px;
+}
+
+.party-member-card {
+    padding: 12px;
+}
+
+.member-image {
+    width: 30px;
+    height: 30px;
+}
+
+.member-name {
+    font-size: 12px;
+}
+
+/* Large Mobile (480px - 768px) */
+@media (min-width: 480px) {
+    .results-content {
+        padding: 0 20px 20px 20px;
+    }
+    
+    .results-header h1 {
+        font-size: 28px;
+    }
+    
+    .home-button {
+        padding: 12px 24px;
+        font-size: 16px;
+        bottom: 15px;
+        right: 15px;
+    }
+    
+    .mbti-card {
+        margin-bottom: 20px;
+        padding: 25px;
+    }
+    
+    .mbti-type {
+        font-size: 42px;
+    }
+    
+    .mbti-name {
+        font-size: 20px;
+    }
+    
+    .mbti-description {
+        font-size: 15px;
+    }
+    
+    .traits-grid {
+        gap: 10px;
+    }
+    
+    .trait-item {
+        padding: 10px 15px;
+    }
+    
+    .trait-name {
+        font-size: 13px;
+    }
+    
+    .trait-value {
+        font-size: 16px;
+    }
+    
+    .party-grid {
+        gap: 10px;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    }
+    
+    .party-member-card {
+        padding: 15px;
+    }
+    
+    .member-image {
+        width: 35px;
+        height: 35px;
+    }
+    
+    .member-name {
+        font-size: 13px;
+    }
+}
+
+/* Tablet (768px - 1024px) */
+@media (min-width: 768px) {
+    .results-container {
+        padding: env(safe-area-inset-top) 30px env(safe-area-inset-bottom) 30px;
+    }
+    
+    .results-content {
+        padding: 0 30px 30px 30px;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .results-header h1 {
+        font-size: 32px;
+    }
+    
+    .home-button {
+        padding: 15px 30px;
+        font-size: 18px;
+        bottom: 20px;
+        right: 20px;
+    }
+    
+    .mbti-card {
+        margin-bottom: 30px;
+        padding: 35px;
+    }
+    
+    .mbti-type {
+        font-size: 48px;
+    }
+    
+    .mbti-name {
+        font-size: 22px;
+    }
+    
+    .mbti-description {
+        font-size: 16px;
+        line-height: 1.6;
+    }
+    
+    .section-title {
+        font-size: 22px;
+    }
+    
+    .traits-grid {
+        gap: 12px;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+    
+    .trait-item {
+        padding: 12px 18px;
+    }
+    
+    .trait-name {
+        font-size: 14px;
+    }
+    
+    .trait-value {
+        font-size: 18px;
+    }
+    
+    .party-grid {
+        gap: 15px;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
+    
+    .party-member-card {
+        padding: 20px;
+    }
+    
+    .member-image {
+        width: 45px;
+        height: 45px;
+    }
+    
+    .member-name {
+        font-size: 14px;
+    }
+    
+    .member-power {
+        font-size: 13px;
+    }
+}
+
+/* Desktop (1024px+) */
+@media (min-width: 1024px) {
+    .results-content {
+        padding: 0 40px 40px 40px;
+        max-width: 1000px;
+    }
+    
+    .results-header h1 {
+        font-size: 36px;
+    }
+    
+    .home-button {
+        padding: 18px 36px;
+        font-size: 20px;
+        bottom: 30px;
+        right: 30px;
+        transition: all 0.3s ease;
+    }
+    
+    .home-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+    }
+    
+    .mbti-card {
+        margin-bottom: 40px;
+        padding: 45px;
+    }
+    
+    .mbti-type {
+        font-size: 54px;
+    }
+    
+    .mbti-name {
+        font-size: 24px;
+    }
+    
+    .mbti-description {
+        font-size: 18px;
+        line-height: 1.7;
+    }
+    
+    .section-title {
+        font-size: 24px;
+    }
+    
+    .traits-grid {
+        gap: 15px;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    }
+    
+    .trait-item {
+        padding: 15px 20px;
+        transition: transform 0.2s ease;
+    }
+    
+    .trait-item:hover {
+        transform: translateY(-2px);
+    }
+    
+    .trait-name {
+        font-size: 15px;
+    }
+    
+    .trait-value {
+        font-size: 20px;
+    }
+    
+    .party-grid {
+        gap: 20px;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+    
+    .party-member-card {
+        padding: 25px;
+        transition: transform 0.2s ease;
+    }
+    
+    .party-member-card:hover {
+        transform: translateY(-3px);
+    }
+    
+    .member-image {
+        width: 55px;
+        height: 55px;
+    }
+    
+    .member-name {
+        font-size: 15px;
+    }
+    
+    .member-power {
+        font-size: 14px;
+    }
+}
+
+/* Large Desktop (1440px+) */
+@media (min-width: 1440px) {
+    .results-content {
+        max-width: 1200px;
+        padding: 0 50px 50px 50px;
+    }
+    
+    .mbti-card {
+        padding: 55px;
+    }
+    
+    .mbti-type {
+        font-size: 60px;
+    }
+    
+    .traits-grid {
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    }
+    
+    .party-grid {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+}
+
+/* Landscape (low height) */
+@media (orientation: landscape) and (max-height: 500px) {
+    .results-header {
+        padding: 10px 0;
+    }
+    
+    .results-header h1 {
+        font-size: 20px;
+    }
+    
+    .mbti-card {
+        padding: 15px;
+        margin-bottom: 10px;
+    }
+    
+    .mbti-type {
+        font-size: 28px;
+    }
+    
+    .mbti-name {
+        font-size: 16px;
+    }
+    
+    .mbti-description {
+        font-size: 13px;
+    }
+    
+    .section-title {
+        font-size: 16px;
+    }
+    
+    .trait-item {
+        padding: 6px 10px;
+    }
+    
+    .party-member-card {
+        padding: 10px;
+    }
+    
+    .home-button {
+        padding: 8px 16px;
+        font-size: 14px;
+        bottom: 5px;
+        right: 5px;
+    }
+}
