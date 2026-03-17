@@ -63,7 +63,7 @@ function disableAnswerButtons() {
     // 診断ボタンエリアのみをブロックするオーバーレイ
     let overlay = document.getElementById('button-block-overlay');
     if (!overlay) {
-        const answerScale = document.querySelector('.answer-scale');
+        const answerScale = document.querySelector('.seg-wrap');
         if (answerScale) {
             overlay = document.createElement('div');
             overlay.id = 'button-block-overlay';
@@ -90,7 +90,10 @@ function enableAnswerButtons() {
     
     gameState.buttonsDisabled = false;
     gameState.isProcessing = false; // 確実にフラグをリセット
-    
+
+    // セグメントボタンの選択状態をリセット
+    document.querySelectorAll('.seg.on').forEach(s => s.classList.remove('on'));
+
     for (let i = 1; i <= 5; i++) {
         const btn = document.getElementById(`btn-${i}`);
         if (btn) {
@@ -273,6 +276,9 @@ function bindEvents() {
                     btn.classList.remove('active');
                     
                     if (touchStarted && !gameState.isProcessing && !gameState.isStoryPlaying && !gameState.buttonsDisabled) {
+                        // 選択状態を視覚的に表示
+                        document.querySelectorAll('.seg.on').forEach(s => s.classList.remove('on'));
+                        btn.classList.add('on');
                         // 少し遅延を入れて視覚的フィードバックを確保
                         setTimeout(() => answer(i), 50);
                     }
@@ -308,6 +314,8 @@ function bindEvents() {
                 
                 // デスクトップの場合のみクリックで回答
                 if (!isTouchDevice) {
+                    document.querySelectorAll('.seg.on').forEach(s => s.classList.remove('on'));
+                    btn.classList.add('on');
                     answer(i);
                 }
             });
@@ -369,12 +377,18 @@ function loadQuestion() {
     
     const q = questions[gameState.currentQuestion - 1];
     const enemy = enemies[gameState.currentQuestion - 1];
-    
+
+    // ステージテーマ・キャラクターを更新
+    updateStage();
+
     if (!q || !enemy) {
         console.error('質問またはエネミーデータが見つかりません');
         return;
     }
     
+    // 覚醒度更新
+    updateAwakening();
+
     // 質問表示
     const qNumberEl = document.getElementById('q-number');
     const questionEl = document.getElementById('question');
@@ -402,12 +416,10 @@ function loadQuestion() {
     
     // ボス戦演出
     const isBoss = gameState.currentQuestion % 10 === 0;
+    const bossTagEl = document.getElementById('boss-tag');
+    if (bossTagEl) bossTagEl.style.display = isBoss ? 'inline-block' : 'none';
     if (enemySpriteEl) {
-        if (isBoss) {
-            enemySpriteEl.style.fontSize = '120px';
-        } else {
-            enemySpriteEl.style.fontSize = '100px';
-        }
+        enemySpriteEl.style.fontSize = isBoss ? '120px' : '100px';
     }
     
     // タイマー開始
@@ -592,16 +604,14 @@ function attackAnimation() {
 // ダメージ表示
 // ------------------------------
 function showDamage(damage) {
-    const battleArea = document.querySelector('.battle-area');
-    if (!battleArea) return;
-    
-    const damageText = document.createElement('div');
-    damageText.className = 'damage-text';
-    damageText.textContent = damage;
-    damageText.style.left = '50%';
-    damageText.style.top = '40%';
-    battleArea.appendChild(damageText);
-    setTimeout(() => damageText.remove(), 1000);
+    const dmgEl = document.getElementById('dmg-number');
+    if (!dmgEl) return;
+
+    dmgEl.textContent = `-${damage}`;
+    // アニメーションをリスタートして浮上エフェクトを再生
+    dmgEl.style.animation = 'none';
+    dmgEl.offsetHeight; // reflow
+    dmgEl.style.animation = '';
 }
 
 
@@ -876,7 +886,7 @@ function displayCharacterModal(character) {
 // ------------------------------
 function closeCharacterModal() {
     document.getElementById('character-modal').classList.remove('show');
-    
+
     // モーダル閉じる時にオーバーレイを復元（処理中の場合のみ）
     if (gameState.isProcessing || gameState.buttonsDisabled) {
         const overlay = document.getElementById('button-block-overlay');
@@ -885,16 +895,10 @@ function closeCharacterModal() {
             console.log('[DEBUG] キャラクターモーダル閉じる時にオーバーレイを復元');
         }
     }
-    
-    // Stepプロンプトを表示
-    if (gameState.currentStepPrompt) {
-        setTimeout(() => {
-            showPromptModal(gameState.currentStepPrompt);
-        }, 500);
-        return;
-    }
-    
-    // プロンプトがない場合は通常継続処理
+
+    // プロンプトはsaveDataに保存済み（プロンプト画面から確認可能）
+    // チャプタートランジション（アニメーション）→ Stage進行へ
+    gameState.currentStepPrompt = null;
     continueAfterPrompt();
 }
 
@@ -916,15 +920,64 @@ function getRarityClass(rarity) {
 // ------------------------------
 function updateStage() {
     try {
-        // ステージ更新
         const stageIndex = Math.floor((gameState.currentQuestion - 1) / 10);
+        const stageNum = Math.min(10, stageIndex + 1);
+
+        // ステージ名更新
         const stageName = document.getElementById('stage-name');
         if (stageName && stageNames[stageIndex]) {
             stageName.textContent = stageNames[stageIndex];
         }
+
+        // バトル行のステージクラス更新 (s1-s10) + 質問アニメーションクラス (q1-q10)
+        const battleRow = document.querySelector('.battle-row');
+        if (battleRow) {
+            for (let s = 1; s <= 10; s++) battleRow.classList.remove(`s${s}`);
+            battleRow.classList.add(`s${stageNum}`);
+            const posInStage = (gameState.currentQuestion - 1) % 10 + 1;
+            for (let q = 1; q <= 10; q++) battleRow.classList.remove(`q${q}`);
+            battleRow.classList.add(`q${posInStage}`);
+        }
+
+        // ステージコンテナにもクラスを付与（背景色・ステータスバー色変更用）
+        const stageContainer = document.querySelector('.stage-container');
+        if (stageContainer) {
+            for (let s = 1; s <= 10; s++) stageContainer.classList.remove(`s${s}`);
+            stageContainer.classList.add(`s${stageNum}`);
+        }
+
+        // プレイヤーキャラクター画像更新
+        const playerChar = document.getElementById('player-char');
+        if (playerChar) {
+            playerChar.src = `./char/character${stageNum}.png`;
+        }
     } catch (error) {
         console.warn('ステージ更新エラー:', error);
     }
+}
+
+function updateAwakening() {
+    // 覚醒度表示は10刻み (0%〜90%)
+    const posInStage = (gameState.currentQuestion - 1) % 10;
+    const awakePercent = posInStage * 10;
+
+    // フィルターの明るさは 0%→70%, 90%→100% に変換してマッピング
+    // (表示数値とは別に、実際の明るさスタートを70%相当にする)
+    const playerChar = document.getElementById('player-char');
+    if (playerChar) {
+        for (let a = 10; a <= 90; a += 10) playerChar.classList.remove(`aw${a}`);
+        const brightness = 85 + awakePercent * (15 / 90); // 85〜100
+        if (brightness < 100) {
+            const awLevel = Math.min(90, Math.round(brightness / 10) * 10);
+            playerChar.classList.add(`aw${awLevel}`);
+        }
+    }
+
+    // 覚醒度テキストとバーを更新
+    const awakePct = document.getElementById('awake-pct');
+    const awakeBar = document.getElementById('awake-bar');
+    if (awakePct) awakePct.textContent = `覚醒度 ${awakePercent}%`;
+    if (awakeBar) awakeBar.style.width = `${awakePercent}%`;
 }
 
 // ------------------------------
