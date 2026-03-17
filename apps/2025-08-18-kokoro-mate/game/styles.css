@@ -65,9 +65,9 @@ html, body {
    flex-direction: row → 左=プレイヤー, 右=敵
    ================================================================ */
 .battle-row {
-    display: flex; align-items: flex-start; flex-direction: row;
-    padding: 14px 12px 10px; gap: 4px;
-    position: relative; flex-shrink: 0; overflow: visible;
+    display: flex; align-items: center; flex-direction: row;
+    padding: 12px 12px; gap: 4px;
+    position: relative; flex: 1; overflow: visible;
 }
 /* 舞台スポットライト */
 .battle-row::before {
@@ -86,7 +86,7 @@ html, body {
 /* Enemy visual wrapper — same height as .aw */
 .ew {
     position: relative; display: flex; align-items: center;
-    justify-content: center; width: 88px; height: 80px; flex-shrink: 0;
+    justify-content: center; width: 100px; height: 96px; flex-shrink: 0;
     animation: boss-float 2.5s ease-in-out infinite;
 }
 /* Hit flash overlay */
@@ -106,7 +106,7 @@ html, body {
 @keyframes boss-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
 /* Boss emoji */
 .enemy-sprite {
-    line-height: 1; font-size: 54px;
+    line-height: 1; font-size: 62px;
     position: relative; z-index: 2;
     animation: boss-hit 1.8s ease-out infinite;
     filter: drop-shadow(0 4px 12px rgba(180,80,140,0.35));
@@ -119,7 +119,7 @@ html, body {
     48%,100% { transform: translateX(0) rotate(0) scale(1); }
 }
 /* Boss is larger for boss fights */
-.ew.is-boss .enemy-sprite { font-size: 68px; }
+.ew.is-boss .enemy-sprite { font-size: 78px; }
 
 .boss-tag {
     font-size: 7px; font-weight: 900;
@@ -165,7 +165,7 @@ html, body {
 
 /* --- アクションゾーン (中央) --- */
 .az {
-    width: 52px; height: 80px;
+    width: 52px; height: 96px;
     position: relative; flex-shrink: 0; z-index: 4; overflow: visible;
 }
 
@@ -177,7 +177,7 @@ html, body {
 .aw {
     position: relative; display: flex;
     align-items: center; justify-content: center;
-    width: 80px; height: 80px;
+    width: 96px; height: 96px;
 }
 .ar {
     position: absolute; border-radius: 50%; border-style: solid;
@@ -189,11 +189,11 @@ html, body {
     50%      { transform: scale(1.08); opacity: 0.85; }
 }
 .pi {
-    width: 52px; height: auto; object-fit: contain;
+    width: 64px; height: auto; object-fit: contain;
     position: relative; z-index: 2;
 }
 .apct { font-size: 7px; font-weight: 700; color: #b83880; letter-spacing: 0.3px; }
-.agb { width: 78px; margin-top: 2px; }
+.agb { width: 90px; margin-top: 2px; }
 .agbg { height: 3px; border-radius: 2px; background: rgba(0,0,0,0.07); }
 .agfg {
     height: 100%; border-radius: 2px;
@@ -220,43 +220,43 @@ html, body {
    質問カード & セグメントコントロール
    ================================================================ */
 .question-card {
-    margin: 6px 12px 0;
+    margin: 0 12px;
     margin-bottom: max(12px, env(safe-area-inset-bottom));
     background: rgba(255,255,255,0.9);
     border-radius: 18px;
-    padding: 16px 14px max(20px, env(safe-area-inset-bottom));
+    padding: 14px 14px max(14px, env(safe-area-inset-bottom));
     box-shadow: 0 4px 20px rgba(200,80,140,0.10), 0 1px 6px rgba(200,80,140,0.06);
-    display: flex; flex-direction: column; justify-content: space-between;
+    display: flex; flex-direction: column; gap: 10px;
     flex: 1;
 }
 .question-header {
     display: flex; align-items: center;
 }
 .question-category {
-    font-size: 8px; font-weight: 700;
+    font-size: 9px; font-weight: 700;
     padding: 3px 9px; border-radius: 7px;
     background: rgba(200,60,140,0.12); color: #b83880;
 }
 .question-text {
     font-size: 15px; font-weight: 700; line-height: 1.55;
-    text-align: center; color: #4a1438; padding: 4px 2px;
+    text-align: center; color: #4a1438; padding: 2px 2px;
     overflow-wrap: break-word;
     flex: 1; display: flex; align-items: center; justify-content: center;
 }
 
 /* セグメントコントロール */
 .seg-wrap {
-    display: flex; border-radius: 12px; padding: 4px; gap: 3px;
+    display: flex; border-radius: 14px; padding: 5px; gap: 4px;
     background: rgba(200,60,140,0.09);
     flex-shrink: 0;
 }
 .seg {
-    flex: 1; padding: 11px 1px; border-radius: 9px; border: none;
-    background: transparent; font-size: 10px; font-weight: 600;
+    flex: 1; padding: 13px 1px; border-radius: 10px; border: none;
+    background: transparent; font-size: 11px; font-weight: 600;
     cursor: pointer; line-height: 1.2; text-align: center;
     color: #a85080;
     transition: background 0.15s, box-shadow 0.15s, color 0.1s;
-    min-height: 44px; display: flex; align-items: center; justify-content: center;
+    min-height: 48px; display: flex; align-items: center; justify-content: center;
     -webkit-user-select: none; user-select: none;
     font-family: inherit;
 }
@@ -281,28 +281,43 @@ html, body {
 .pt,
 .csp { display: none; }
 
-/* Stage 1 & 8: ビーム */
-.s1 .beam, .s1 .bimpact,
-.s8 .beam, .s8 .bimpact { display: block; }
+/* Q1: ビーム */
+.q1 .beam, .q1 .bimpact { display: block; }
+/* Q2: リップル */
+.q2 .rip { display: block; }
+/* Q3: クリスタル */
+.q3 .csp { display: block; }
+/* Q4: 花びら */
+.q4 .feather { display: block; }
+/* Q5: ソナー */
+.q5 .son, .q5 .sctr { display: block; }
+/* Q6: ライトニング */
+.q6 .blt, .q6 .bgl { display: block; }
+/* Q7: バースト */
+.q7 .bst, .q7 .bcore, .q7 .pt { display: block; }
+/* Q8: ビーム + 花びら */
+.q8 .beam, .q8 .bimpact, .q8 .feather { display: block; }
+/* Q9: リップル + クリスタル */
+.q9 .rip, .q9 .csp { display: block; }
+/* Q10 (BOSS): バースト + ライトニング */
+.q10 .bst, .q10 .bcore, .q10 .pt,
+.q10 .blt, .q10 .bgl { display: block; }
 
-/* Stage 2: リップル */
-.s2 .rip { display: block; }
-
-/* Stage 3 & 9: クリスタル */
-.s3 .csp, .s9 .csp { display: block; }
-
-/* Stage 4 & 10: バースト + パーティクル */
-.s4 .bst, .s4 .bcore, .s4 .pt,
-.s10 .bst, .s10 .bcore, .s10 .pt { display: block; }
-
-/* Stage 5: 花びら */
-.s5 .feather { display: block; }
-
-/* Stage 6: ソナー */
-.s6 .son, .s6 .sctr { display: block; }
-
-/* Stage 7: ライトニング */
-.s7 .blt, .s7 .bgl { display: block; }
+/* ────────────────────────────────────────────
+   アニメーション色 — CSS変数でステージ色を継承
+   ──────────────────────────────────────────── */
+.beam    { background: linear-gradient(to right,transparent,rgba(var(--ar),.75),transparent); box-shadow: 0 0 8px rgba(var(--ar),.6); }
+.bimpact { background: radial-gradient(circle,rgba(var(--ar),.8),transparent); }
+.rip     { border-color: rgba(var(--ar),.5); }
+.son     { background: rgba(var(--ar),.4); }
+.sctr    { background: rgba(var(--ar),.8); box-shadow: 0 0 10px rgba(var(--ar),.6); }
+.bgl     { background: radial-gradient(circle,rgba(var(--ar),.35),transparent); }
+.bst     { background: radial-gradient(circle,rgba(var(--ar),.35),transparent); }
+.bcore   { background: radial-gradient(circle,var(--al),var(--ag)); box-shadow: 0 0 16px rgba(var(--ar),.8); }
+.pt      { background: var(--ag); }
+.csp     { background: linear-gradient(160deg,var(--al),var(--ad)); }
+.feather { background: rgba(var(--ar),.75); }
+.blt     { color: var(--ag); }
 
 /* --- Attack keyframes (left=player → right=enemy) --- */
 
@@ -458,7 +473,7 @@ html, body {
 
 /* ── S1 🎭 ローズ ── */
 .s1 .ew { animation-duration: 2.5s; }
-.s1 .enemy-sprite { font-size: 54px; filter: drop-shadow(0 0 14px rgba(230,80,180,0.65)) drop-shadow(0 0 32px rgba(180,40,140,0.35)); }
+.s1 .enemy-sprite { font-size: 62px; filter: drop-shadow(0 0 14px rgba(230,80,180,0.65)) drop-shadow(0 0 32px rgba(180,40,140,0.35)); }
 .s1 .enemy-name { color: #7a1858; }
 .s1 .enemy-hp-fill { background: linear-gradient(90deg,#e04888,#ff80b8); }
 .s1 .ar { border-color: rgba(210,70,160,0.28); }
@@ -478,7 +493,7 @@ html, body {
 .s1 .feather { background: rgba(230,120,200,0.75); }
 
 /* ── S2 🏛️ ゴールド ── */
-.s2 .enemy-sprite { font-size: 54px; filter: drop-shadow(0 0 16px rgba(240,190,0,0.75)) drop-shadow(0 0 36px rgba(180,130,0,0.4)); }
+.s2 .enemy-sprite { font-size: 62px; filter: drop-shadow(0 0 16px rgba(240,190,0,0.75)) drop-shadow(0 0 36px rgba(180,130,0,0.4)); }
 .s2 .enemy-name { color: #6a4a00; }
 .s2 .enemy-hp-fill { background: linear-gradient(90deg,#c08800,#f0b820); }
 .s2 .ar { border-color: rgba(200,155,0,0.28); }
@@ -488,7 +503,7 @@ html, body {
 .s2 .question-category { background: rgba(200,155,0,0.13); color: #9a7010; }
 
 /* ── S3 🗿 アース ── */
-.s3 .enemy-sprite { font-size: 54px; filter: drop-shadow(0 0 14px rgba(160,110,50,0.6)) drop-shadow(0 0 30px rgba(120,80,20,0.32)); }
+.s3 .enemy-sprite { font-size: 62px; filter: drop-shadow(0 0 14px rgba(160,110,50,0.6)) drop-shadow(0 0 30px rgba(120,80,20,0.32)); }
 .s3 .enemy-name { color: #4a2c0e; }
 .s3 .enemy-hp-fill { background: linear-gradient(90deg,#9a5e18,#c88840); }
 .s3 .ar { border-color: rgba(150,100,40,0.28); }
@@ -499,7 +514,7 @@ html, body {
 
 /* ── S4 🌟 サン (star-spin) ── */
 .s4 .ew { animation: none; }
-.s4 .enemy-sprite { font-size: 58px; filter: drop-shadow(0 0 18px rgba(255,220,0,0.9)) drop-shadow(0 0 40px rgba(200,160,0,0.5)); animation: boss-hit 1.8s ease-out infinite, star-spin 8s linear infinite; }
+.s4 .enemy-sprite { font-size: 68px; filter: drop-shadow(0 0 18px rgba(255,220,0,0.9)) drop-shadow(0 0 40px rgba(200,160,0,0.5)); animation: boss-hit 1.8s ease-out infinite, star-spin 8s linear infinite; }
 @keyframes star-spin { 0%{transform:rotate(0)} 100%{transform:rotate(360deg)} }
 .s4 .enemy-name { color: #584e00; }
 .s4 .enemy-hp-fill { background: linear-gradient(90deg,#c89800,#e8c420); }
@@ -513,7 +528,7 @@ html, body {
 .s4 .question-category { background: rgba(220,175,0,0.14); color: #9a8010; }
 
 /* ── S5 👼 セレスト ── */
-.s5 .enemy-sprite { font-size: 56px; filter: drop-shadow(0 0 16px rgba(120,180,255,0.7)) drop-shadow(0 0 36px rgba(80,140,230,0.4)); }
+.s5 .enemy-sprite { font-size: 64px; filter: drop-shadow(0 0 16px rgba(120,180,255,0.7)) drop-shadow(0 0 36px rgba(80,140,230,0.4)); }
 .s5 .enemy-name { color: #1a3868; }
 .s5 .enemy-hp-fill { background: linear-gradient(90deg,#3870d0,#78b0ff); }
 .s5 .ar { border-color: rgba(90,155,240,0.28); }
@@ -523,7 +538,7 @@ html, body {
 .s5 .question-category { background: rgba(90,155,240,0.12); color: #3868b0; }
 
 /* ── S6 🌳 フォレスト ── */
-.s6 .enemy-sprite { font-size: 56px; filter: drop-shadow(0 0 16px rgba(40,180,80,0.6)) drop-shadow(0 0 35px rgba(20,140,50,0.38)); }
+.s6 .enemy-sprite { font-size: 64px; filter: drop-shadow(0 0 16px rgba(40,180,80,0.6)) drop-shadow(0 0 35px rgba(20,140,50,0.38)); }
 .s6 .enemy-name { color: #0e4020; }
 .s6 .enemy-hp-fill { background: linear-gradient(90deg,#178040,#48b858); }
 .s6 .ar { border-color: rgba(40,178,80,0.28); }
@@ -534,7 +549,7 @@ html, body {
 .s6 .question-category { background: rgba(30,158,65,0.12); color: #1a6830; }
 
 /* ── S7 🏯 スチール ── */
-.s7 .enemy-sprite { font-size: 54px; filter: drop-shadow(0 0 14px rgba(100,120,210,0.55)) drop-shadow(0 0 30px rgba(60,80,168,0.3)); }
+.s7 .enemy-sprite { font-size: 62px; filter: drop-shadow(0 0 14px rgba(100,120,210,0.55)) drop-shadow(0 0 30px rgba(60,80,168,0.3)); }
 .s7 .enemy-name { color: #202860; }
 .s7 .enemy-hp-fill { background: linear-gradient(90deg,#2848c0,#5878e0); }
 .s7 .ar { border-color: rgba(75,100,185,0.26); }
@@ -546,7 +561,7 @@ html, body {
 
 /* ── S8 ⭐ コズミック (star-spin) ── */
 .s8 .ew { animation: none; }
-.s8 .enemy-sprite { font-size: 60px; filter: drop-shadow(0 0 18px rgba(78,158,255,0.82)) drop-shadow(0 0 42px rgba(38,98,228,0.5)); animation: boss-hit 1.8s ease-out infinite, star-spin 10s linear infinite; }
+.s8 .enemy-sprite { font-size: 70px; filter: drop-shadow(0 0 18px rgba(78,158,255,0.82)) drop-shadow(0 0 42px rgba(38,98,228,0.5)); animation: boss-hit 1.8s ease-out infinite, star-spin 10s linear infinite; }
 .s8 .enemy-name { color: #0c1c60; }
 .s8 .enemy-hp-fill { background: linear-gradient(90deg,#0848e0,#4888ff); }
 .s8 .ar { border-color: rgba(48,138,248,0.3); }
@@ -557,7 +572,7 @@ html, body {
 .s8 .question-category { background: rgba(48,138,248,0.12); color: #1848a8; }
 
 /* ── S9 🏛️ クリスタルラベンダー ── */
-.s9 .enemy-sprite { font-size: 54px; filter: drop-shadow(0 0 16px rgba(155,115,245,0.72)) drop-shadow(0 0 36px rgba(98,52,208,0.4)); }
+.s9 .enemy-sprite { font-size: 62px; filter: drop-shadow(0 0 16px rgba(155,115,245,0.72)) drop-shadow(0 0 36px rgba(98,52,208,0.4)); }
 .s9 .enemy-name { color: #2c0e88; }
 .s9 .enemy-hp-fill { background: linear-gradient(90deg,#4820a0,#a870ff); }
 .s9 .ar { border-color: rgba(128,88,225,0.26); }
@@ -568,7 +583,7 @@ html, body {
 
 /* ── S10 🌌 ギャラクシー最終 ── */
 .s10 .ew { animation: boss-float 2s ease-in-out infinite; }
-.s10 .enemy-sprite { font-size: 68px; filter: drop-shadow(0 0 22px rgba(220,55,255,0.92)) drop-shadow(0 0 52px rgba(155,0,228,0.62)); animation: boss-hit 1.8s ease-out infinite, final-pulse 4s ease-in-out infinite; }
+.s10 .enemy-sprite { font-size: 78px; filter: drop-shadow(0 0 22px rgba(220,55,255,0.92)) drop-shadow(0 0 52px rgba(155,0,228,0.62)); animation: boss-hit 1.8s ease-out infinite, final-pulse 4s ease-in-out infinite; }
 @keyframes final-pulse {
     0%,100% { filter: drop-shadow(0 0 22px rgba(220,55,255,0.92)) drop-shadow(0 0 52px rgba(155,0,228,0.62)); }
     50%     { filter: drop-shadow(0 0 36px rgba(255,95,255,1)) drop-shadow(0 0 80px rgba(200,0,255,0.82)); }
@@ -689,6 +704,146 @@ html, body {
     padding: 14px 36px; font-size: 15px; font-weight: 700;
     cursor: pointer; margin-top: 8px; width: 100%;
 }
+
+/* ================================================================
+   ステージ別カラーテーマ（背景・ステータスバー）
+   ================================================================ */
+
+/* --- 背景・transition --- */
+.stage-container {
+    transition: background 0.6s ease;
+}
+.status-bar {
+    transition: background 0.6s ease, border-color 0.6s ease;
+}
+.home-btn, .stage-display, .q-counter {
+    transition: background 0.6s ease, color 0.6s ease;
+}
+
+/* s1: ピンク (default) */
+.stage-container.s1 { background: linear-gradient(150deg,#fff5f8 0%,#fce8f2 50%,#f8e0ec 100%); --ar:230,80,190; --ag:#e060a8; --al:#ffb0f0; --ad:#b040a0; }
+.stage-container.s1 .status-bar { background: rgba(255,245,250,0.88); border-bottom-color: rgba(200,80,140,0.1); }
+.stage-container.s1 .home-btn { background: rgba(200,80,140,0.1); color: #b03070; }
+.stage-container.s1 .stage-display { color: #a03070; }
+.stage-container.s1 .q-counter { color: #d050a0; }
+
+/* s2: ゴールド */
+.stage-container.s2 { background: linear-gradient(150deg,#fffdf0 0%,#fdf4d0 50%,#f8eab8 100%); --ar:220,175,0; --ag:#d8a820; --al:#fff070; --ad:#a07010; }
+.stage-container.s2 .status-bar { background: rgba(255,253,240,0.88); border-bottom-color: rgba(200,155,0,0.1); }
+.stage-container.s2 .home-btn { background: rgba(200,155,0,0.12); color: #906000; }
+.stage-container.s2 .stage-display { color: #7a5000; }
+.stage-container.s2 .q-counter { color: #b07800; }
+
+/* s3: ブラウン */
+.stage-container.s3 { background: linear-gradient(150deg,#fff9f0 0%,#f8eddc 50%,#f0e0c0 100%); --ar:184,120,56; --ag:#b87838; --al:#c8a862; --ad:#886040; }
+.stage-container.s3 .status-bar { background: rgba(255,249,240,0.88); border-bottom-color: rgba(150,100,40,0.1); }
+.stage-container.s3 .home-btn { background: rgba(150,100,40,0.1); color: #6a4820; }
+.stage-container.s3 .stage-display { color: #5a3818; }
+.stage-container.s3 .q-counter { color: #9a6828; }
+
+/* s4: イエロー BOSS */
+.stage-container.s4 { background: linear-gradient(150deg,#ffffe8 0%,#fdf8c0 50%,#f8f098 100%); --ar:220,185,0; --ag:#d8b820; --al:#fff070; --ad:#d0a000; }
+.stage-container.s4 .status-bar { background: rgba(255,255,232,0.88); border-bottom-color: rgba(200,160,0,0.1); }
+.stage-container.s4 .home-btn { background: rgba(200,160,0,0.12); color: #806800; }
+.stage-container.s4 .stage-display { color: #686000; }
+.stage-container.s4 .q-counter { color: #a88000; }
+
+/* s5: ブルー */
+.stage-container.s5 { background: linear-gradient(150deg,#f0f5ff 0%,#ddeeff 50%,#cce4ff 100%); --ar:90,155,240; --ag:#78b0ff; --al:#c8e4ff; --ad:#3870d0; }
+.stage-container.s5 .status-bar { background: rgba(240,245,255,0.88); border-bottom-color: rgba(90,155,240,0.1); }
+.stage-container.s5 .home-btn { background: rgba(90,155,240,0.1); color: #2858a0; }
+.stage-container.s5 .stage-display { color: #204888; }
+.stage-container.s5 .q-counter { color: #3878d0; }
+
+/* s6: グリーン */
+.stage-container.s6 { background: linear-gradient(150deg,#f0fff4 0%,#d8f8e4 50%,#c4f0d4 100%); --ar:38,175,78; --ag:#38b858; --al:#90e0a8; --ad:#187838; }
+.stage-container.s6 .status-bar { background: rgba(240,255,244,0.88); border-bottom-color: rgba(40,178,80,0.1); }
+.stage-container.s6 .home-btn { background: rgba(40,178,80,0.1); color: #0e6030; }
+.stage-container.s6 .stage-display { color: #0c5028; }
+.stage-container.s6 .q-counter { color: #188840; }
+
+/* s7: インディゴ */
+.stage-container.s7 { background: linear-gradient(150deg,#f0f2ff 0%,#dde4ff 50%,#ccd4ff 100%); --ar:75,100,185; --ag:#4858a0; --al:#b0c0ff; --ad:#2848a0; }
+.stage-container.s7 .status-bar { background: rgba(240,242,255,0.88); border-bottom-color: rgba(75,100,185,0.1); }
+.stage-container.s7 .home-btn { background: rgba(75,100,185,0.1); color: #2838a0; }
+.stage-container.s7 .stage-display { color: #202880; }
+.stage-container.s7 .q-counter { color: #4060c0; }
+
+/* s8: ディープブルー BOSS */
+.stage-container.s8 { background: linear-gradient(150deg,#eef4ff 0%,#d0e8ff 50%,#b8dcff 100%); --ar:80,160,255; --ag:#4888ff; --al:#c0e0ff; --ad:#0848d8; }
+.stage-container.s8 .status-bar { background: rgba(238,244,255,0.88); border-bottom-color: rgba(48,138,248,0.1); }
+.stage-container.s8 .home-btn { background: rgba(48,138,248,0.12); color: #0848b0; }
+.stage-container.s8 .stage-display { color: #0838a0; }
+.stage-container.s8 .q-counter { color: #2070d8; }
+
+/* s9: パープル */
+.stage-container.s9 { background: linear-gradient(150deg,#f8f0ff 0%,#ecddff 50%,#e0ccff 100%); --ar:155,115,245; --ag:#9868e0; --al:#c8b0ff; --ad:#7858e0; }
+.stage-container.s9 .status-bar { background: rgba(248,240,255,0.88); border-bottom-color: rgba(128,88,225,0.1); }
+.stage-container.s9 .home-btn { background: rgba(128,88,225,0.1); color: #4010a0; }
+.stage-container.s9 .stage-display { color: #380898; }
+.stage-container.s9 .q-counter { color: #6840c0; }
+
+/* s10: マゼンタ BOSS */
+.stage-container.s10 { background: linear-gradient(150deg,#fff0ff 0%,#f8d8ff 50%,#f0c0ff 100%); --ar:220,55,255; --ag:#e038f8; --al:#ffaaff; --ad:#be00e0; }
+.stage-container.s10 .status-bar { background: rgba(255,240,255,0.88); border-bottom-color: rgba(200,55,245,0.1); }
+.stage-container.s10 .home-btn { background: rgba(200,55,245,0.12); color: #9000c0; }
+.stage-container.s10 .stage-display { color: #780098; }
+.stage-container.s10 .q-counter { color: #c020e0; }
+
+/* ================================================================
+   セグメントボタン — ステージカラー連動
+   ================================================================ */
+.seg-wrap, .seg.on, .seg:active { transition: background 0.6s ease, color 0.6s ease; }
+
+/* s1: ピンク */
+.stage-container.s1 .seg-wrap { background: rgba(200,60,140,0.09); }
+.stage-container.s1 .seg { color: #a03070; }
+.stage-container.s1 .seg.on, .stage-container.s1 .seg:active { color: #b83880; }
+
+/* s2: ゴールド */
+.stage-container.s2 .seg-wrap { background: rgba(200,155,0,0.10); }
+.stage-container.s2 .seg { color: #7a5000; }
+.stage-container.s2 .seg.on, .stage-container.s2 .seg:active { color: #906000; }
+
+/* s3: ブラウン */
+.stage-container.s3 .seg-wrap { background: rgba(150,100,40,0.10); }
+.stage-container.s3 .seg { color: #5a3818; }
+.stage-container.s3 .seg.on, .stage-container.s3 .seg:active { color: #6a4820; }
+
+/* s4: イエロー */
+.stage-container.s4 .seg-wrap { background: rgba(200,160,0,0.10); }
+.stage-container.s4 .seg { color: #686000; }
+.stage-container.s4 .seg.on, .stage-container.s4 .seg:active { color: #806800; }
+
+/* s5: ブルー */
+.stage-container.s5 .seg-wrap { background: rgba(90,155,240,0.10); }
+.stage-container.s5 .seg { color: #204888; }
+.stage-container.s5 .seg.on, .stage-container.s5 .seg:active { color: #2858a0; }
+
+/* s6: グリーン */
+.stage-container.s6 .seg-wrap { background: rgba(40,178,80,0.10); }
+.stage-container.s6 .seg { color: #0c5028; }
+.stage-container.s6 .seg.on, .stage-container.s6 .seg:active { color: #0e6030; }
+
+/* s7: インディゴ */
+.stage-container.s7 .seg-wrap { background: rgba(75,100,185,0.10); }
+.stage-container.s7 .seg { color: #202880; }
+.stage-container.s7 .seg.on, .stage-container.s7 .seg:active { color: #2838a0; }
+
+/* s8: ディープブルー */
+.stage-container.s8 .seg-wrap { background: rgba(48,138,248,0.10); }
+.stage-container.s8 .seg { color: #0838a0; }
+.stage-container.s8 .seg.on, .stage-container.s8 .seg:active { color: #0848b0; }
+
+/* s9: パープル */
+.stage-container.s9 .seg-wrap { background: rgba(128,88,225,0.10); }
+.stage-container.s9 .seg { color: #380898; }
+.stage-container.s9 .seg.on, .stage-container.s9 .seg:active { color: #4010a0; }
+
+/* s10: マゼンタ */
+.stage-container.s10 .seg-wrap { background: rgba(200,55,245,0.10); }
+.stage-container.s10 .seg { color: #780098; }
+.stage-container.s10 .seg.on, .stage-container.s10 .seg:active { color: #9000c0; }
 
 /* ================================================================
    レスポンシブ

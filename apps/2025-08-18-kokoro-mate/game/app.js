@@ -886,7 +886,7 @@ function displayCharacterModal(character) {
 // ------------------------------
 function closeCharacterModal() {
     document.getElementById('character-modal').classList.remove('show');
-    
+
     // モーダル閉じる時にオーバーレイを復元（処理中の場合のみ）
     if (gameState.isProcessing || gameState.buttonsDisabled) {
         const overlay = document.getElementById('button-block-overlay');
@@ -895,16 +895,10 @@ function closeCharacterModal() {
             console.log('[DEBUG] キャラクターモーダル閉じる時にオーバーレイを復元');
         }
     }
-    
-    // Stepプロンプトを表示
-    if (gameState.currentStepPrompt) {
-        setTimeout(() => {
-            showPromptModal(gameState.currentStepPrompt);
-        }, 500);
-        return;
-    }
-    
-    // プロンプトがない場合は通常継続処理
+
+    // プロンプトはsaveDataに保存済み（プロンプト画面から確認可能）
+    // チャプタートランジション（アニメーション）→ Stage進行へ
+    gameState.currentStepPrompt = null;
     continueAfterPrompt();
 }
 
@@ -935,11 +929,21 @@ function updateStage() {
             stageName.textContent = stageNames[stageIndex];
         }
 
-        // バトル行のステージクラス更新 (s1-s10)
+        // バトル行のステージクラス更新 (s1-s10) + 質問アニメーションクラス (q1-q10)
         const battleRow = document.querySelector('.battle-row');
         if (battleRow) {
             for (let s = 1; s <= 10; s++) battleRow.classList.remove(`s${s}`);
             battleRow.classList.add(`s${stageNum}`);
+            const posInStage = (gameState.currentQuestion - 1) % 10 + 1;
+            for (let q = 1; q <= 10; q++) battleRow.classList.remove(`q${q}`);
+            battleRow.classList.add(`q${posInStage}`);
+        }
+
+        // ステージコンテナにもクラスを付与（背景色・ステータスバー色変更用）
+        const stageContainer = document.querySelector('.stage-container');
+        if (stageContainer) {
+            for (let s = 1; s <= 10; s++) stageContainer.classList.remove(`s${s}`);
+            stageContainer.classList.add(`s${stageNum}`);
         }
 
         // プレイヤーキャラクター画像更新

@@ -163,7 +163,7 @@ class HomeManager {
 
   getGameHTML() {
     return `
-      <div class="stage-container">
+      <div class="stage-container s1">
         <div class="spotlight"></div>
         <div class="particle-container" id="particles"></div>
         <div class="status-bar">
