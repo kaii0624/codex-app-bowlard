@@ -953,16 +953,18 @@ function updateStage() {
 }
 
 function updateAwakening() {
-    const awakePercent = Math.round(
-        (gameState.currentQuestion - 1) / (gameState.totalQuestions - 1) * 100
-    );
+    // 覚醒度表示は10刻み (0%〜90%)
+    const posInStage = (gameState.currentQuestion - 1) % 10;
+    const awakePercent = posInStage * 10;
 
-    // プレイヤーキャラへの覚醒フィルタークラスを更新
+    // フィルターの明るさは 0%→70%, 90%→100% に変換してマッピング
+    // (表示数値とは別に、実際の明るさスタートを70%相当にする)
     const playerChar = document.getElementById('player-char');
     if (playerChar) {
         for (let a = 10; a <= 90; a += 10) playerChar.classList.remove(`aw${a}`);
-        if (awakePercent < 100) {
-            const awLevel = Math.min(90, Math.max(10, Math.round(awakePercent / 10) * 10));
+        const brightness = 85 + awakePercent * (15 / 90); // 85〜100
+        if (brightness < 100) {
+            const awLevel = Math.min(90, Math.round(brightness / 10) * 10);
             playerChar.classList.add(`aw${awLevel}`);
         }
     }
