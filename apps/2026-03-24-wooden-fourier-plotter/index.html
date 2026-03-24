@@ -267,16 +267,20 @@
     }
 
     .dock {
+      align-self: start;
       display: grid;
-      grid-template-columns: 156px minmax(0, 1fr);
+      grid-template-columns: 148px minmax(0, 1fr);
       gap: 12px;
       padding: 12px;
-      min-height: 220px;
+      height: 246px;
+      min-height: 246px;
     }
 
     .disk-card,
     .control-card {
       position: relative;
+      overflow: hidden;
+      height: 100%;
       border-radius: 20px;
       border: 1px solid rgba(255, 224, 170, 0.14);
       background:
@@ -288,7 +292,7 @@
     .disk-card {
       display: grid;
       place-items: center;
-      padding: 10px;
+      padding: 8px;
     }
 
     .card-tag {
@@ -303,8 +307,8 @@
 
     .program-disk {
       position: relative;
-      width: 138px;
-      height: 138px;
+      width: 128px;
+      height: 128px;
       border-radius: 50%;
       background:
         radial-gradient(circle at 34% 32%, rgba(255, 235, 194, 0.28), transparent 20%),
@@ -340,15 +344,15 @@
       position: absolute;
       top: 50%;
       left: 50%;
-      width: 46px;
-      height: 46px;
-      margin: -23px 0 0 -23px;
+      width: 42px;
+      height: 42px;
+      margin: -21px 0 0 -21px;
       border-radius: 50%;
       font-family: "IBM Plex Mono", monospace;
       font-size: 10px;
       transform:
         rotate(var(--slot-angle))
-        translateY(-53px)
+        translateY(-49px)
         rotate(var(--slot-counter-angle))
         rotate(var(--disk-counter-spin, 0deg));
       box-shadow: inset 0 1px 0 rgba(255, 240, 211, 0.42);
@@ -364,7 +368,7 @@
 
     .disk-core {
       position: absolute;
-      inset: 43px;
+      inset: 39px;
       display: grid;
       place-items: center;
       border-radius: 50%;
@@ -384,26 +388,142 @@
     }
 
     .core-mark strong {
-      font-size: 16px;
+      font-size: 15px;
       letter-spacing: 0.18em;
       color: var(--text);
     }
 
     .control-card {
       display: grid;
-      gap: 10px;
-      padding: 14px 14px 12px;
+      grid-template-rows: minmax(0, 1fr) auto;
+      gap: 6px;
+      padding: 8px 9px;
+      align-content: stretch;
+    }
+
+    .analysis-block {
+      display: grid;
+      grid-template-rows: repeat(2, minmax(0, 1fr));
+      gap: 4px;
+      height: 82px;
+      min-height: 0;
+    }
+
+    .analysis-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 74px;
+      gap: 6px;
+      min-height: 0;
+      padding: 5px 6px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 224, 170, 0.12);
+      background:
+        linear-gradient(180deg, rgba(255, 238, 206, 0.05), transparent 34%),
+        rgba(38, 24, 16, 0.56);
+    }
+
+    .axis-meta {
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr);
+      gap: 4px;
+      min-width: 0;
       align-content: start;
+    }
+
+    .axis-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .axis-badge,
+    .axis-note,
+    .axis-formula,
+    .term-line {
+      font-family: "IBM Plex Mono", monospace;
+    }
+
+    .axis-badge {
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .axis-badge.x {
+      color: var(--accent);
+    }
+
+    .axis-badge.y {
+      color: #ffd892;
+    }
+
+    .axis-note {
+      font-size: 9px;
+      color: rgba(255, 242, 217, 0.92);
+      white-space: nowrap;
+    }
+
+    .axis-formula {
+      font-size: 7px;
+      line-height: 1.35;
+      color: var(--faint);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .equation {
+      display: grid;
+      gap: 2px;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    .term-line {
+      font-size: 7px;
+      line-height: 1.1;
+      color: rgba(255, 240, 214, 0.9);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .term-line.phase {
+      color: var(--faint);
+    }
+
+    .wave-shell {
+      position: relative;
+      min-height: 0;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 224, 170, 0.12);
+      background:
+        linear-gradient(180deg, rgba(255, 238, 206, 0.06), transparent 32%),
+        rgba(20, 13, 10, 0.72);
+      overflow: hidden;
+    }
+
+    .wave-canvas {
+      display: block;
+      width: 100%;
+      height: 36px;
+    }
+
+    .controls-block {
+      display: grid;
+      gap: 4px;
     }
 
     .range-row {
       display: grid;
       grid-template-columns: 52px minmax(0, 1fr) 48px;
       align-items: center;
-      gap: 10px;
+      gap: 6px;
       min-width: 0;
       font-family: "IBM Plex Mono", monospace;
-      font-size: 11px;
+      font-size: 9px;
       color: var(--muted);
     }
 
@@ -416,7 +536,7 @@
 
     input[type="range"] {
       width: 100%;
-      height: 28px;
+      height: 22px;
       margin: 0;
       appearance: none;
       background: transparent;
@@ -465,14 +585,13 @@
     .button-row {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-      margin-top: 2px;
+      gap: 6px;
     }
 
     .mini-btn {
-      padding: 12px 10px;
+      padding: 8px 8px;
       border-radius: 16px;
-      font-size: 11px;
+      font-size: 10px;
     }
 
     .mini-btn.active {
@@ -482,24 +601,33 @@
 
     @media (max-width: 380px) {
       .dock {
-        grid-template-columns: 144px minmax(0, 1fr);
-        min-height: 212px;
+        grid-template-columns: 138px minmax(0, 1fr);
+        height: 236px;
+        min-height: 236px;
       }
 
       .program-disk {
-        width: 126px;
-        height: 126px;
+        width: 118px;
+        height: 118px;
       }
 
       .disk-btn {
-        width: 42px;
-        height: 42px;
-        margin: -21px 0 0 -21px;
+        width: 38px;
+        height: 38px;
+        margin: -19px 0 0 -19px;
         transform:
           rotate(var(--slot-angle))
-          translateY(-48px)
+          translateY(-44px)
           rotate(var(--slot-counter-angle))
           rotate(var(--disk-counter-spin, 0deg));
+      }
+
+      .analysis-row {
+        grid-template-columns: minmax(0, 1fr) 68px;
+      }
+
+      .wave-canvas {
+        height: 34px;
       }
 
       .topbar {
@@ -546,27 +674,59 @@
       </section>
 
       <section class="control-card">
-        <div class="range-row">
-          <span>speed</span>
-          <input id="speedRange" type="range" min="25" max="170" step="1" value="84" />
-          <strong id="speedValue">0.84</strong>
+        <div class="analysis-block">
+          <div class="analysis-row">
+            <div class="axis-meta">
+              <div class="axis-head">
+                <span class="axis-badge x">x(t)</span>
+                <span class="axis-note" id="xCurrentValue">+0.00</span>
+              </div>
+              <div class="axis-formula" id="xFormula">x(t)=c0+sum A_n cos(nt+phi_n)</div>
+              <div class="equation" id="xEquation"></div>
+            </div>
+            <div class="wave-shell">
+              <canvas class="wave-canvas" id="xWaveCanvas" aria-label="x waveform"></canvas>
+            </div>
+          </div>
+
+          <div class="analysis-row">
+            <div class="axis-meta">
+              <div class="axis-head">
+                <span class="axis-badge y">y(t)</span>
+                <span class="axis-note" id="yCurrentValue">+0.00</span>
+              </div>
+              <div class="axis-formula" id="yFormula">y(t)=c0+sum B_n cos(nt+psi_n)</div>
+              <div class="equation" id="yEquation"></div>
+            </div>
+            <div class="wave-shell">
+              <canvas class="wave-canvas" id="yWaveCanvas" aria-label="y waveform"></canvas>
+            </div>
+          </div>
         </div>
 
-        <div class="range-row">
-          <span>terms</span>
-          <input id="termsRange" type="range" min="3" max="6" step="1" value="6" />
-          <strong id="termsValue">6</strong>
-        </div>
+        <div class="controls-block">
+          <div class="range-row">
+            <span>speed</span>
+            <input id="speedRange" type="range" min="25" max="170" step="1" value="84" />
+            <strong id="speedValue">0.84</strong>
+          </div>
 
-        <div class="range-row">
-          <span>phase</span>
-          <input id="phaseRange" type="range" min="0" max="1000" step="1" value="0" />
-          <strong id="phaseValue">0°</strong>
-        </div>
+          <div class="range-row">
+            <span>terms</span>
+            <input id="termsRange" type="range" min="3" max="6" step="1" value="6" />
+            <strong id="termsValue">6</strong>
+          </div>
 
-        <div class="button-row">
-          <button class="mini-btn" id="resetBtn" type="button">RESET</button>
-          <button class="mini-btn active" id="ghostBtn" type="button">GHOST</button>
+          <div class="range-row">
+            <span>phase</span>
+            <input id="phaseRange" type="range" min="0" max="1000" step="1" value="0" />
+            <strong id="phaseValue">0°</strong>
+          </div>
+
+          <div class="button-row">
+            <button class="mini-btn" id="resetBtn" type="button">RESET</button>
+            <button class="mini-btn active" id="ghostBtn" type="button">GHOST</button>
+          </div>
         </div>
       </section>
     </footer>
@@ -574,6 +734,7 @@
 
   <script>
     const TAU = Math.PI * 2;
+    const AXIS_Y_COLOR = "#ffd892";
     const canvas = document.getElementById("machineCanvas");
     const ctx = canvas.getContext("2d");
     const playBtn = document.getElementById("playBtn");
@@ -591,6 +752,16 @@
     const coreCode = document.getElementById("coreCode");
     const programDisk = document.getElementById("programDisk");
     const diskButtons = [...document.querySelectorAll(".disk-btn")];
+    const xFormula = document.getElementById("xFormula");
+    const yFormula = document.getElementById("yFormula");
+    const xEquation = document.getElementById("xEquation");
+    const yEquation = document.getElementById("yEquation");
+    const xCurrentValue = document.getElementById("xCurrentValue");
+    const yCurrentValue = document.getElementById("yCurrentValue");
+    const xWaveCanvas = document.getElementById("xWaveCanvas");
+    const yWaveCanvas = document.getElementById("yWaveCanvas");
+    const xWaveCtx = xWaveCanvas.getContext("2d");
+    const yWaveCtx = yWaveCanvas.getContext("2d");
 
     function normalizePoints(points) {
       let minX = Infinity;
@@ -817,34 +988,50 @@
       ghost: true,
       trail: [],
       dpr: Math.max(1, Math.min(window.devicePixelRatio || 1, 2)),
-      lastTime: 0
+      lastTime: 0,
+      equationKey: ""
     };
 
     function currentPreset() {
       return presets[state.presetId];
     }
 
-    function evaluateSeries(series, theta, terms) {
-      const xTerms = [];
-      const yTerms = [];
-      let x = series.x.offset;
-      let y = series.y.offset;
+    function evaluateAxis(axisSeries, theta, terms) {
+      const evaluatedTerms = [];
+      let total = axisSeries.offset;
 
       for (let i = 0; i < terms; i += 1) {
-        const xTerm = series.x.terms[i];
-        const yTerm = series.y.terms[i];
+        const term = axisSeries.terms[i];
+        const angle = term.n * theta + term.phase;
+        const value = term.amp * Math.cos(angle);
 
-        const xv = xTerm.amp * Math.cos(xTerm.n * theta + xTerm.phase);
-        const yv = yTerm.amp * Math.cos(yTerm.n * theta + yTerm.phase);
-
-        x += xv;
-        y += yv;
-
-        xTerms.push({ ...xTerm, value: xv });
-        yTerms.push({ ...yTerm, value: yv });
+        total += value;
+        evaluatedTerms.push({
+          ...term,
+          angle,
+          value
+        });
       }
 
-      return { x, y, xTerms, yTerms };
+      return {
+        offset: axisSeries.offset,
+        total,
+        terms: evaluatedTerms
+      };
+    }
+
+    function evaluateSeries(series, theta, terms) {
+      const xAxis = evaluateAxis(series.x, theta, terms);
+      const yAxis = evaluateAxis(series.y, theta, terms);
+
+      return {
+        x: xAxis.total,
+        y: yAxis.total,
+        xAxis,
+        yAxis,
+        xTerms: xAxis.terms,
+        yTerms: yAxis.terms
+      };
     }
 
     function clamp(value, min, max) {
@@ -856,6 +1043,36 @@
         x: board.x + board.w * 0.5 + point.x * drawScale,
         y: board.y + board.h * 0.5 - point.y * drawScale
       };
+    }
+
+    function hexToRgba(hex, alpha) {
+      let normalized = hex.replace("#", "");
+      if (normalized.length === 3) {
+        normalized = normalized
+          .split("")
+          .map((char) => char + char)
+          .join("");
+      }
+
+      const r = Number.parseInt(normalized.slice(0, 2), 16);
+      const g = Number.parseInt(normalized.slice(2, 4), 16);
+      const b = Number.parseInt(normalized.slice(4, 6), 16);
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
+    function formatNumber(value) {
+      const fixed = Math.abs(value) < 0.005 ? 0 : value;
+      return fixed.toFixed(2);
+    }
+
+    function formatSignedNumber(value) {
+      const fixed = Math.abs(value) < 0.005 ? 0 : value;
+      return `${fixed >= 0 ? "+" : ""}${fixed.toFixed(2)}`;
+    }
+
+    function formatPhase(value) {
+      const deg = Math.round((value * 180) / Math.PI);
+      return `${deg >= 0 ? "+" : ""}${deg}°`;
     }
 
     function updateLabels() {
@@ -900,24 +1117,33 @@
       }
     }
 
-    function clearTrail() {
-      state.trail = [];
-      const initial = evaluateSeries(currentPreset().series, state.theta, state.terms);
-      state.trail.push({ x: initial.x, y: initial.y });
+    function currentEvaluation() {
+      return evaluateSeries(currentPreset().series, state.theta, state.terms);
     }
 
-    function drawGear(cx, cy, radius, angle, accent) {
+    function clearTrail(evaluated = currentEvaluation()) {
+      state.trail = [];
+      state.trail.push({ x: evaluated.x, y: evaluated.y });
+    }
+
+    function drawGear(cx, cy, radius, angle, accent, options = {}) {
+      const teeth = options.teeth ?? 12;
+      const activity = options.activity ?? 0.45;
+      const spokeCount = options.spokes ?? 4;
+
       ctx.save();
       ctx.translate(cx, cy);
       ctx.rotate(angle);
       ctx.fillStyle = "#6d4724";
       ctx.strokeStyle = "rgba(255, 223, 165, 0.28)";
       ctx.lineWidth = 1.1;
+      ctx.shadowColor = accent;
+      ctx.shadowBlur = 10 * activity;
       ctx.beginPath();
-      for (let tooth = 0; tooth < 12; tooth += 1) {
-        const a0 = (tooth / 12) * TAU;
-        const a1 = a0 + TAU / 24;
-        const a2 = a0 + TAU / 12;
+      for (let tooth = 0; tooth < teeth; tooth += 1) {
+        const a0 = (tooth / teeth) * TAU;
+        const a1 = a0 + TAU / (teeth * 2);
+        const a2 = a0 + TAU / teeth;
         const r0 = radius * 0.88;
         const r1 = radius;
         if (tooth === 0) {
@@ -934,8 +1160,8 @@
       ctx.strokeStyle = accent;
       ctx.lineWidth = 1;
       ctx.beginPath();
-      for (let spoke = 0; spoke < 4; spoke += 1) {
-        const angleSpoke = (spoke / 4) * TAU;
+      for (let spoke = 0; spoke < spokeCount; spoke += 1) {
+        const angleSpoke = (spoke / spokeCount) * TAU;
         ctx.moveTo(0, 0);
         ctx.lineTo(Math.cos(angleSpoke) * radius * 0.72, Math.sin(angleSpoke) * radius * 0.72);
       }
@@ -948,9 +1174,9 @@
       ctx.restore();
     }
 
-    function drawModuleBase(x, y, w, h) {
+    function drawModuleBase(x, y, w, h, glow = 0.3) {
       const gradient = ctx.createLinearGradient(x, y, x + w, y + h);
-      gradient.addColorStop(0, "rgba(181, 126, 69, 0.2)");
+      gradient.addColorStop(0, `rgba(181, 126, 69, ${0.14 + glow * 0.16})`);
       gradient.addColorStop(1, "rgba(71, 43, 24, 0.92)");
       ctx.fillStyle = gradient;
       ctx.strokeStyle = "rgba(255, 223, 165, 0.14)";
@@ -961,18 +1187,97 @@
       ctx.stroke();
     }
 
-    function drawXModules(board, xTerms, theta, accent) {
+    function drawPhasePin(cx, cy, radius, phase, accent) {
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(phase);
+      ctx.strokeStyle = hexToRgba(accent, 0.42);
+      ctx.setLineDash([3, 3]);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(radius * 0.95, 0);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+
+    function drawScotchSliderHorizontal(sliderX, centerY, pinX, pinY, crankRadius, accent, activity) {
+      const sliderW = 16;
+      const sliderH = clamp(crankRadius * 2 + 12, 22, 32);
+      const top = centerY - sliderH * 0.5;
+
+      ctx.fillStyle = "#f6d6a4";
+      ctx.beginPath();
+      ctx.roundRect(sliderX - sliderW * 0.5, top, sliderW, sliderH, 6);
+      ctx.fill();
+
+      ctx.strokeStyle = hexToRgba("#2a1810", 0.44);
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(sliderX, centerY - sliderH * 0.28);
+      ctx.lineTo(sliderX, centerY + sliderH * 0.28);
+      ctx.stroke();
+
+      ctx.fillStyle = accent;
+      ctx.shadowColor = accent;
+      ctx.shadowBlur = 8 * activity;
+      ctx.beginPath();
+      ctx.arc(pinX, pinY, 3.3, 0, TAU);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      return {
+        bottomY: top + sliderH
+      };
+    }
+
+    function drawScotchSliderVertical(centerX, sliderY, pinX, pinY, crankRadius, accent, activity) {
+      const sliderH = 16;
+      const sliderW = clamp(crankRadius * 2 + 12, 22, 32);
+      const left = centerX - sliderW * 0.5;
+
+      ctx.fillStyle = "#f6d6a4";
+      ctx.beginPath();
+      ctx.roundRect(left, sliderY - sliderH * 0.5, sliderW, sliderH, 6);
+      ctx.fill();
+
+      ctx.strokeStyle = hexToRgba("#2a1810", 0.44);
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(centerX - sliderW * 0.28, sliderY);
+      ctx.lineTo(centerX + sliderW * 0.28, sliderY);
+      ctx.stroke();
+
+      ctx.fillStyle = accent;
+      ctx.shadowColor = accent;
+      ctx.shadowBlur = 8 * activity;
+      ctx.beginPath();
+      ctx.arc(pinX, pinY, 3.3, 0, TAU);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      return {
+        leftX: left
+      };
+    }
+
+    function drawXModules(board, xTerms, theta, accent, targetX) {
       const gap = 6;
       const count = xTerms.length;
-      const areaY = Math.max(16, board.y - 74);
-      const moduleH = 60;
+      const areaY = Math.max(16, board.y - 82);
+      const moduleH = 70;
       const moduleW = (board.w - gap * (count - 1)) / count;
       const yBus = board.y - 10;
       const maxAmp = Math.max(...xTerms.map((term) => term.amp), 0.001);
+      const maxValue = Math.max(...xTerms.map((term) => Math.abs(term.value)), 0.001);
+      const shaftY = areaY + 11;
 
       ctx.strokeStyle = "rgba(255, 226, 181, 0.16)";
       ctx.lineWidth = 1;
       ctx.beginPath();
+      ctx.moveTo(board.x, shaftY);
+      ctx.lineTo(board.x + board.w, shaftY);
       ctx.moveTo(board.x, yBus);
       ctx.lineTo(board.x + board.w, yBus);
       ctx.stroke();
@@ -980,65 +1285,93 @@
       xTerms.forEach((term, index) => {
         const x = board.x + index * (moduleW + gap);
         const y = areaY;
-        const cx = x + moduleW * 0.5;
-        const cy = y + 20;
-        const radius = Math.min(moduleW, moduleH) * 0.23;
-        const crankRadius = radius * (0.35 + 0.55 * (term.amp / maxAmp));
-        const driveAngle = theta * term.n + term.phase;
-        const pinX = cx + Math.cos(driveAngle) * crankRadius;
-        const pinY = cy + Math.sin(driveAngle) * crankRadius;
-        const rel = term.amp > 0.0001 ? term.value / term.amp : 0;
-        const trackX = x + moduleW * 0.18;
-        const trackY = y + moduleH - 16;
-        const trackW = moduleW * 0.64;
-        const sliderX = trackX + trackW * (0.5 + rel * 0.42);
+        const activity = Math.abs(term.value) / maxValue;
+        const mainCx = x + moduleW * 0.18;
+        const mainCy = shaftY;
+        const mainRadius = clamp(moduleW * 0.12, 4.5, 6.8);
+        const discCx = x + moduleW * 0.58;
+        const discCy = y + 34;
+        const discRadius = clamp(moduleW * 0.21, 8, 12.5);
+        const crankRadius = discRadius * (0.42 + 0.46 * (term.amp / maxAmp));
+        const pinX = discCx + Math.cos(term.angle) * crankRadius;
+        const pinY = discCy + Math.sin(term.angle) * crankRadius;
+        const railStart = x + moduleW * 0.24;
+        const railEnd = x + moduleW * 0.9;
+        const sliderX = clamp(pinX, railStart + 8, railEnd - 8);
 
-        drawModuleBase(x, y, moduleW, moduleH);
-        drawGear(cx, cy, radius, driveAngle, accent);
+        drawModuleBase(x, y, moduleW, moduleH, activity);
 
-        ctx.strokeStyle = "rgba(255, 221, 160, 0.2)";
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = "rgba(255, 224, 170, 0.2)";
+        ctx.lineWidth = 1.1;
         ctx.beginPath();
-        ctx.moveTo(trackX, trackY);
-        ctx.lineTo(trackX + trackW, trackY);
+        ctx.moveTo(mainCx, mainCy + mainRadius);
+        ctx.lineTo(discCx, discCy - discRadius - 3);
         ctx.stroke();
 
-        ctx.strokeStyle = accent;
+        ctx.strokeStyle = "rgba(255, 224, 170, 0.14)";
         ctx.beginPath();
-        ctx.moveTo(pinX, pinY);
-        ctx.lineTo(sliderX, trackY);
+        ctx.moveTo(railStart, discCy);
+        ctx.lineTo(railEnd, discCy);
         ctx.stroke();
 
-        ctx.fillStyle = "#f6d6a4";
+        drawGear(mainCx, mainCy, mainRadius, -theta, accent, {
+          teeth: 8,
+          activity: 0.24 + activity * 0.38,
+          spokes: 3
+        });
+        drawPhasePin(discCx, discCy, discRadius, term.phase, accent);
+        drawGear(discCx, discCy, discRadius, term.angle, accent, {
+          teeth: 10 + term.n * 2,
+          activity: 0.3 + activity * 0.7
+        });
+
+        const slider = drawScotchSliderHorizontal(
+          sliderX,
+          discCy,
+          pinX,
+          pinY,
+          crankRadius,
+          accent,
+          activity
+        );
+
+        ctx.strokeStyle = hexToRgba(accent, 0.2 + activity * 0.55);
+        ctx.lineWidth = 1.5;
         ctx.beginPath();
-        ctx.roundRect(sliderX - 6, trackY - 7, 12, 14, 5);
+        ctx.moveTo(sliderX, slider.bottomY - 1);
+        ctx.lineTo(sliderX, yBus);
+        ctx.lineTo(targetX, yBus);
+        ctx.stroke();
+
+        ctx.fillStyle = hexToRgba(accent, 0.32 + activity * 0.5);
+        ctx.beginPath();
+        ctx.arc(sliderX, yBus, 2.8, 0, TAU);
         ctx.fill();
 
-        ctx.strokeStyle = "rgba(255, 223, 165, 0.1)";
-        ctx.beginPath();
-        ctx.moveTo(cx, y + moduleH);
-        ctx.lineTo(cx, yBus);
-        ctx.stroke();
-
-        ctx.fillStyle = "rgba(255, 239, 212, 0.6)";
-        ctx.font = "10px IBM Plex Mono";
+        ctx.fillStyle = "rgba(255, 239, 212, 0.7)";
+        ctx.font = "9px IBM Plex Mono";
         ctx.textAlign = "center";
-        ctx.fillText(`${term.n}x`, cx, y + 52);
+        ctx.fillText(`1:${term.n}`, x + moduleW * 0.5, y + 13);
+        ctx.fillText(`${term.n}x`, x + moduleW * 0.5, y + moduleH - 8);
       });
     }
 
-    function drawYModules(board, yTerms, theta, accent) {
+    function drawYModules(board, yTerms, theta, accent, targetY) {
       const gap = 6;
       const count = yTerms.length;
       const areaX = board.x + board.w + 12;
-      const moduleW = Math.min(88, canvas.clientWidth * 0.22);
+      const moduleW = Math.min(88, canvas.width / state.dpr * 0.22);
       const moduleH = (board.h - gap * (count - 1)) / count;
       const xBus = board.x + board.w + 10;
       const maxAmp = Math.max(...yTerms.map((term) => term.amp), 0.001);
+      const maxValue = Math.max(...yTerms.map((term) => Math.abs(term.value)), 0.001);
+      const shaftX = areaX + moduleW - 12;
 
       ctx.strokeStyle = "rgba(255, 226, 181, 0.16)";
       ctx.lineWidth = 1;
       ctx.beginPath();
+      ctx.moveTo(shaftX, board.y);
+      ctx.lineTo(shaftX, board.y + board.h);
       ctx.moveTo(xBus, board.y);
       ctx.lineTo(xBus, board.y + board.h);
       ctx.stroke();
@@ -1046,55 +1379,196 @@
       yTerms.forEach((term, index) => {
         const x = areaX;
         const y = board.y + index * (moduleH + gap);
-        const cx = x + 24;
-        const cy = y + moduleH * 0.5;
-        const radius = Math.min(moduleW, moduleH) * 0.23;
-        const crankRadius = radius * (0.35 + 0.55 * (term.amp / maxAmp));
-        const driveAngle = theta * term.n + term.phase;
-        const pinX = cx + Math.cos(driveAngle) * crankRadius;
-        const pinY = cy + Math.sin(driveAngle) * crankRadius;
-        const rel = term.amp > 0.0001 ? term.value / term.amp : 0;
-        const trackX = x + moduleW - 18;
-        const trackY = y + moduleH * 0.18;
-        const trackH = moduleH * 0.64;
-        const sliderY = trackY + trackH * (0.5 - rel * 0.42);
+        const activity = Math.abs(term.value) / maxValue;
+        const discCx = x + 25;
+        const discCy = y + moduleH * 0.52;
+        const discRadius = clamp(Math.min(moduleW, moduleH) * 0.2, 8, 12);
+        const crankRadius = discRadius * (0.42 + 0.46 * (term.amp / maxAmp));
+        const pinX = discCx + Math.cos(term.angle) * crankRadius;
+        const pinY = discCy + Math.sin(term.angle) * crankRadius;
+        const mainCx = shaftX;
+        const mainCy = y + moduleH * 0.23;
+        const mainRadius = clamp(moduleW * 0.08, 4.5, 6.5);
+        const railX = x + moduleW - 18;
+        const railTop = y + moduleH * 0.16;
+        const railBottom = y + moduleH * 0.84;
+        const sliderY = clamp(pinY, railTop + 8, railBottom - 8);
 
-        drawModuleBase(x, y, moduleW, moduleH);
-        drawGear(cx, cy, radius, driveAngle, accent);
+        drawModuleBase(x, y, moduleW, moduleH, activity);
+
+        ctx.strokeStyle = "rgba(255, 224, 170, 0.2)";
+        ctx.lineWidth = 1.1;
+        ctx.beginPath();
+        ctx.moveTo(mainCx - mainRadius, mainCy);
+        ctx.lineTo(discCx + discRadius + 3, discCy);
+        ctx.stroke();
 
         ctx.strokeStyle = "rgba(255, 221, 160, 0.2)";
-        ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(trackX, trackY);
-        ctx.lineTo(trackX, trackY + trackH);
+        ctx.moveTo(railX, railTop);
+        ctx.lineTo(railX, railBottom);
         ctx.stroke();
 
-        ctx.strokeStyle = accent;
+        drawGear(mainCx, mainCy, mainRadius, -theta, accent, {
+          teeth: 8,
+          activity: 0.24 + activity * 0.38,
+          spokes: 3
+        });
+        drawPhasePin(discCx, discCy, discRadius, term.phase, accent);
+        drawGear(discCx, discCy, discRadius, term.angle, accent, {
+          teeth: 10 + term.n * 2,
+          activity: 0.3 + activity * 0.7
+        });
+
+        const slider = drawScotchSliderVertical(
+          railX,
+          sliderY,
+          pinX,
+          pinY,
+          crankRadius,
+          accent,
+          activity
+        );
+
+        ctx.strokeStyle = hexToRgba(accent, 0.2 + activity * 0.55);
+        ctx.lineWidth = 1.5;
         ctx.beginPath();
-        ctx.moveTo(pinX, pinY);
-        ctx.lineTo(trackX, sliderY);
+        ctx.moveTo(slider.leftX + 1, sliderY);
+        ctx.lineTo(xBus, sliderY);
+        ctx.lineTo(xBus, targetY);
         ctx.stroke();
 
-        ctx.fillStyle = "#f6d6a4";
+        ctx.fillStyle = hexToRgba(accent, 0.32 + activity * 0.5);
         ctx.beginPath();
-        ctx.roundRect(trackX - 7, sliderY - 6, 14, 12, 5);
+        ctx.arc(xBus, sliderY, 2.8, 0, TAU);
         ctx.fill();
 
-        ctx.strokeStyle = "rgba(255, 223, 165, 0.1)";
-        ctx.beginPath();
-        ctx.moveTo(xBus, cy);
-        ctx.lineTo(x, cy);
-        ctx.stroke();
+        ctx.fillStyle = "rgba(255, 239, 212, 0.68)";
+        ctx.font = "9px IBM Plex Mono";
+        ctx.textAlign = "center";
+        ctx.fillText(`1:${term.n}`, x + moduleW * 0.62, y + 12);
 
         ctx.save();
-        ctx.translate(x + moduleW - 30, cy);
+        ctx.translate(x + moduleW - 29, discCy);
         ctx.rotate(Math.PI / 2);
-        ctx.fillStyle = "rgba(255, 239, 212, 0.6)";
-        ctx.font = "10px IBM Plex Mono";
-        ctx.textAlign = "center";
         ctx.fillText(`${term.n}y`, 0, 0);
         ctx.restore();
       });
+    }
+
+    function resizeWaveCanvas(canvasEl) {
+      const rect = canvasEl.getBoundingClientRect();
+      const width = Math.max(1, Math.round(rect.width * state.dpr));
+      const height = Math.max(1, Math.round(rect.height * state.dpr));
+
+      if (canvasEl.width !== width || canvasEl.height !== height) {
+        canvasEl.width = width;
+        canvasEl.height = height;
+      }
+    }
+
+    function drawWaveGraph(canvasEl, waveCtx, axisSeries, theta, termCount, color) {
+      resizeWaveCanvas(canvasEl);
+
+      const width = canvasEl.width / state.dpr;
+      const height = canvasEl.height / state.dpr;
+      const samples = 96;
+      const values = [];
+      let min = Infinity;
+      let max = -Infinity;
+
+      for (let i = 0; i < samples; i += 1) {
+        const t = (i / (samples - 1)) * TAU;
+        const axisEval = evaluateAxis(axisSeries, t, termCount);
+        values.push(axisEval.total);
+        min = Math.min(min, axisEval.total);
+        max = Math.max(max, axisEval.total);
+      }
+
+      const paddingX = 6;
+      const paddingY = 6;
+      const innerW = width - paddingX * 2;
+      const innerH = height - paddingY * 2;
+      const span = Math.max(0.2, max - min);
+      const currentValue = evaluateAxis(axisSeries, theta, termCount).total;
+      const markerX = paddingX + innerW * ((((theta % TAU) + TAU) % TAU) / TAU);
+
+      waveCtx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+      waveCtx.clearRect(0, 0, width, height);
+
+      waveCtx.strokeStyle = "rgba(255, 227, 184, 0.08)";
+      waveCtx.lineWidth = 1;
+      waveCtx.beginPath();
+      waveCtx.moveTo(paddingX, paddingY + innerH * 0.5);
+      waveCtx.lineTo(width - paddingX, paddingY + innerH * 0.5);
+      waveCtx.moveTo(paddingX, paddingY + innerH * 0.2);
+      waveCtx.lineTo(width - paddingX, paddingY + innerH * 0.2);
+      waveCtx.moveTo(paddingX, paddingY + innerH * 0.8);
+      waveCtx.lineTo(width - paddingX, paddingY + innerH * 0.8);
+      waveCtx.stroke();
+
+      waveCtx.strokeStyle = hexToRgba(color, 0.24);
+      waveCtx.lineWidth = 1.1;
+      waveCtx.beginPath();
+      waveCtx.moveTo(markerX, paddingY);
+      waveCtx.lineTo(markerX, height - paddingY);
+      waveCtx.stroke();
+
+      waveCtx.strokeStyle = color;
+      waveCtx.lineWidth = 1.8;
+      waveCtx.lineJoin = "round";
+      waveCtx.lineCap = "round";
+      waveCtx.shadowColor = color;
+      waveCtx.shadowBlur = 8;
+      waveCtx.beginPath();
+
+      values.forEach((value, index) => {
+        const x = paddingX + (index / (samples - 1)) * innerW;
+        const y = paddingY + innerH - ((value - min) / span) * innerH;
+        if (index === 0) {
+          waveCtx.moveTo(x, y);
+        } else {
+          waveCtx.lineTo(x, y);
+        }
+      });
+
+      waveCtx.stroke();
+      waveCtx.shadowBlur = 0;
+
+      const dotY = paddingY + innerH - ((currentValue - min) / span) * innerH;
+      waveCtx.fillStyle = color;
+      waveCtx.beginPath();
+      waveCtx.arc(markerX, dotY, 3.2, 0, TAU);
+      waveCtx.fill();
+    }
+
+    function updateAnalysisPanels(evaluated) {
+      const preset = currentPreset();
+      const key = `${state.presetId}:${state.terms}`;
+
+      if (state.equationKey !== key) {
+        xFormula.textContent = `x(t)=c0+sum[n<=${state.terms}] A_n cos(nt+phi_n)`;
+        yFormula.textContent = `y(t)=c0+sum[n<=${state.terms}] B_n cos(nt+psi_n)`;
+        state.equationKey = key;
+      }
+
+      xCurrentValue.textContent = formatSignedNumber(evaluated.x);
+      yCurrentValue.textContent = formatSignedNumber(evaluated.y);
+
+      function chipsForAxis(axisEval, symbol) {
+        const amps = axisEval.terms.map((term) => `${symbol}${term.n}:${formatNumber(term.amp)}`).join(" ");
+        const phases = axisEval.terms.map((term) => `${term.n}:${formatPhase(term.phase)}`).join(" ");
+        return [
+          `<span class="term-line">c0:${formatNumber(axisEval.offset)} ${amps}</span>`,
+          `<span class="term-line phase">${symbol === "A" ? "phi" : "psi"}:${phases}</span>`
+        ].join("");
+      }
+
+      xEquation.innerHTML = chipsForAxis(evaluated.xAxis, "A");
+      yEquation.innerHTML = chipsForAxis(evaluated.yAxis, "B");
+
+      drawWaveGraph(xWaveCanvas, xWaveCtx, preset.series.x, state.theta, state.terms, preset.color);
+      drawWaveGraph(yWaveCanvas, yWaveCtx, preset.series.y, state.theta, state.terms, AXIS_Y_COLOR);
     }
 
     function drawBoard(board, accent) {
@@ -1302,7 +1776,7 @@
       };
 
       const drawScale = Math.min(board.w, board.h) * 0.43;
-      const evaluated = evaluateSeries(preset.series, state.theta, state.terms);
+      const evaluated = currentEvaluation();
       const pen = mapPoint({ x: evaluated.x, y: evaluated.y }, board, drawScale);
 
       drawBoard(board, accent);
@@ -1312,10 +1786,11 @@
       }
 
       drawTrail(board, drawScale, accent);
-      drawXModules(board, evaluated.xTerms, state.theta, accent);
-      drawYModules(board, evaluated.yTerms, state.theta, accent);
+      drawXModules(board, evaluated.xTerms, state.theta, accent, pen.x);
+      drawYModules(board, evaluated.yTerms, state.theta, accent, pen.y);
       drawGimbal(board, pen.x, pen.y, accent);
       drawCrank(board, state.theta, accent);
+      updateAnalysisPanels(evaluated);
     }
 
     function tick(timestamp) {
@@ -1327,19 +1802,14 @@
       state.lastTime = timestamp;
 
       if (state.playing) {
-        const previousTheta = state.theta;
         state.theta += (delta / 1000) * state.speed * 0.72;
         if (state.theta >= TAU) {
           state.theta %= TAU;
           state.trail = [];
         }
 
-        const evaluated = evaluateSeries(currentPreset().series, state.theta, state.terms);
+        const evaluated = currentEvaluation();
         addTrailPoint({ x: evaluated.x, y: evaluated.y });
-
-        if (state.trail.length === 0 && previousTheta === 0) {
-          state.trail.push({ x: evaluated.x, y: evaluated.y });
-        }
 
         phaseRange.value = String(Math.round((state.theta / TAU) * 1000));
       }
@@ -1358,6 +1828,7 @@
 
     function setPreset(id) {
       state.presetId = id;
+      state.equationKey = "";
       clearTrail();
       updateLabels();
       render();
@@ -1389,6 +1860,7 @@
 
     termsRange.addEventListener("input", () => {
       state.terms = Number(termsRange.value);
+      state.equationKey = "";
       clearTrail();
       updateLabels();
       render();
