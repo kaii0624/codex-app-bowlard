@@ -1,0 +1,1419 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"
+  />
+  <title>Wooden Fourier Plotter</title>
+  <link
+    rel="icon"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232a1810'/%3E%3Ccircle cx='32' cy='32' r='18' fill='none' stroke='%23e5be77' stroke-width='6'/%3E%3Ccircle cx='32' cy='32' r='5' fill='%2379d7ff'/%3E%3C/svg%3E"
+  />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Alegreya+Sans+SC:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg-0: #1a110c;
+      --bg-1: #2f1d12;
+      --bg-2: #5b3a1d;
+      --paper: #f3e1b8;
+      --paper-2: #e0c08c;
+      --wood-1: #4f2f1d;
+      --wood-2: #8d6136;
+      --wood-3: #c69356;
+      --brass-1: #e5be77;
+      --brass-2: #8b632c;
+      --ink: #25160f;
+      --panel: rgba(27, 17, 12, 0.88);
+      --line: rgba(255, 222, 166, 0.18);
+      --line-strong: rgba(255, 214, 146, 0.38);
+      --text: #fff3db;
+      --muted: rgba(255, 233, 197, 0.72);
+      --faint: rgba(255, 220, 168, 0.42);
+      --accent: #79d7ff;
+      --accent-soft: rgba(121, 215, 255, 0.18);
+      --success: #a9e285;
+      --danger: #ff8f66;
+      --shadow: 0 28px 52px rgba(0, 0, 0, 0.34);
+      font-family: "Alegreya Sans SC", "Hiragino Sans", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background:
+        radial-gradient(120vmax 70vmax at 18% 0%, rgba(198, 147, 86, 0.26), transparent 60%),
+        radial-gradient(90vmax 90vmax at 100% 100%, rgba(121, 215, 255, 0.1), transparent 56%),
+        linear-gradient(180deg, var(--bg-2) 0%, var(--bg-1) 24%, var(--bg-0) 100%);
+    }
+
+    body {
+      position: fixed;
+      inset: 0;
+      color: var(--text);
+      touch-action: manipulation;
+      user-select: none;
+    }
+
+    button,
+    input {
+      font: inherit;
+      color: inherit;
+    }
+
+    .app {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 10px;
+      padding:
+        max(12px, env(safe-area-inset-top))
+        max(12px, env(safe-area-inset-right))
+        max(12px, env(safe-area-inset-bottom))
+        max(12px, env(safe-area-inset-left));
+      overflow: hidden;
+    }
+
+    .topbar,
+    .dock,
+    .stage-panel {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 26px;
+      background:
+        linear-gradient(180deg, rgba(255, 243, 219, 0.04), transparent 35%),
+        linear-gradient(135deg, rgba(96, 60, 29, 0.7), rgba(22, 14, 10, 0.92));
+      box-shadow: var(--shadow);
+    }
+
+    .topbar::before,
+    .dock::before,
+    .stage-panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.14;
+      background:
+        repeating-linear-gradient(
+          12deg,
+          rgba(255, 240, 212, 0.65) 0 2px,
+          transparent 2px 15px,
+          rgba(111, 68, 28, 0.42) 15px 18px,
+          transparent 18px 32px
+        );
+      mix-blend-mode: soft-light;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      padding: 14px 16px;
+      min-height: 84px;
+    }
+
+    .brand {
+      display: grid;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .eyebrow,
+    .chip,
+    .range-row span:first-child,
+    .core-mark,
+    .stage-label,
+    .play-btn,
+    .mini-btn {
+      font-family: "IBM Plex Mono", monospace;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow {
+      font-size: 10px;
+      color: var(--faint);
+    }
+
+    .title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 8vw, 40px);
+      line-height: 0.88;
+      letter-spacing: 0.08em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .meta {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 52px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line-strong);
+      background: rgba(255, 235, 197, 0.05);
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    .chip.live {
+      color: var(--accent);
+      border-color: rgba(121, 215, 255, 0.32);
+      box-shadow: inset 0 0 0 1px rgba(121, 215, 255, 0.08);
+    }
+
+    .play-btn,
+    .mini-btn,
+    .disk-btn {
+      border: 1px solid var(--line-strong);
+      background:
+        linear-gradient(180deg, rgba(255, 231, 181, 0.12), rgba(77, 47, 29, 0.85));
+      color: var(--text);
+      cursor: pointer;
+      transition:
+        transform 180ms ease,
+        border-color 180ms ease,
+        box-shadow 180ms ease,
+        background 180ms ease;
+    }
+
+    .play-btn:hover,
+    .mini-btn:hover,
+    .disk-btn:hover {
+      transform: translateY(-1px);
+      border-color: rgba(255, 216, 145, 0.62);
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.24);
+    }
+
+    .play-btn {
+      min-width: 88px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      font-size: 12px;
+    }
+
+    .stage-panel {
+      min-height: 0;
+      background:
+        radial-gradient(circle at 22% 12%, rgba(121, 215, 255, 0.12), transparent 26%),
+        radial-gradient(circle at 86% 84%, rgba(255, 195, 122, 0.12), transparent 28%),
+        linear-gradient(180deg, rgba(55, 35, 21, 0.9), rgba(15, 10, 8, 0.96));
+    }
+
+    .stage-label {
+      position: absolute;
+      font-size: 10px;
+      color: rgba(255, 233, 197, 0.52);
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .stage-label.x {
+      top: 16px;
+      left: 18px;
+    }
+
+    .stage-label.y {
+      top: 16px;
+      right: 18px;
+    }
+
+    .stage-label.gimbal {
+      bottom: 14px;
+      left: 18px;
+    }
+
+    #machineCanvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .dock {
+      display: grid;
+      grid-template-columns: 156px minmax(0, 1fr);
+      gap: 12px;
+      padding: 12px;
+      min-height: 220px;
+    }
+
+    .disk-card,
+    .control-card {
+      position: relative;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 224, 170, 0.14);
+      background:
+        linear-gradient(180deg, rgba(255, 238, 206, 0.04), transparent 30%),
+        rgba(19, 12, 9, 0.56);
+      min-width: 0;
+    }
+
+    .disk-card {
+      display: grid;
+      place-items: center;
+      padding: 10px;
+    }
+
+    .card-tag {
+      position: absolute;
+      top: 10px;
+      left: 12px;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      color: var(--faint);
+    }
+
+    .program-disk {
+      position: relative;
+      width: 138px;
+      height: 138px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 34% 32%, rgba(255, 235, 194, 0.28), transparent 20%),
+        radial-gradient(circle at 50% 50%, rgba(255, 211, 145, 0.12), transparent 54%),
+        linear-gradient(180deg, rgba(205, 157, 95, 0.8), rgba(76, 46, 27, 0.96));
+      border: 1px solid rgba(255, 214, 145, 0.36);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 239, 209, 0.46),
+        inset 0 -12px 24px rgba(0, 0, 0, 0.24),
+        0 14px 22px rgba(0, 0, 0, 0.28);
+      overflow: hidden;
+      transform: rotate(var(--disk-spin, 0deg));
+      transition: transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .program-disk::before,
+    .program-disk::after {
+      content: "";
+      position: absolute;
+      inset: 11px;
+      border-radius: 50%;
+      border: 1px dashed rgba(255, 223, 165, 0.28);
+      pointer-events: none;
+    }
+
+    .program-disk::after {
+      inset: 34px;
+      border-style: solid;
+      border-color: rgba(255, 215, 144, 0.16);
+    }
+
+    .disk-btn {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 46px;
+      height: 46px;
+      margin: -23px 0 0 -23px;
+      border-radius: 50%;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 10px;
+      transform:
+        rotate(var(--slot-angle))
+        translateY(-53px)
+        rotate(var(--slot-counter-angle))
+        rotate(var(--disk-counter-spin, 0deg));
+      box-shadow: inset 0 1px 0 rgba(255, 240, 211, 0.42);
+    }
+
+    .disk-btn.active {
+      border-color: rgba(121, 215, 255, 0.7);
+      color: var(--accent);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 240, 211, 0.42),
+        0 0 0 3px rgba(121, 215, 255, 0.12);
+    }
+
+    .disk-core {
+      position: absolute;
+      inset: 43px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 40% 34%, rgba(255, 230, 180, 0.32), transparent 22%),
+        linear-gradient(180deg, rgba(255, 223, 165, 0.18), rgba(42, 27, 19, 0.9));
+      border: 1px solid rgba(255, 215, 145, 0.26);
+      box-shadow: inset 0 1px 0 rgba(255, 238, 204, 0.42);
+    }
+
+    .core-mark {
+      display: grid;
+      place-items: center;
+      gap: 4px;
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    .core-mark strong {
+      font-size: 16px;
+      letter-spacing: 0.18em;
+      color: var(--text);
+    }
+
+    .control-card {
+      display: grid;
+      gap: 10px;
+      padding: 14px 14px 12px;
+      align-content: start;
+    }
+
+    .range-row {
+      display: grid;
+      grid-template-columns: 52px minmax(0, 1fr) 48px;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .range-row strong {
+      font-weight: 500;
+      text-align: right;
+      color: var(--text);
+      white-space: nowrap;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 28px;
+      margin: 0;
+      appearance: none;
+      background: transparent;
+    }
+
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 7px;
+      border-radius: 999px;
+      background:
+        linear-gradient(90deg, rgba(255, 214, 145, 0.12), rgba(121, 215, 255, 0.22));
+      border: 1px solid rgba(255, 223, 165, 0.14);
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      appearance: none;
+      margin-top: -6px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 32% 32%, rgba(255, 248, 231, 0.82), transparent 26%),
+        linear-gradient(180deg, rgba(255, 229, 177, 0.96), rgba(134, 95, 42, 0.98));
+      border: 1px solid rgba(255, 221, 160, 0.8);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.34);
+    }
+
+    input[type="range"]::-moz-range-track {
+      height: 7px;
+      border-radius: 999px;
+      background:
+        linear-gradient(90deg, rgba(255, 214, 145, 0.12), rgba(121, 215, 255, 0.22));
+      border: 1px solid rgba(255, 223, 165, 0.14);
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 32% 32%, rgba(255, 248, 231, 0.82), transparent 26%),
+        linear-gradient(180deg, rgba(255, 229, 177, 0.96), rgba(134, 95, 42, 0.98));
+      border: 1px solid rgba(255, 221, 160, 0.8);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.34);
+    }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 2px;
+    }
+
+    .mini-btn {
+      padding: 12px 10px;
+      border-radius: 16px;
+      font-size: 11px;
+    }
+
+    .mini-btn.active {
+      border-color: rgba(121, 215, 255, 0.54);
+      color: var(--accent);
+    }
+
+    @media (max-width: 380px) {
+      .dock {
+        grid-template-columns: 144px minmax(0, 1fr);
+        min-height: 212px;
+      }
+
+      .program-disk {
+        width: 126px;
+        height: 126px;
+      }
+
+      .disk-btn {
+        width: 42px;
+        height: 42px;
+        margin: -21px 0 0 -21px;
+        transform:
+          rotate(var(--slot-angle))
+          translateY(-48px)
+          rotate(var(--slot-counter-angle))
+          rotate(var(--disk-counter-spin, 0deg));
+      }
+
+      .topbar {
+        min-height: 78px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="eyebrow">wooden fourier plotter</div>
+        <div class="title-row">
+          <h1 id="presetName">CAT</h1>
+          <div class="meta">
+            <span class="chip live" id="runChip">RUN</span>
+            <span class="chip" id="termsChip">6T</span>
+          </div>
+        </div>
+      </div>
+      <button class="play-btn" id="playBtn" type="button">PAUSE</button>
+    </header>
+
+    <section class="stage-panel">
+      <div class="stage-label x">x stack</div>
+      <div class="stage-label y">y stack</div>
+      <div class="stage-label gimbal">pen / gantry</div>
+      <canvas id="machineCanvas" aria-label="wooden fourier drawing machine"></canvas>
+    </section>
+
+    <footer class="dock">
+      <section class="disk-card">
+        <div class="card-tag">disk</div>
+        <div class="program-disk" id="programDisk">
+          <button class="disk-btn" type="button" data-preset="test" style="--slot-angle: 0deg; --slot-counter-angle: 0deg;">TEST</button>
+          <button class="disk-btn" type="button" data-preset="cat" style="--slot-angle: 90deg; --slot-counter-angle: -90deg;">CAT</button>
+          <button class="disk-btn" type="button" data-preset="bat" style="--slot-angle: 180deg; --slot-counter-angle: -180deg;">BAT</button>
+          <button class="disk-btn" type="button" data-preset="bloom" style="--slot-angle: 270deg; --slot-counter-angle: -270deg;">BLOOM</button>
+          <div class="disk-core">
+            <div class="core-mark">program<strong id="coreCode">CAT</strong></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="control-card">
+        <div class="range-row">
+          <span>speed</span>
+          <input id="speedRange" type="range" min="25" max="170" step="1" value="84" />
+          <strong id="speedValue">0.84</strong>
+        </div>
+
+        <div class="range-row">
+          <span>terms</span>
+          <input id="termsRange" type="range" min="3" max="6" step="1" value="6" />
+          <strong id="termsValue">6</strong>
+        </div>
+
+        <div class="range-row">
+          <span>phase</span>
+          <input id="phaseRange" type="range" min="0" max="1000" step="1" value="0" />
+          <strong id="phaseValue">0°</strong>
+        </div>
+
+        <div class="button-row">
+          <button class="mini-btn" id="resetBtn" type="button">RESET</button>
+          <button class="mini-btn active" id="ghostBtn" type="button">GHOST</button>
+        </div>
+      </section>
+    </footer>
+  </div>
+
+  <script>
+    const TAU = Math.PI * 2;
+    const canvas = document.getElementById("machineCanvas");
+    const ctx = canvas.getContext("2d");
+    const playBtn = document.getElementById("playBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const ghostBtn = document.getElementById("ghostBtn");
+    const speedRange = document.getElementById("speedRange");
+    const termsRange = document.getElementById("termsRange");
+    const phaseRange = document.getElementById("phaseRange");
+    const speedValue = document.getElementById("speedValue");
+    const termsValue = document.getElementById("termsValue");
+    const phaseValue = document.getElementById("phaseValue");
+    const termsChip = document.getElementById("termsChip");
+    const runChip = document.getElementById("runChip");
+    const presetName = document.getElementById("presetName");
+    const coreCode = document.getElementById("coreCode");
+    const programDisk = document.getElementById("programDisk");
+    const diskButtons = [...document.querySelectorAll(".disk-btn")];
+
+    function normalizePoints(points) {
+      let minX = Infinity;
+      let maxX = -Infinity;
+      let minY = Infinity;
+      let maxY = -Infinity;
+
+      points.forEach((point) => {
+        minX = Math.min(minX, point.x);
+        maxX = Math.max(maxX, point.x);
+        minY = Math.min(minY, point.y);
+        maxY = Math.max(maxY, point.y);
+      });
+
+      const cx = (minX + maxX) * 0.5;
+      const cy = (minY + maxY) * 0.5;
+      const span = Math.max(maxX - minX, maxY - minY) || 1;
+      const scale = 1.64 / span;
+
+      return points.map((point) => ({
+        x: (point.x - cx) * scale,
+        y: (point.y - cy) * scale
+      }));
+    }
+
+    function resampleClosedPath(points, sampleCount) {
+      const closed = [...points, points[0]];
+      const lengths = [0];
+      let total = 0;
+
+      for (let i = 1; i < closed.length; i += 1) {
+        total += Math.hypot(closed[i].x - closed[i - 1].x, closed[i].y - closed[i - 1].y);
+        lengths.push(total);
+      }
+
+      const samples = [];
+      for (let i = 0; i < sampleCount; i += 1) {
+        const target = (i / sampleCount) * total;
+        let seg = 1;
+        while (seg < lengths.length && lengths[seg] < target) {
+          seg += 1;
+        }
+
+        const start = closed[seg - 1];
+        const end = closed[seg];
+        const startLen = lengths[seg - 1];
+        const segLen = Math.max(0.0001, lengths[seg] - startLen);
+        const mix = (target - startLen) / segLen;
+
+        samples.push({
+          x: start.x + (end.x - start.x) * mix,
+          y: start.y + (end.y - start.y) * mix
+        });
+      }
+
+      return samples;
+    }
+
+    function polygon(points, samples = 720) {
+      const normalized = normalizePoints(points.map(([x, y]) => ({ x, y })));
+      return resampleClosedPath(normalized, samples);
+    }
+
+    function makeBloomPoints(samples = 720) {
+      const points = [];
+      for (let i = 0; i < samples; i += 1) {
+        const t = (i / samples) * TAU;
+        const r =
+          0.62 +
+          0.19 * Math.cos(5 * t) +
+          0.1 * Math.sin(9 * t + 0.65) +
+          0.05 * Math.cos(2 * t - 0.4);
+        points.push({
+          x: 1.08 * r * Math.cos(t),
+          y: 0.95 * r * Math.sin(t)
+        });
+      }
+      return normalizePoints(points);
+    }
+
+    function makeTestPoints(samples = 720) {
+      const points = [];
+      for (let i = 0; i < samples; i += 1) {
+        const t = (i / samples) * TAU;
+        const c = Math.cos(t);
+        const s = Math.sin(t);
+        points.push({
+          x: 0.8 * Math.sign(c) * Math.pow(Math.abs(c), 0.58) + 0.12 * Math.cos(3 * t),
+          y: 0.68 * Math.sign(s) * Math.pow(Math.abs(s), 0.58) + 0.14 * Math.sin(2 * t - 0.3)
+        });
+      }
+      return normalizePoints(points);
+    }
+
+    function computeAxisTerms(points, axis, maxTerms) {
+      const count = points.length;
+      let offset = 0;
+      for (const point of points) {
+        offset += point[axis];
+      }
+      offset /= count;
+
+      const terms = [];
+      for (let n = 1; n <= maxTerms; n += 1) {
+        let a = 0;
+        let b = 0;
+
+        for (let i = 0; i < count; i += 1) {
+          const t = (i / count) * TAU;
+          const value = points[i][axis] - offset;
+          a += value * Math.cos(n * t);
+          b += value * Math.sin(n * t);
+        }
+
+        a = (2 * a) / count;
+        b = (2 * b) / count;
+
+        terms.push({
+          n,
+          amp: Math.hypot(a, b),
+          phase: -Math.atan2(b, a)
+        });
+      }
+
+      return { offset, terms };
+    }
+
+    function computeSeries(points, maxTerms) {
+      return {
+        x: computeAxisTerms(points, "x", maxTerms),
+        y: computeAxisTerms(points, "y", maxTerms)
+      };
+    }
+
+    function buildPreset(id, label, color, diskAngle, points) {
+      return {
+        id,
+        label,
+        color,
+        diskAngle,
+        points,
+        series: computeSeries(points, 6)
+      };
+    }
+
+    const presets = {
+      test: buildPreset(
+        "test",
+        "TEST",
+        "#79d7ff",
+        0,
+        makeTestPoints()
+      ),
+      cat: buildPreset(
+        "cat",
+        "CAT",
+        "#ffbf73",
+        -90,
+        polygon([
+          [-0.96, -0.3],
+          [-0.85, -0.08],
+          [-0.72, 0.06],
+          [-0.64, 0.3],
+          [-0.44, 0.72],
+          [-0.22, 0.28],
+          [-0.06, 0.78],
+          [0.12, 0.3],
+          [0.34, 0.64],
+          [0.44, 0.18],
+          [0.62, -0.04],
+          [0.84, 0.04],
+          [0.72, -0.26],
+          [0.84, -0.42],
+          [0.54, -0.5],
+          [0.2, -0.58],
+          [-0.14, -0.6],
+          [-0.48, -0.56],
+          [-0.74, -0.48]
+        ])
+      ),
+      bat: buildPreset(
+        "bat",
+        "BAT",
+        "#ff8f66",
+        -180,
+        polygon([
+          [-0.98, 0.06],
+          [-0.84, -0.22],
+          [-0.62, 0.06],
+          [-0.52, -0.38],
+          [-0.24, -0.06],
+          [-0.08, -0.62],
+          [0, -0.12],
+          [0.08, -0.62],
+          [0.24, -0.06],
+          [0.52, -0.38],
+          [0.62, 0.06],
+          [0.84, -0.22],
+          [0.98, 0.06],
+          [0.62, 0.28],
+          [0.44, 0.1],
+          [0.24, 0.42],
+          [0, 0.18],
+          [-0.24, 0.42],
+          [-0.44, 0.1],
+          [-0.62, 0.28]
+        ])
+      ),
+      bloom: buildPreset(
+        "bloom",
+        "BLOOM",
+        "#a9e285",
+        -270,
+        makeBloomPoints()
+      )
+    };
+
+    const state = {
+      presetId: "cat",
+      theta: 0,
+      speed: Number(speedRange.value) / 100,
+      terms: Number(termsRange.value),
+      playing: true,
+      ghost: true,
+      trail: [],
+      dpr: Math.max(1, Math.min(window.devicePixelRatio || 1, 2)),
+      lastTime: 0
+    };
+
+    function currentPreset() {
+      return presets[state.presetId];
+    }
+
+    function evaluateSeries(series, theta, terms) {
+      const xTerms = [];
+      const yTerms = [];
+      let x = series.x.offset;
+      let y = series.y.offset;
+
+      for (let i = 0; i < terms; i += 1) {
+        const xTerm = series.x.terms[i];
+        const yTerm = series.y.terms[i];
+
+        const xv = xTerm.amp * Math.cos(xTerm.n * theta + xTerm.phase);
+        const yv = yTerm.amp * Math.cos(yTerm.n * theta + yTerm.phase);
+
+        x += xv;
+        y += yv;
+
+        xTerms.push({ ...xTerm, value: xv });
+        yTerms.push({ ...yTerm, value: yv });
+      }
+
+      return { x, y, xTerms, yTerms };
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function mapPoint(point, board, drawScale) {
+      return {
+        x: board.x + board.w * 0.5 + point.x * drawScale,
+        y: board.y + board.h * 0.5 - point.y * drawScale
+      };
+    }
+
+    function updateLabels() {
+      const preset = currentPreset();
+      presetName.textContent = preset.label;
+      coreCode.textContent = preset.label;
+      speedValue.textContent = state.speed.toFixed(2);
+      termsValue.textContent = String(state.terms);
+      termsChip.textContent = `${state.terms}T`;
+      runChip.textContent = state.playing ? "RUN" : "HOLD";
+      runChip.classList.toggle("live", state.playing);
+      phaseValue.textContent = `${Math.round((((state.theta % TAU) + TAU) % TAU) / TAU * 360)}°`;
+      playBtn.textContent = state.playing ? "PAUSE" : "PLAY";
+      ghostBtn.classList.toggle("active", state.ghost);
+      document.documentElement.style.setProperty("--accent", preset.color);
+      programDisk.style.setProperty("--disk-spin", `${preset.diskAngle}deg`);
+      programDisk.style.setProperty("--disk-counter-spin", `${-preset.diskAngle}deg`);
+
+      diskButtons.forEach((button) => {
+        button.classList.toggle("active", button.dataset.preset === state.presetId);
+      });
+    }
+
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const width = Math.max(1, Math.round(rect.width * state.dpr));
+      const height = Math.max(1, Math.round(rect.height * state.dpr));
+
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
+      }
+    }
+
+    function addTrailPoint(point) {
+      const previous = state.trail[state.trail.length - 1];
+      if (!previous || Math.hypot(previous.x - point.x, previous.y - point.y) > 1.6) {
+        state.trail.push(point);
+      }
+      if (state.trail.length > 960) {
+        state.trail.shift();
+      }
+    }
+
+    function clearTrail() {
+      state.trail = [];
+      const initial = evaluateSeries(currentPreset().series, state.theta, state.terms);
+      state.trail.push({ x: initial.x, y: initial.y });
+    }
+
+    function drawGear(cx, cy, radius, angle, accent) {
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(angle);
+      ctx.fillStyle = "#6d4724";
+      ctx.strokeStyle = "rgba(255, 223, 165, 0.28)";
+      ctx.lineWidth = 1.1;
+      ctx.beginPath();
+      for (let tooth = 0; tooth < 12; tooth += 1) {
+        const a0 = (tooth / 12) * TAU;
+        const a1 = a0 + TAU / 24;
+        const a2 = a0 + TAU / 12;
+        const r0 = radius * 0.88;
+        const r1 = radius;
+        if (tooth === 0) {
+          ctx.moveTo(Math.cos(a0) * r0, Math.sin(a0) * r0);
+        }
+        ctx.lineTo(Math.cos(a0) * r0, Math.sin(a0) * r0);
+        ctx.lineTo(Math.cos(a1) * r1, Math.sin(a1) * r1);
+        ctx.lineTo(Math.cos(a2) * r0, Math.sin(a2) * r0);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let spoke = 0; spoke < 4; spoke += 1) {
+        const angleSpoke = (spoke / 4) * TAU;
+        ctx.moveTo(0, 0);
+        ctx.lineTo(Math.cos(angleSpoke) * radius * 0.72, Math.sin(angleSpoke) * radius * 0.72);
+      }
+      ctx.stroke();
+
+      ctx.fillStyle = "#d1a35d";
+      ctx.beginPath();
+      ctx.arc(0, 0, radius * 0.18, 0, TAU);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawModuleBase(x, y, w, h) {
+      const gradient = ctx.createLinearGradient(x, y, x + w, y + h);
+      gradient.addColorStop(0, "rgba(181, 126, 69, 0.2)");
+      gradient.addColorStop(1, "rgba(71, 43, 24, 0.92)");
+      ctx.fillStyle = gradient;
+      ctx.strokeStyle = "rgba(255, 223, 165, 0.14)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(x, y, w, h, 12);
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    function drawXModules(board, xTerms, theta, accent) {
+      const gap = 6;
+      const count = xTerms.length;
+      const areaY = Math.max(16, board.y - 74);
+      const moduleH = 60;
+      const moduleW = (board.w - gap * (count - 1)) / count;
+      const yBus = board.y - 10;
+      const maxAmp = Math.max(...xTerms.map((term) => term.amp), 0.001);
+
+      ctx.strokeStyle = "rgba(255, 226, 181, 0.16)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(board.x, yBus);
+      ctx.lineTo(board.x + board.w, yBus);
+      ctx.stroke();
+
+      xTerms.forEach((term, index) => {
+        const x = board.x + index * (moduleW + gap);
+        const y = areaY;
+        const cx = x + moduleW * 0.5;
+        const cy = y + 20;
+        const radius = Math.min(moduleW, moduleH) * 0.23;
+        const crankRadius = radius * (0.35 + 0.55 * (term.amp / maxAmp));
+        const driveAngle = theta * term.n + term.phase;
+        const pinX = cx + Math.cos(driveAngle) * crankRadius;
+        const pinY = cy + Math.sin(driveAngle) * crankRadius;
+        const rel = term.amp > 0.0001 ? term.value / term.amp : 0;
+        const trackX = x + moduleW * 0.18;
+        const trackY = y + moduleH - 16;
+        const trackW = moduleW * 0.64;
+        const sliderX = trackX + trackW * (0.5 + rel * 0.42);
+
+        drawModuleBase(x, y, moduleW, moduleH);
+        drawGear(cx, cy, radius, driveAngle, accent);
+
+        ctx.strokeStyle = "rgba(255, 221, 160, 0.2)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(trackX, trackY);
+        ctx.lineTo(trackX + trackW, trackY);
+        ctx.stroke();
+
+        ctx.strokeStyle = accent;
+        ctx.beginPath();
+        ctx.moveTo(pinX, pinY);
+        ctx.lineTo(sliderX, trackY);
+        ctx.stroke();
+
+        ctx.fillStyle = "#f6d6a4";
+        ctx.beginPath();
+        ctx.roundRect(sliderX - 6, trackY - 7, 12, 14, 5);
+        ctx.fill();
+
+        ctx.strokeStyle = "rgba(255, 223, 165, 0.1)";
+        ctx.beginPath();
+        ctx.moveTo(cx, y + moduleH);
+        ctx.lineTo(cx, yBus);
+        ctx.stroke();
+
+        ctx.fillStyle = "rgba(255, 239, 212, 0.6)";
+        ctx.font = "10px IBM Plex Mono";
+        ctx.textAlign = "center";
+        ctx.fillText(`${term.n}x`, cx, y + 52);
+      });
+    }
+
+    function drawYModules(board, yTerms, theta, accent) {
+      const gap = 6;
+      const count = yTerms.length;
+      const areaX = board.x + board.w + 12;
+      const moduleW = Math.min(88, canvas.clientWidth * 0.22);
+      const moduleH = (board.h - gap * (count - 1)) / count;
+      const xBus = board.x + board.w + 10;
+      const maxAmp = Math.max(...yTerms.map((term) => term.amp), 0.001);
+
+      ctx.strokeStyle = "rgba(255, 226, 181, 0.16)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(xBus, board.y);
+      ctx.lineTo(xBus, board.y + board.h);
+      ctx.stroke();
+
+      yTerms.forEach((term, index) => {
+        const x = areaX;
+        const y = board.y + index * (moduleH + gap);
+        const cx = x + 24;
+        const cy = y + moduleH * 0.5;
+        const radius = Math.min(moduleW, moduleH) * 0.23;
+        const crankRadius = radius * (0.35 + 0.55 * (term.amp / maxAmp));
+        const driveAngle = theta * term.n + term.phase;
+        const pinX = cx + Math.cos(driveAngle) * crankRadius;
+        const pinY = cy + Math.sin(driveAngle) * crankRadius;
+        const rel = term.amp > 0.0001 ? term.value / term.amp : 0;
+        const trackX = x + moduleW - 18;
+        const trackY = y + moduleH * 0.18;
+        const trackH = moduleH * 0.64;
+        const sliderY = trackY + trackH * (0.5 - rel * 0.42);
+
+        drawModuleBase(x, y, moduleW, moduleH);
+        drawGear(cx, cy, radius, driveAngle, accent);
+
+        ctx.strokeStyle = "rgba(255, 221, 160, 0.2)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(trackX, trackY);
+        ctx.lineTo(trackX, trackY + trackH);
+        ctx.stroke();
+
+        ctx.strokeStyle = accent;
+        ctx.beginPath();
+        ctx.moveTo(pinX, pinY);
+        ctx.lineTo(trackX, sliderY);
+        ctx.stroke();
+
+        ctx.fillStyle = "#f6d6a4";
+        ctx.beginPath();
+        ctx.roundRect(trackX - 7, sliderY - 6, 14, 12, 5);
+        ctx.fill();
+
+        ctx.strokeStyle = "rgba(255, 223, 165, 0.1)";
+        ctx.beginPath();
+        ctx.moveTo(xBus, cy);
+        ctx.lineTo(x, cy);
+        ctx.stroke();
+
+        ctx.save();
+        ctx.translate(x + moduleW - 30, cy);
+        ctx.rotate(Math.PI / 2);
+        ctx.fillStyle = "rgba(255, 239, 212, 0.6)";
+        ctx.font = "10px IBM Plex Mono";
+        ctx.textAlign = "center";
+        ctx.fillText(`${term.n}y`, 0, 0);
+        ctx.restore();
+      });
+    }
+
+    function drawBoard(board, accent) {
+      const paperGradient = ctx.createLinearGradient(board.x, board.y, board.x, board.y + board.h);
+      paperGradient.addColorStop(0, "rgba(243, 225, 184, 0.98)");
+      paperGradient.addColorStop(1, "rgba(224, 192, 140, 0.96)");
+      ctx.fillStyle = paperGradient;
+      ctx.strokeStyle = "rgba(97, 59, 26, 0.8)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(board.x, board.y, board.w, board.h, 22);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.save();
+      ctx.translate(board.x, board.y);
+      ctx.beginPath();
+      ctx.rect(0, 0, board.w, board.h);
+      ctx.clip();
+      ctx.strokeStyle = "rgba(37, 22, 15, 0.06)";
+      ctx.lineWidth = 1;
+
+      for (let gx = 16; gx < board.w; gx += 26) {
+        ctx.beginPath();
+        ctx.moveTo(gx, 0);
+        ctx.lineTo(gx, board.h);
+        ctx.stroke();
+      }
+
+      for (let gy = 16; gy < board.h; gy += 26) {
+        ctx.beginPath();
+        ctx.moveTo(0, gy);
+        ctx.lineTo(board.w, gy);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+
+      const pinPositions = [
+        [board.x + 18, board.y + 18],
+        [board.x + board.w - 18, board.y + 18],
+        [board.x + 18, board.y + board.h - 18],
+        [board.x + board.w - 18, board.y + board.h - 18]
+      ];
+
+      pinPositions.forEach(([px, py]) => {
+        const pinGradient = ctx.createRadialGradient(px - 2, py - 2, 0, px, py, 7);
+        pinGradient.addColorStop(0, "rgba(255, 240, 210, 0.92)");
+        pinGradient.addColorStop(1, "rgba(116, 80, 39, 0.94)");
+        ctx.fillStyle = pinGradient;
+        ctx.beginPath();
+        ctx.arc(px, py, 7, 0, TAU);
+        ctx.fill();
+      });
+
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([6, 8]);
+      ctx.strokeRect(board.x + 12, board.y + 12, board.w - 24, board.h - 24);
+      ctx.setLineDash([]);
+    }
+
+    function drawReferencePath(board, drawScale, points) {
+      ctx.strokeStyle = "rgba(61, 42, 28, 0.2)";
+      ctx.lineWidth = 1.4;
+      ctx.setLineDash([4, 6]);
+      ctx.beginPath();
+      points.forEach((point, index) => {
+        const mapped = mapPoint(point, board, drawScale);
+        if (index === 0) {
+          ctx.moveTo(mapped.x, mapped.y);
+        } else {
+          ctx.lineTo(mapped.x, mapped.y);
+        }
+      });
+      ctx.closePath();
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    function drawTrail(board, drawScale, accent) {
+      if (state.trail.length < 2) {
+        return;
+      }
+
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 2.2;
+      ctx.lineJoin = "round";
+      ctx.lineCap = "round";
+      ctx.shadowColor = accent;
+      ctx.shadowBlur = 12;
+      ctx.beginPath();
+      state.trail.forEach((point, index) => {
+        const mapped = mapPoint(point, board, drawScale);
+        if (index === 0) {
+          ctx.moveTo(mapped.x, mapped.y);
+        } else {
+          ctx.lineTo(mapped.x, mapped.y);
+        }
+      });
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
+
+    function drawGimbal(board, penX, penY, accent) {
+      const xGuideY = board.y - 10;
+      const yGuideX = board.x + board.w + 10;
+
+      ctx.strokeStyle = "rgba(37, 22, 15, 0.35)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(board.x, penY);
+      ctx.lineTo(board.x + board.w, penY);
+      ctx.moveTo(penX, board.y);
+      ctx.lineTo(penX, board.y + board.h);
+      ctx.stroke();
+
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(board.x, xGuideY);
+      ctx.lineTo(penX, xGuideY);
+      ctx.lineTo(penX, penY);
+      ctx.moveTo(yGuideX, board.y);
+      ctx.lineTo(yGuideX, penY);
+      ctx.lineTo(penX, penY);
+      ctx.stroke();
+
+      ctx.fillStyle = "#ead0a0";
+      ctx.beginPath();
+      ctx.roundRect(penX - 11, xGuideY - 8, 22, 16, 7);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.roundRect(yGuideX - 8, penY - 11, 16, 22, 7);
+      ctx.fill();
+
+      ctx.fillStyle = "#2a1810";
+      ctx.beginPath();
+      ctx.arc(penX, penY, 6.5, 0, TAU);
+      ctx.fill();
+
+      ctx.fillStyle = accent;
+      ctx.beginPath();
+      ctx.arc(penX, penY, 3.2, 0, TAU);
+      ctx.fill();
+    }
+
+    function drawCrank(board, theta, accent) {
+      const cx = board.x + board.w + 34;
+      const cy = board.y + board.h + 46;
+      const radius = 22;
+      const handleAngle = theta;
+      const pinX = cx + Math.cos(handleAngle) * radius;
+      const pinY = cy + Math.sin(handleAngle) * radius;
+      const shaftY = board.y - 42;
+      const shaftX = board.x + board.w + 34;
+
+      ctx.strokeStyle = "rgba(255, 223, 165, 0.16)";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(shaftX, shaftY);
+      ctx.lineTo(board.x + 14, shaftY);
+      ctx.stroke();
+
+      drawGear(cx, cy, 26, theta, accent);
+
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(pinX, pinY);
+      ctx.stroke();
+
+      ctx.fillStyle = "#f6d6a4";
+      ctx.beginPath();
+      ctx.arc(pinX, pinY, 6, 0, TAU);
+      ctx.fill();
+
+      const knobX = pinX + Math.cos(handleAngle) * 18;
+      const knobY = pinY + Math.sin(handleAngle) * 18;
+      ctx.beginPath();
+      ctx.arc(knobX, knobY, 8, 0, TAU);
+      ctx.fill();
+    }
+
+    function render() {
+      resizeCanvas();
+
+      const width = canvas.width / state.dpr;
+      const height = canvas.height / state.dpr;
+      ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+      ctx.clearRect(0, 0, width, height);
+
+      const preset = currentPreset();
+      const accent = preset.color;
+      const topBand = clamp(height * 0.17, 60, 88);
+      const bottomBand = clamp(height * 0.18, 70, 108);
+      const rightBand = clamp(width * 0.26, 88, 114);
+      const board = {
+        x: 16,
+        y: topBand,
+        w: width - rightBand - 24,
+        h: height - topBand - bottomBand - 16
+      };
+
+      const drawScale = Math.min(board.w, board.h) * 0.43;
+      const evaluated = evaluateSeries(preset.series, state.theta, state.terms);
+      const pen = mapPoint({ x: evaluated.x, y: evaluated.y }, board, drawScale);
+
+      drawBoard(board, accent);
+
+      if (state.ghost) {
+        drawReferencePath(board, drawScale, preset.points);
+      }
+
+      drawTrail(board, drawScale, accent);
+      drawXModules(board, evaluated.xTerms, state.theta, accent);
+      drawYModules(board, evaluated.yTerms, state.theta, accent);
+      drawGimbal(board, pen.x, pen.y, accent);
+      drawCrank(board, state.theta, accent);
+    }
+
+    function tick(timestamp) {
+      if (!state.lastTime) {
+        state.lastTime = timestamp;
+      }
+
+      const delta = Math.min(32, timestamp - state.lastTime);
+      state.lastTime = timestamp;
+
+      if (state.playing) {
+        const previousTheta = state.theta;
+        state.theta += (delta / 1000) * state.speed * 0.72;
+        if (state.theta >= TAU) {
+          state.theta %= TAU;
+          state.trail = [];
+        }
+
+        const evaluated = evaluateSeries(currentPreset().series, state.theta, state.terms);
+        addTrailPoint({ x: evaluated.x, y: evaluated.y });
+
+        if (state.trail.length === 0 && previousTheta === 0) {
+          state.trail.push({ x: evaluated.x, y: evaluated.y });
+        }
+
+        phaseRange.value = String(Math.round((state.theta / TAU) * 1000));
+      }
+
+      updateLabels();
+      render();
+      requestAnimationFrame(tick);
+    }
+
+    function syncPhaseFromSlider() {
+      state.theta = (Number(phaseRange.value) / 1000) * TAU;
+      clearTrail();
+      updateLabels();
+      render();
+    }
+
+    function setPreset(id) {
+      state.presetId = id;
+      clearTrail();
+      updateLabels();
+      render();
+    }
+
+    playBtn.addEventListener("click", () => {
+      state.playing = !state.playing;
+      updateLabels();
+    });
+
+    resetBtn.addEventListener("click", () => {
+      state.theta = 0;
+      phaseRange.value = "0";
+      clearTrail();
+      updateLabels();
+      render();
+    });
+
+    ghostBtn.addEventListener("click", () => {
+      state.ghost = !state.ghost;
+      updateLabels();
+      render();
+    });
+
+    speedRange.addEventListener("input", () => {
+      state.speed = Number(speedRange.value) / 100;
+      updateLabels();
+    });
+
+    termsRange.addEventListener("input", () => {
+      state.terms = Number(termsRange.value);
+      clearTrail();
+      updateLabels();
+      render();
+    });
+
+    phaseRange.addEventListener("input", () => {
+      state.playing = false;
+      syncPhaseFromSlider();
+    });
+
+    diskButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        setPreset(button.dataset.preset);
+      });
+    });
+
+    window.addEventListener("resize", () => {
+      resizeCanvas();
+      render();
+    });
+
+    clearTrail();
+    updateLabels();
+    render();
+    requestAnimationFrame(tick);
+  </script>
+</body>
+</html>
