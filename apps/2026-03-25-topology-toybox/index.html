@@ -1,0 +1,1334 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"
+  />
+  <title>Topology Toybox</title>
+  <link
+    rel="icon"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230a1322'/%3E%3Cpath d='M16 40c5-14 27-14 32 0' fill='none' stroke='%23f4c96b' stroke-width='5' stroke-linecap='round'/%3E%3Ccircle cx='22' cy='24' r='5' fill='%2348d2d2'/%3E%3Ccircle cx='42' cy='24' r='5' fill='%23ff7e6b'/%3E%3C/svg%3E"
+  />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Syne:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg-0: #071018;
+      --bg-1: #0d1724;
+      --bg-2: #162238;
+      --ink: #f5ebd4;
+      --muted: rgba(245, 235, 212, 0.72);
+      --faint: rgba(245, 235, 212, 0.42);
+      --line: rgba(255, 255, 255, 0.12);
+      --line-strong: rgba(255, 255, 255, 0.24);
+      --panel: rgba(10, 18, 29, 0.78);
+      --panel-2: rgba(16, 28, 43, 0.86);
+      --mint: #53e0d1;
+      --sand: #f4c96b;
+      --coral: #ff7e6b;
+      --sky: #89aaff;
+      --glow: 0 26px 64px rgba(0, 0, 0, 0.32);
+      font-family: "Syne", "Hiragino Sans", "Yu Gothic", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background:
+        radial-gradient(120vmax 80vmax at 10% 0%, rgba(83, 224, 209, 0.14), transparent 58%),
+        radial-gradient(90vmax 70vmax at 100% 12%, rgba(255, 126, 107, 0.18), transparent 55%),
+        radial-gradient(70vmax 60vmax at 50% 100%, rgba(137, 170, 255, 0.14), transparent 62%),
+        linear-gradient(180deg, #121a2a 0%, var(--bg-1) 32%, var(--bg-0) 100%);
+    }
+
+    body {
+      position: fixed;
+      inset: 0;
+      color: var(--ink);
+      touch-action: manipulation;
+      user-select: none;
+    }
+
+    button,
+    input {
+      font: inherit;
+      color: inherit;
+    }
+
+    .app {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 10px;
+      padding:
+        max(12px, env(safe-area-inset-top))
+        max(12px, env(safe-area-inset-right))
+        max(12px, env(safe-area-inset-bottom))
+        max(12px, env(safe-area-inset-left));
+      overflow: hidden;
+    }
+
+    .topbar,
+    .stage,
+    .dock {
+      position: relative;
+      overflow: hidden;
+      border-radius: 28px;
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 30%),
+        linear-gradient(145deg, rgba(17, 28, 44, 0.92), rgba(6, 11, 18, 0.92));
+      box-shadow: var(--glow);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    .topbar::before,
+    .stage::before,
+    .dock::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(120deg, rgba(255, 255, 255, 0.05), transparent 28%),
+        repeating-linear-gradient(
+          -28deg,
+          rgba(255, 255, 255, 0.045) 0 1px,
+          transparent 1px 16px,
+          rgba(83, 224, 209, 0.035) 16px 17px,
+          transparent 17px 32px
+        );
+      opacity: 0.5;
+      pointer-events: none;
+      mix-blend-mode: screen;
+    }
+
+    .topbar {
+      display: grid;
+      gap: 14px;
+      padding: 15px 16px 14px;
+      min-height: 112px;
+    }
+
+    .headline {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: end;
+    }
+
+    .eyebrow,
+    .date-chip,
+    .tab,
+    .hud-formula,
+    .stat,
+    .control-row label,
+    .action-btn,
+    .hint {
+      font-family: "IBM Plex Mono", monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .eyebrow {
+      margin: 0 0 6px;
+      font-size: 10px;
+      color: var(--faint);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(30px, 9vw, 44px);
+      line-height: 0.9;
+      letter-spacing: -0.03em;
+    }
+
+    .sub {
+      margin: 6px 0 0;
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--muted);
+      max-width: 28ch;
+    }
+
+    .date-chip {
+      padding: 9px 11px;
+      border-radius: 999px;
+      border: 1px solid rgba(244, 201, 107, 0.3);
+      background: rgba(244, 201, 107, 0.08);
+      font-size: 10px;
+      color: var(--sand);
+      align-self: start;
+      white-space: nowrap;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .tab {
+      position: relative;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.04);
+      padding: 12px 10px;
+      font-size: 10px;
+      color: var(--muted);
+      cursor: pointer;
+      transition:
+        transform 180ms ease,
+        border-color 180ms ease,
+        background 180ms ease,
+        color 180ms ease;
+    }
+
+    .tab.active {
+      color: #08131f;
+      border-color: transparent;
+      background:
+        linear-gradient(135deg, var(--mint), #87c6ff 62%, #ffd796 100%);
+      box-shadow: 0 10px 24px rgba(83, 224, 209, 0.24);
+    }
+
+    .tab:active {
+      transform: scale(0.98);
+    }
+
+    .stage {
+      min-height: 0;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .hud {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      align-content: space-between;
+      pointer-events: none;
+      padding: 14px;
+    }
+
+    .hud-top {
+      display: grid;
+      gap: 6px;
+      justify-items: start;
+    }
+
+    .hud-title {
+      font-size: 24px;
+      line-height: 0.95;
+      text-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+    }
+
+    .hud-copy {
+      font-size: 12px;
+      line-height: 1.4;
+      color: var(--muted);
+      max-width: 26ch;
+      text-shadow: 0 5px 20px rgba(0, 0, 0, 0.32);
+    }
+
+    .hud-formula {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(7, 14, 24, 0.52);
+      font-size: 10px;
+      color: rgba(245, 235, 212, 0.82);
+    }
+
+    .hud-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 12px;
+    }
+
+    .stats {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      max-width: calc(100% - 84px);
+    }
+
+    .stat {
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(7, 14, 24, 0.56);
+      font-size: 10px;
+      color: rgba(245, 235, 212, 0.78);
+    }
+
+    .hint {
+      padding: 8px 10px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(7, 14, 24, 0.48);
+      font-size: 10px;
+      color: rgba(245, 235, 212, 0.72);
+      text-align: center;
+      min-width: 74px;
+    }
+
+    .dock {
+      display: grid;
+      gap: 12px;
+      padding: 14px 14px 13px;
+    }
+
+    .controls {
+      display: grid;
+      gap: 11px;
+    }
+
+    .control-row {
+      display: grid;
+      grid-template-columns: 62px minmax(0, 1fr) 58px;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .control-row label {
+      font-size: 10px;
+      color: var(--faint);
+    }
+
+    .control-value {
+      justify-self: end;
+      font-size: 12px;
+      color: var(--ink);
+    }
+
+    input[type="range"] {
+      width: 100%;
+      margin: 0;
+      appearance: none;
+      background: transparent;
+    }
+
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 7px;
+      border-radius: 999px;
+      background:
+        linear-gradient(90deg, rgba(83, 224, 209, 0.45), rgba(244, 201, 107, 0.45), rgba(255, 126, 107, 0.4));
+    }
+
+    input[type="range"]::-moz-range-track {
+      height: 7px;
+      border-radius: 999px;
+      background:
+        linear-gradient(90deg, rgba(83, 224, 209, 0.45), rgba(244, 201, 107, 0.45), rgba(255, 126, 107, 0.4));
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 2px solid rgba(8, 19, 31, 0.9);
+      background: #f7f0de;
+      box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.08);
+      margin-top: -6px;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 2px solid rgba(8, 19, 31, 0.9);
+      background: #f7f0de;
+      box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.08);
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .action-btn {
+      border: 1px solid var(--line-strong);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.06);
+      min-height: 48px;
+      font-size: 11px;
+      cursor: pointer;
+      transition:
+        transform 180ms ease,
+        border-color 180ms ease,
+        background 180ms ease;
+    }
+
+    .action-btn.primary {
+      background:
+        linear-gradient(135deg, rgba(83, 224, 209, 0.95), rgba(137, 170, 255, 0.88));
+      color: #06111d;
+      border-color: transparent;
+    }
+
+    .action-btn.secondary {
+      background:
+        linear-gradient(135deg, rgba(255, 126, 107, 0.15), rgba(244, 201, 107, 0.12));
+    }
+
+    .action-btn:active {
+      transform: scale(0.98);
+    }
+
+    .mode-mini {
+      justify-self: end;
+      padding: 9px 11px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.04);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    @media (max-height: 760px) {
+      .app {
+        gap: 8px;
+        padding:
+          max(10px, env(safe-area-inset-top))
+          max(10px, env(safe-area-inset-right))
+          max(10px, env(safe-area-inset-bottom))
+          max(10px, env(safe-area-inset-left));
+      }
+
+      .topbar {
+        gap: 12px;
+        padding: 13px 14px 12px;
+        min-height: 102px;
+      }
+
+      .hud {
+        padding: 12px;
+      }
+
+      .hud-title {
+        font-size: 21px;
+      }
+
+      .dock {
+        gap: 10px;
+        padding: 12px;
+      }
+
+      .actions {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) 72px;
+      }
+
+      .action-btn {
+        min-height: 44px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="headline">
+        <div>
+          <p class="eyebrow">Geometry / Topology</p>
+          <h1>Topology Toybox</h1>
+          <p class="sub">Sphere eversion, the Poincare disk, and Hopf fibers in one touchable scene.</p>
+        </div>
+        <div class="date-chip">2026-03-25</div>
+      </div>
+
+      <div class="tabs" role="tablist" aria-label="Visualization mode">
+        <button class="tab active" data-mode="eversion" role="tab" aria-selected="true" type="button">Evert</button>
+        <button class="tab" data-mode="disk" role="tab" aria-selected="false" type="button">Disk</button>
+        <button class="tab" data-mode="hopf" role="tab" aria-selected="false" type="button">Hopf</button>
+      </div>
+    </header>
+
+    <section class="stage">
+      <canvas id="stage" aria-label="Topology visualization"></canvas>
+      <div class="hud">
+        <div class="hud-top">
+          <div class="hud-title" id="hudTitle"></div>
+          <div class="hud-copy" id="hudCopy"></div>
+          <div class="hud-formula" id="hudFormula"></div>
+        </div>
+        <div class="hud-bottom">
+          <div class="stats" id="stats"></div>
+          <div class="hint" id="hint">drag</div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="dock">
+      <div class="controls">
+        <div class="control-row">
+          <label for="control0" id="label0"></label>
+          <input id="control0" type="range" />
+          <div class="control-value" id="value0"></div>
+        </div>
+        <div class="control-row">
+          <label for="control1" id="label1"></label>
+          <input id="control1" type="range" />
+          <div class="control-value" id="value1"></div>
+        </div>
+        <div class="control-row">
+          <label for="control2" id="label2"></label>
+          <input id="control2" type="range" />
+          <div class="control-value" id="value2"></div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="action-btn primary" id="playBtn" type="button">Pause</button>
+        <button class="action-btn secondary" id="resetBtn" type="button">Reset</button>
+        <div class="mode-mini" id="modeMini">Immersion</div>
+      </div>
+    </footer>
+  </main>
+
+  <script>
+    const TAU = Math.PI * 2;
+    const GOLDEN = Math.PI * (3 - Math.sqrt(5));
+
+    const canvas = document.getElementById("stage");
+    const ctx = canvas.getContext("2d");
+    const playBtn = document.getElementById("playBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const hudTitle = document.getElementById("hudTitle");
+    const hudCopy = document.getElementById("hudCopy");
+    const hudFormula = document.getElementById("hudFormula");
+    const statsWrap = document.getElementById("stats");
+    const modeMini = document.getElementById("modeMini");
+    const hintEl = document.getElementById("hint");
+    const sliders = [0, 1, 2].map((index) => ({
+      input: document.getElementById(`control${index}`),
+      label: document.getElementById(`label${index}`),
+      value: document.getElementById(`value${index}`)
+    }));
+    const tabs = [...document.querySelectorAll(".tab")];
+
+    const MODE_CONFIG = {
+      eversion: {
+        title: "Sphere Eversion",
+        copy: "A sphere passes through itself, not through a crease, until inside and outside trade places.",
+        formula: "S2 -> Morin-like halfway -> -S2",
+        mini: "Immersion",
+        hint: "drag orbit",
+        controls: [
+          {
+            key: "stage",
+            label: "Turn",
+            min: 0,
+            max: 1,
+            step: 0.001,
+            format: (value) => `${Math.round(value * 100)}%`
+          },
+          {
+            key: "bands",
+            label: "Bands",
+            min: 6,
+            max: 16,
+            step: 1,
+            format: (value) => `${Math.round(value)}`
+          },
+          {
+            key: "spin",
+            label: "Spin",
+            min: 0,
+            max: 1.2,
+            step: 0.01,
+            format: (value) => value.toFixed(2)
+          }
+        ],
+        defaults: { stage: 0.1, bands: 10, spin: 0.58 }
+      },
+      disk: {
+        title: "Poincare Disk",
+        copy: "The whole hyperbolic plane hides inside the circle, and its isometries move as Mobius maps.",
+        formula: "T(z) = e^(i theta) (z + a) / (1 + a* z)",
+        mini: "Mobius",
+        hint: "drag map",
+        controls: [
+          {
+            key: "shift",
+            label: "Shift",
+            min: 0,
+            max: 0.72,
+            step: 0.001,
+            format: (value) => value.toFixed(2)
+          },
+          {
+            key: "orbit",
+            label: "Orbit",
+            min: 0,
+            max: 360,
+            step: 1,
+            format: (value) => `${Math.round(value)}d`
+          },
+          {
+            key: "grid",
+            label: "Grid",
+            min: 4,
+            max: 12,
+            step: 1,
+            format: (value) => `${Math.round(value)}`
+          }
+        ],
+        defaults: { shift: 0.38, orbit: 22, grid: 7 }
+      },
+      hopf: {
+        title: "Hopf Fibration",
+        copy: "Fibers from S3 project into linked circles that stack into tori across ordinary 3D space.",
+        formula: "S1 -> S3 -> S2",
+        mini: "Linked",
+        hint: "drag orbit",
+        controls: [
+          {
+            key: "twist",
+            label: "Twist",
+            min: 0,
+            max: 1,
+            step: 0.001,
+            format: (value) => `${Math.round(value * 100)}%`
+          },
+          {
+            key: "fibers",
+            label: "Fibers",
+            min: 10,
+            max: 36,
+            step: 1,
+            format: (value) => `${Math.round(value)}`
+          },
+          {
+            key: "tilt",
+            label: "Tilt",
+            min: 0.18,
+            max: 1,
+            step: 0.001,
+            format: (value) => value.toFixed(2)
+          }
+        ],
+        defaults: { twist: 0.26, fibers: 28, tilt: 0.58 }
+      }
+    };
+
+    const state = {
+      mode: "eversion",
+      auto: true,
+      clock: 0,
+      lastTime: 0,
+      delta: 16,
+      size: { width: 0, height: 0, dpr: 1 },
+      params: {
+        eversion: { ...MODE_CONFIG.eversion.defaults },
+        disk: { ...MODE_CONFIG.disk.defaults },
+        hopf: { ...MODE_CONFIG.hopf.defaults }
+      },
+      drag: {
+        active: false,
+        lastX: 0,
+        lastY: 0
+      },
+      camera: {
+        eversion: { yaw: 0.9, pitch: -0.36 },
+        hopf: { yaw: 0.76, pitch: -0.34 }
+      }
+    };
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function mix(a, b, t) {
+      return a + (b - a) * t;
+    }
+
+    function smoothstep(t) {
+      const x = clamp(t, 0, 1);
+      return x * x * (3 - 2 * x);
+    }
+
+    function vec(x, y, z) {
+      return { x, y, z };
+    }
+
+    function add3(a, b) {
+      return vec(a.x + b.x, a.y + b.y, a.z + b.z);
+    }
+
+    function scale3(a, s) {
+      return vec(a.x * s, a.y * s, a.z * s);
+    }
+
+    function mix3(a, b, t) {
+      return vec(mix(a.x, b.x, t), mix(a.y, b.y, t), mix(a.z, b.z, t));
+    }
+
+    function rotateX(point, angle) {
+      const c = Math.cos(angle);
+      const s = Math.sin(angle);
+      return vec(point.x, point.y * c - point.z * s, point.y * s + point.z * c);
+    }
+
+    function rotateY(point, angle) {
+      const c = Math.cos(angle);
+      const s = Math.sin(angle);
+      return vec(point.x * c + point.z * s, point.y, -point.x * s + point.z * c);
+    }
+
+    function rotateZ(point, angle) {
+      const c = Math.cos(angle);
+      const s = Math.sin(angle);
+      return vec(point.x * c - point.y * s, point.x * s + point.y * c, point.z);
+    }
+
+    function projectPoint(point, camera, rect, zoom) {
+      const rotated = rotateY(rotateX(point, camera.pitch), camera.yaw);
+      const depth = zoom / (zoom - rotated.z);
+      return {
+        x: rect.cx + rotated.x * rect.scale * depth,
+        y: rect.cy + rotated.y * rect.scale * depth,
+        z: rotated.z,
+        depth
+      };
+    }
+
+    function strokePolyline(points, strokeStyle, lineWidth, alpha = 1) {
+      if (points.length < 2) {
+        return;
+      }
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = strokeStyle;
+      ctx.lineWidth = lineWidth;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.beginPath();
+      ctx.moveTo(points[0].x, points[0].y);
+      for (let index = 1; index < points.length; index += 1) {
+        ctx.lineTo(points[index].x, points[index].y);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const width = Math.round(rect.width * dpr);
+      const height = Math.round(rect.height * dpr);
+
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
+      }
+
+      state.size.width = rect.width;
+      state.size.height = rect.height;
+      state.size.dpr = dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function setMode(mode) {
+      state.mode = mode;
+      tabs.forEach((tab) => {
+        const active = tab.dataset.mode === mode;
+        tab.classList.toggle("active", active);
+        tab.setAttribute("aria-selected", active ? "true" : "false");
+      });
+      updateControls();
+      updateHud();
+    }
+
+    function updateControls() {
+      const config = MODE_CONFIG[state.mode];
+      const params = state.params[state.mode];
+
+      config.controls.forEach((control, index) => {
+        const slider = sliders[index];
+        slider.label.textContent = control.label;
+        slider.input.min = String(control.min);
+        slider.input.max = String(control.max);
+        slider.input.step = String(control.step);
+        slider.input.value = String(params[control.key]);
+        slider.value.textContent = control.format(params[control.key]);
+      });
+    }
+
+    function updateHud(stats = []) {
+      const config = MODE_CONFIG[state.mode];
+      hudTitle.textContent = config.title;
+      hudCopy.textContent = config.copy;
+      hudFormula.textContent = config.formula;
+      modeMini.textContent = config.mini;
+      hintEl.textContent = config.hint;
+      statsWrap.innerHTML = "";
+      stats.forEach((text) => {
+        const pill = document.createElement("div");
+        pill.className = "stat";
+        pill.textContent = text;
+        statsWrap.appendChild(pill);
+      });
+    }
+
+    function resetMode() {
+      state.params[state.mode] = { ...MODE_CONFIG[state.mode].defaults };
+      state.auto = true;
+      updateControls();
+      playBtn.textContent = "Pause";
+    }
+
+    function setAuto(auto) {
+      state.auto = auto;
+      playBtn.textContent = auto ? "Pause" : "Play";
+    }
+
+    function attachUi() {
+      tabs.forEach((tab) => {
+        tab.addEventListener("click", () => {
+          setMode(tab.dataset.mode);
+        });
+      });
+
+      sliders.forEach((slider, index) => {
+        slider.input.addEventListener("input", (event) => {
+          const config = MODE_CONFIG[state.mode].controls[index];
+          const nextValue = Number(event.target.value);
+          state.params[state.mode][config.key] = nextValue;
+          slider.value.textContent = config.format(nextValue);
+          setAuto(false);
+        });
+      });
+
+      playBtn.addEventListener("click", () => {
+        setAuto(!state.auto);
+      });
+
+      resetBtn.addEventListener("click", () => {
+        resetMode();
+      });
+
+      function syncSlider(index, value) {
+        const control = MODE_CONFIG[state.mode].controls[index];
+        sliders[index].input.value = String(value);
+        sliders[index].value.textContent = control.format(value);
+      }
+
+      function handleDiskDrag(event) {
+        const box = canvas.getBoundingClientRect();
+        const x = event.clientX - box.left;
+        const y = event.clientY - box.top;
+        const centerX = box.width * 0.5;
+        const centerY = box.height * 0.53;
+        const radius = Math.min(box.width, box.height) * 0.37;
+        const dx = x - centerX;
+        const dy = y - centerY;
+        const orbit = ((Math.atan2(dy, dx) * 180) / Math.PI + 360) % 360;
+        const shift = clamp((Math.hypot(dx, dy) / radius) * 0.72, 0, 0.72);
+        state.params.disk.shift = shift;
+        state.params.disk.orbit = orbit;
+        syncSlider(0, shift);
+        syncSlider(1, orbit);
+        setAuto(false);
+      }
+
+      const pointerStart = (event) => {
+        if (state.mode === "disk") {
+          state.drag.active = true;
+          handleDiskDrag(event);
+          return;
+        }
+        state.drag.active = true;
+        state.drag.lastX = event.clientX;
+        state.drag.lastY = event.clientY;
+      };
+
+      const pointerMove = (event) => {
+        if (!state.drag.active) {
+          return;
+        }
+        if (state.mode === "disk") {
+          handleDiskDrag(event);
+          return;
+        }
+        const dx = event.clientX - state.drag.lastX;
+        const dy = event.clientY - state.drag.lastY;
+        const camera = state.camera[state.mode];
+        camera.yaw += dx * 0.008;
+        camera.pitch = clamp(camera.pitch + dy * 0.006, -1.2, 1.2);
+        state.drag.lastX = event.clientX;
+        state.drag.lastY = event.clientY;
+      };
+
+      const pointerEnd = () => {
+        state.drag.active = false;
+      };
+
+      canvas.addEventListener("pointerdown", pointerStart);
+      window.addEventListener("pointermove", pointerMove);
+      window.addEventListener("pointerup", pointerEnd);
+      window.addEventListener("pointercancel", pointerEnd);
+      window.addEventListener("resize", resizeCanvas);
+    }
+
+    function drawBackground(mode, rect) {
+      ctx.clearRect(0, 0, rect.width, rect.height);
+
+      const gradient = ctx.createLinearGradient(0, 0, rect.width, rect.height);
+      if (mode === "eversion") {
+        gradient.addColorStop(0, "#0e1b28");
+        gradient.addColorStop(0.55, "#131a2d");
+        gradient.addColorStop(1, "#22152a");
+      } else if (mode === "disk") {
+        gradient.addColorStop(0, "#09121b");
+        gradient.addColorStop(0.55, "#0b1726");
+        gradient.addColorStop(1, "#171c31");
+      } else {
+        gradient.addColorStop(0, "#071118");
+        gradient.addColorStop(0.5, "#101a2a");
+        gradient.addColorStop(1, "#1a1322");
+      }
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, rect.width, rect.height);
+
+      ctx.save();
+      ctx.globalAlpha = 0.26;
+      const glow = ctx.createRadialGradient(rect.width * 0.2, rect.height * 0.16, 0, rect.width * 0.2, rect.height * 0.16, rect.width * 0.56);
+      glow.addColorStop(0, "rgba(83, 224, 209, 0.5)");
+      glow.addColorStop(1, "rgba(83, 224, 209, 0)");
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, rect.width, rect.height);
+
+      const glow2 = ctx.createRadialGradient(rect.width * 0.84, rect.height * 0.82, 0, rect.width * 0.84, rect.height * 0.82, rect.width * 0.58);
+      glow2.addColorStop(0, mode === "disk" ? "rgba(137, 170, 255, 0.44)" : "rgba(255, 126, 107, 0.44)");
+      glow2.addColorStop(1, "rgba(255, 126, 107, 0)");
+      ctx.fillStyle = glow2;
+      ctx.fillRect(0, 0, rect.width, rect.height);
+      ctx.restore();
+    }
+
+    function eversionPoint(u, v, stage) {
+      const su = Math.sin(u);
+      const cu = Math.cos(u);
+      const sv = Math.sin(v);
+      const cv = Math.cos(v);
+      const base = vec(su * cv, cu, su * sv);
+      const tangentV = vec(-sv, 0, cv);
+      const tangentU = vec(cu * cv, -su, cu * sv);
+      const wave = Math.sin(2 * v);
+      const fourFold = Math.cos(2 * v);
+
+      const halfway = add3(
+        add3(
+          scale3(base, 0.32 + 0.08 * fourFold * su),
+          scale3(tangentV, 0.98 * cu)
+        ),
+        add3(
+          scale3(tangentU, 0.62 * wave),
+          vec(0.36 * su * su * fourFold, 0.24 * su * Math.sin(4 * v), 0.36 * su * su * Math.sin(2 * v))
+        )
+      );
+
+      if (stage <= 0.5) {
+        return mix3(base, halfway, smoothstep(stage * 2));
+      }
+
+      const t = smoothstep((stage - 0.5) * 2);
+      const rotatedHalfway = rotateY(rotateZ(halfway, t * Math.PI * 0.52), t * Math.PI * 0.5);
+      return mix3(rotatedHalfway, scale3(base, -1), t);
+    }
+
+    function renderEversion(rect) {
+      const params = state.params.eversion;
+      const speed = 0.00022 + params.spin * 0.00042;
+      if (state.auto) {
+        state.params.eversion.stage = 0.5 + 0.5 * Math.sin(state.clock * speed);
+        sliders[0].input.value = String(state.params.eversion.stage);
+        sliders[0].value.textContent = MODE_CONFIG.eversion.controls[0].format(state.params.eversion.stage);
+        state.camera.eversion.yaw += state.delta * (0.00012 + params.spin * 0.000096);
+      }
+
+      const stage = state.params.eversion.stage;
+      const bands = Math.round(params.bands);
+      const camera = state.camera.eversion;
+      const view = {
+        cx: rect.width * 0.5,
+        cy: rect.height * 0.55,
+        scale: Math.min(rect.width, rect.height) * 0.26
+      };
+
+      const depthCurves = [];
+      const samples = 90;
+
+      for (let i = 0; i <= bands; i += 1) {
+        const u = 0.12 + (Math.PI - 0.24) * (i / bands);
+        const projected = [];
+        let zTotal = 0;
+
+        for (let j = 0; j <= samples; j += 1) {
+          const v = TAU * (j / samples);
+          const point = scale3(eversionPoint(u, v, stage), 1.15);
+          const p = projectPoint(point, camera, view, 4.8);
+          projected.push(p);
+          zTotal += p.z;
+        }
+
+        depthCurves.push({
+          z: zTotal / projected.length,
+          color: i % 2 === 0 ? "rgba(83, 224, 209, 0.94)" : "rgba(244, 201, 107, 0.9)",
+          width: i % 2 === 0 ? 1.55 : 1.1,
+          alpha: i % 2 === 0 ? 0.85 : 0.58,
+          points: projected
+        });
+      }
+
+      for (let i = 0; i < bands * 2; i += 1) {
+        const v = TAU * (i / (bands * 2));
+        const projected = [];
+        let zTotal = 0;
+        for (let j = 0; j <= samples; j += 1) {
+          const u = 0.04 + (Math.PI - 0.08) * (j / samples);
+          const point = scale3(eversionPoint(u, v, stage), 1.15);
+          const p = projectPoint(point, camera, view, 4.8);
+          projected.push(p);
+          zTotal += p.z;
+        }
+        depthCurves.push({
+          z: zTotal / projected.length,
+          color: "rgba(255, 126, 107, 0.82)",
+          width: 0.95,
+          alpha: 0.52,
+          points: projected
+        });
+      }
+
+      depthCurves.sort((a, b) => a.z - b.z);
+
+      ctx.save();
+      ctx.globalCompositeOperation = "screen";
+      depthCurves.forEach((curve) => {
+        strokePolyline(curve.points, curve.color, curve.width, curve.alpha);
+      });
+      ctx.restore();
+
+      updateHud([
+        `turn ${Math.round(stage * 100)}%`,
+        `bands ${bands}`,
+        "self x"
+      ]);
+    }
+
+    function complex(x, y) {
+      return { x, y };
+    }
+
+    function complexMul(a, b) {
+      return complex(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);
+    }
+
+    function complexDiv(a, b) {
+      const d = b.x * b.x + b.y * b.y;
+      return complex((a.x * b.x + a.y * b.y) / d, (a.y * b.x - a.x * b.y) / d);
+    }
+
+    function mobius(z, a, angle) {
+      const numerator = complex(z.x + a.x, z.y + a.y);
+      const denominator = complex(1 + a.x * z.x + a.y * z.y, a.x * z.y - a.y * z.x);
+      const rotated = complexDiv(numerator, denominator);
+      const rot = complex(Math.cos(angle), Math.sin(angle));
+      return complexMul(rotated, rot);
+    }
+
+    function diskPoint(radius, angle) {
+      return complex(radius * Math.cos(angle), radius * Math.sin(angle));
+    }
+
+    function renderDisk(rect) {
+      const params = state.params.disk;
+      if (state.auto) {
+        state.params.disk.orbit = (state.params.disk.orbit + state.delta * 0.027) % 360;
+        sliders[1].input.value = String(state.params.disk.orbit);
+        sliders[1].value.textContent = MODE_CONFIG.disk.controls[1].format(state.params.disk.orbit);
+      }
+
+      const shift = params.shift;
+      const orbit = (params.orbit * Math.PI) / 180;
+      const grid = Math.round(params.grid);
+      const center = {
+        x: rect.width * 0.5,
+        y: rect.height * 0.53
+      };
+      const radius = Math.min(rect.width, rect.height) * 0.37;
+
+      ctx.save();
+      ctx.translate(center.x, center.y);
+      const fill = ctx.createRadialGradient(-radius * 0.12, -radius * 0.18, radius * 0.08, 0, 0, radius * 1.05);
+      fill.addColorStop(0, "rgba(83, 224, 209, 0.22)");
+      fill.addColorStop(0.58, "rgba(16, 32, 52, 0.76)");
+      fill.addColorStop(1, "rgba(8, 15, 25, 0.98)");
+      ctx.fillStyle = fill;
+      ctx.beginPath();
+      ctx.arc(0, 0, radius, 0, TAU);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(244, 201, 107, 0.9)";
+      ctx.lineWidth = 2.3;
+      ctx.stroke();
+      ctx.restore();
+
+      const a = diskPoint(shift, orbit);
+      const rotation = orbit * 0.56;
+      const latticeDots = [];
+      const rhoMax = 3.2;
+
+      ctx.save();
+      ctx.translate(center.x, center.y);
+      ctx.beginPath();
+      ctx.arc(0, 0, radius - 1.2, 0, TAU);
+      ctx.clip();
+
+      for (let ring = 1; ring <= grid; ring += 1) {
+        const rho = (rhoMax * ring) / (grid + 0.4);
+        const baseRadius = Math.tanh(rho / 2);
+        const projected = [];
+        for (let sample = 0; sample <= 180; sample += 1) {
+          const theta = (sample / 180) * TAU;
+          const p = mobius(diskPoint(baseRadius, theta), a, rotation);
+          projected.push({ x: p.x * radius, y: p.y * radius });
+        }
+        strokePolyline(projected, "rgba(137, 170, 255, 0.85)", 1.1, 0.56);
+      }
+
+      for (let line = 0; line < grid * 2; line += 1) {
+        const angle = (line / (grid * 2)) * Math.PI;
+        const projected = [];
+        for (let sample = 0; sample <= 180; sample += 1) {
+          const s = mix(-rhoMax, rhoMax, sample / 180);
+          const r = Math.tanh(Math.abs(s) / 2);
+          const p = diskPoint(r, s >= 0 ? angle : angle + Math.PI);
+          const transformed = mobius(p, a, rotation);
+          projected.push({ x: transformed.x * radius, y: transformed.y * radius });
+        }
+        strokePolyline(projected, "rgba(83, 224, 209, 0.8)", 1.05, 0.56);
+      }
+
+      for (let ring = 1; ring <= grid; ring += 1) {
+        const rho = (rhoMax * ring) / (grid + 0.4);
+        const r = Math.tanh(rho / 2);
+        const count = grid * 6 + ring * 3;
+        for (let i = 0; i < count; i += 1) {
+          const angle = (i / count) * TAU;
+          const p = mobius(diskPoint(r, angle), a, rotation);
+          latticeDots.push({
+            x: p.x * radius,
+            y: p.y * radius,
+            size: 1.5 + (1 - r) * 2.2
+          });
+        }
+      }
+
+      latticeDots.forEach((dot, index) => {
+        ctx.fillStyle = index % 3 === 0 ? "rgba(244, 201, 107, 0.86)" : "rgba(255, 126, 107, 0.68)";
+        ctx.beginPath();
+        ctx.arc(dot.x, dot.y, dot.size, 0, TAU);
+        ctx.fill();
+      });
+
+      const walkerS = Math.sin(state.clock * 0.0012) * rhoMax * 0.88;
+      const walker = diskPoint(Math.tanh(Math.abs(walkerS) / 2), walkerS >= 0 ? orbit : orbit + Math.PI);
+      const walkerPos = mobius(walker, a, rotation);
+      ctx.fillStyle = "#f7f0de";
+      ctx.shadowColor = "rgba(255, 255, 255, 0.6)";
+      ctx.shadowBlur = 18;
+      ctx.beginPath();
+      ctx.arc(walkerPos.x * radius, walkerPos.y * radius, 5.2, 0, TAU);
+      ctx.fill();
+      ctx.restore();
+
+      updateHud([
+        `|a| ${shift.toFixed(2)}`,
+        `orbit ${Math.round(params.orbit)}d`,
+        `grid ${grid}`
+      ]);
+    }
+
+    function stereographicFiber(theta, phi, psi) {
+      const halfTheta = theta / 2;
+      const a1 = (psi + phi) / 2;
+      const a2 = (psi - phi) / 2;
+      const x1 = Math.cos(halfTheta) * Math.cos(a1);
+      const x2 = Math.cos(halfTheta) * Math.sin(a1);
+      const x3 = Math.sin(halfTheta) * Math.cos(a2);
+      const x4 = Math.sin(halfTheta) * Math.sin(a2);
+      const denom = 1 - x4;
+      if (denom < 0.08) {
+        return null;
+      }
+      return vec(x1 / denom, x2 / denom, x3 / denom);
+    }
+
+    function buildHopfSeeds(count, twist) {
+      const bands = Math.max(5, Math.round(Math.sqrt(count * 1.45)));
+      const seeds = [];
+      for (let band = 0; band < bands; band += 1) {
+        const t = bands === 1 ? 0.5 : band / (bands - 1);
+        const z = mix(0.72, -0.72, t);
+        const theta = Math.acos(z);
+        const bandWeight = Math.sqrt(Math.max(0, 1 - z * z));
+        const around = Math.max(3, Math.round((count / bands) * (0.7 + 1.15 * bandWeight)));
+        for (let i = 0; i < around; i += 1) {
+          const phi = ((i / around) * TAU + band * GOLDEN * 0.25 + twist * TAU * 0.35) % TAU;
+          seeds.push({ theta, phi, z });
+        }
+      }
+      return seeds.slice(0, count);
+    }
+
+    function hueFromSeed(seed) {
+      const hue = ((seed.phi / TAU) * 360 + 360) % 360;
+      return `hsla(${hue.toFixed(1)}, 86%, ${mix(62, 72, (seed.z + 1) / 2).toFixed(1)}%, 0.82)`;
+    }
+
+    function renderHopf(rect) {
+      const params = state.params.hopf;
+      if (state.auto) {
+        state.params.hopf.twist = (state.params.hopf.twist + state.delta * 0.000096) % 1;
+        sliders[0].input.value = String(state.params.hopf.twist);
+        sliders[0].value.textContent = MODE_CONFIG.hopf.controls[0].format(state.params.hopf.twist);
+        state.camera.hopf.yaw += state.delta * 0.00015;
+      }
+
+      const camera = state.camera.hopf;
+      camera.pitch = mix(-0.62, 0.18, params.tilt);
+
+      const count = Math.round(params.fibers);
+      const seeds = buildHopfSeeds(count, params.twist);
+      const rect3d = {
+        cx: rect.width * 0.52,
+        cy: rect.height * 0.54,
+        scale: Math.min(rect.width, rect.height) * 0.205
+      };
+
+      const curves = [];
+      const samples = 180;
+      seeds.forEach((seed) => {
+        const points = [];
+        const parts = [];
+        let zTotal = 0;
+        let zCount = 0;
+
+        for (let sample = 0; sample <= samples; sample += 1) {
+          const psi = (sample / samples) * TAU;
+          let point = stereographicFiber(seed.theta, seed.phi, psi);
+          if (!point) {
+            if (points.length > 1) {
+              parts.push(points.splice(0, points.length));
+            } else {
+              points.length = 0;
+            }
+            continue;
+          }
+          point = scale3(point, 0.92);
+          point = rotateZ(point, params.twist * Math.PI * 0.42);
+          const projected = projectPoint(point, camera, rect3d, 5.2);
+          points.push(projected);
+          zTotal += projected.z;
+          zCount += 1;
+        }
+
+        if (points.length > 1) {
+          parts.push(points);
+        }
+
+        curves.push({
+          z: zCount ? zTotal / zCount : 0,
+          color: hueFromSeed(seed),
+          parts
+        });
+      });
+
+      curves.sort((a, b) => a.z - b.z);
+
+      ctx.save();
+      ctx.globalCompositeOperation = "screen";
+      curves.forEach((curve) => {
+        curve.parts.forEach((part) => {
+          strokePolyline(part, curve.color, 1.16, 0.74);
+        });
+      });
+      ctx.restore();
+
+      updateHud([
+        `fibers ${count}`,
+        `twist ${Math.round(params.twist * 100)}%`,
+        "all linked"
+      ]);
+    }
+
+    function renderFrame(time) {
+      if (!state.lastTime) {
+        state.lastTime = time;
+      }
+      const dt = time - state.lastTime;
+      state.lastTime = time;
+      state.delta = Math.min(Math.max(dt, 0), 48);
+      if (state.auto) {
+        state.clock += dt;
+      }
+
+      resizeCanvas();
+      const rect = {
+        width: state.size.width,
+        height: state.size.height
+      };
+
+      drawBackground(state.mode, rect);
+
+      if (state.mode === "eversion") {
+        renderEversion(rect);
+      } else if (state.mode === "disk") {
+        renderDisk(rect);
+      } else {
+        renderHopf(rect);
+      }
+
+      requestAnimationFrame(renderFrame);
+    }
+
+    attachUi();
+    setMode(state.mode);
+    resizeCanvas();
+    requestAnimationFrame(renderFrame);
+  </script>
+</body>
+</html>
