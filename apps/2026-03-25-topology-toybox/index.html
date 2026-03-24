@@ -6,10 +6,10 @@
     name="viewport"
     content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"
   />
-  <title>Topology Toybox</title>
+  <title>Math Motion Lab</title>
   <link
     rel="icon"
-    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230a1322'/%3E%3Cpath d='M16 40c5-14 27-14 32 0' fill='none' stroke='%23f4c96b' stroke-width='5' stroke-linecap='round'/%3E%3Ccircle cx='22' cy='24' r='5' fill='%2348d2d2'/%3E%3Ccircle cx='42' cy='24' r='5' fill='%23ff7e6b'/%3E%3C/svg%3E"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2309121b'/%3E%3Ccircle cx='20' cy='21' r='6' fill='none' stroke='%2353e0d1' stroke-width='4'/%3E%3Ccircle cx='42' cy='22' r='6' fill='none' stroke='%23ff7e6b' stroke-width='4'/%3E%3Cpath d='M12 44c8-14 31-14 40 0' fill='none' stroke='%23f4c96b' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E"
   />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -28,8 +28,6 @@
       --faint: rgba(245, 235, 212, 0.42);
       --line: rgba(255, 255, 255, 0.12);
       --line-strong: rgba(255, 255, 255, 0.24);
-      --panel: rgba(10, 18, 29, 0.78);
-      --panel-2: rgba(16, 28, 43, 0.86);
       --mint: #53e0d1;
       --sand: #f4c96b;
       --coral: #ff7e6b;
@@ -121,15 +119,15 @@
 
     .topbar {
       display: grid;
-      gap: 14px;
-      padding: 15px 16px 14px;
-      min-height: 112px;
+      gap: 12px;
+      padding: 14px 15px 13px;
+      min-height: 154px;
     }
 
     .headline {
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
-      gap: 12px;
+      gap: 10px;
       align-items: end;
     }
 
@@ -140,7 +138,8 @@
     .stat,
     .control-row label,
     .action-btn,
-    .hint {
+    .hint,
+    .mode-mini {
       font-family: "IBM Plex Mono", monospace;
       text-transform: uppercase;
       letter-spacing: 0.12em;
@@ -154,7 +153,7 @@
 
     h1 {
       margin: 0;
-      font-size: clamp(30px, 9vw, 44px);
+      font-size: clamp(28px, 9vw, 42px);
       line-height: 0.9;
       letter-spacing: -0.03em;
     }
@@ -162,7 +161,7 @@
     .sub {
       margin: 6px 0 0;
       font-size: 12px;
-      line-height: 1.45;
+      line-height: 1.42;
       color: var(--muted);
       max-width: 28ch;
     }
@@ -180,17 +179,16 @@
 
     .tabs {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 8px;
     }
 
     .tab {
-      position: relative;
       border: 1px solid var(--line);
       border-radius: 16px;
       background: rgba(255, 255, 255, 0.04);
-      padding: 12px 10px;
-      font-size: 10px;
+      padding: 11px 8px;
+      font-size: 9px;
       color: var(--muted);
       cursor: pointer;
       transition:
@@ -208,7 +206,8 @@
       box-shadow: 0 10px 24px rgba(83, 224, 209, 0.24);
     }
 
-    .tab:active {
+    .tab:active,
+    .action-btn:active {
       transform: scale(0.98);
     }
 
@@ -238,16 +237,16 @@
     }
 
     .hud-title {
-      font-size: 24px;
+      font-size: 23px;
       line-height: 0.95;
       text-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
     }
 
     .hud-copy {
       font-size: 12px;
-      line-height: 1.4;
+      line-height: 1.38;
       color: var(--muted);
-      max-width: 26ch;
+      max-width: 27ch;
       text-shadow: 0 5px 20px rgba(0, 0, 0, 0.32);
     }
 
@@ -274,7 +273,7 @@
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
-      max-width: calc(100% - 84px);
+      max-width: calc(100% - 104px);
     }
 
     .stat {
@@ -294,18 +293,18 @@
       font-size: 10px;
       color: rgba(245, 235, 212, 0.72);
       text-align: center;
-      min-width: 74px;
+      min-width: 92px;
     }
 
     .dock {
       display: grid;
       gap: 12px;
-      padding: 14px 14px 13px;
+      padding: 13px 14px 13px;
     }
 
     .controls {
       display: grid;
-      gap: 11px;
+      gap: 10px;
     }
 
     .control-row {
@@ -399,20 +398,13 @@
         linear-gradient(135deg, rgba(255, 126, 107, 0.15), rgba(244, 201, 107, 0.12));
     }
 
-    .action-btn:active {
-      transform: scale(0.98);
-    }
-
     .mode-mini {
       justify-self: end;
       padding: 9px 11px;
       border-radius: 14px;
       border: 1px solid rgba(255, 255, 255, 0.1);
       background: rgba(255, 255, 255, 0.04);
-      font-family: "IBM Plex Mono", monospace;
       font-size: 10px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
       color: var(--muted);
       white-space: nowrap;
     }
@@ -428,9 +420,13 @@
       }
 
       .topbar {
-        gap: 12px;
-        padding: 13px 14px 12px;
-        min-height: 102px;
+        gap: 10px;
+        padding: 12px 13px;
+        min-height: 144px;
+      }
+
+      .tab {
+        padding: 10px 6px;
       }
 
       .hud {
@@ -446,10 +442,6 @@
         padding: 12px;
       }
 
-      .actions {
-        grid-template-columns: repeat(2, minmax(0, 1fr)) 72px;
-      }
-
       .action-btn {
         min-height: 44px;
       }
@@ -461,9 +453,9 @@
     <header class="topbar">
       <div class="headline">
         <div>
-          <p class="eyebrow">Geometry / Topology</p>
-          <h1>Topology Toybox</h1>
-          <p class="sub">Sphere eversion, the Poincare disk, and Hopf fibers in one touchable scene.</p>
+          <p class="eyebrow">Geometry / Signals</p>
+          <h1>Math Motion Lab</h1>
+          <p class="sub">Topology, curves, wavelets, and poles inside one touchable screen.</p>
         </div>
         <div class="date-chip">2026-03-25</div>
       </div>
@@ -472,11 +464,14 @@
         <button class="tab active" data-mode="eversion" role="tab" aria-selected="true" type="button">Evert</button>
         <button class="tab" data-mode="disk" role="tab" aria-selected="false" type="button">Disk</button>
         <button class="tab" data-mode="hopf" role="tab" aria-selected="false" type="button">Hopf</button>
+        <button class="tab" data-mode="lissajous" role="tab" aria-selected="false" type="button">Lissa</button>
+        <button class="tab" data-mode="wavelet" role="tab" aria-selected="false" type="button">Wavelet</button>
+        <button class="tab" data-mode="laplace" role="tab" aria-selected="false" type="button">Poles</button>
       </div>
     </header>
 
     <section class="stage">
-      <canvas id="stage" aria-label="Topology visualization"></canvas>
+      <canvas id="stage" aria-label="Math visualization"></canvas>
       <div class="hud">
         <div class="hud-top">
           <div class="hud-title" id="hudTitle"></div>
@@ -529,8 +524,8 @@
     const hudCopy = document.getElementById("hudCopy");
     const hudFormula = document.getElementById("hudFormula");
     const statsWrap = document.getElementById("stats");
-    const modeMini = document.getElementById("modeMini");
     const hintEl = document.getElementById("hint");
+    const modeMini = document.getElementById("modeMini");
     const sliders = [0, 1, 2].map((index) => ({
       input: document.getElementById(`control${index}`),
       label: document.getElementById(`label${index}`),
@@ -541,105 +536,89 @@
     const MODE_CONFIG = {
       eversion: {
         title: "Sphere Eversion",
-        copy: "A sphere passes through itself, not through a crease, until inside and outside trade places.",
-        formula: "S2 -> Morin-like halfway -> -S2",
+        copy: "A sphere passes through itself without a crease until inside and outside trade places.",
+        formula: "S^2 -> immersion -> -S^2",
         mini: "Immersion",
         hint: "drag orbit",
         controls: [
-          {
-            key: "stage",
-            label: "Turn",
-            min: 0,
-            max: 1,
-            step: 0.001,
-            format: (value) => `${Math.round(value * 100)}%`
-          },
-          {
-            key: "bands",
-            label: "Bands",
-            min: 6,
-            max: 16,
-            step: 1,
-            format: (value) => `${Math.round(value)}`
-          },
-          {
-            key: "spin",
-            label: "Spin",
-            min: 0,
-            max: 1.2,
-            step: 0.01,
-            format: (value) => value.toFixed(2)
-          }
+          { key: "stage", label: "Turn", min: 0, max: 1, step: 0.001, format: (value) => `${Math.round(value * 100)}%` },
+          { key: "bands", label: "Bands", min: 6, max: 16, step: 1, format: (value) => `${Math.round(value)}` },
+          { key: "spin", label: "Spin", min: 0, max: 1.2, step: 0.01, format: (value) => value.toFixed(2) }
         ],
         defaults: { stage: 0.1, bands: 10, spin: 0.58 }
       },
       disk: {
         title: "Poincare Disk",
-        copy: "The whole hyperbolic plane hides inside the circle, and its isometries move as Mobius maps.",
-        formula: "T(z) = e^(i theta) (z + a) / (1 + a* z)",
+        copy: "The whole hyperbolic plane hides inside a circle, and isometries act as Mobius maps.",
+        formula: "T(z) = e^(i t) (z + a) / (1 + a* z)",
         mini: "Mobius",
         hint: "drag map",
         controls: [
-          {
-            key: "shift",
-            label: "Shift",
-            min: 0,
-            max: 0.72,
-            step: 0.001,
-            format: (value) => value.toFixed(2)
-          },
-          {
-            key: "orbit",
-            label: "Orbit",
-            min: 0,
-            max: 360,
-            step: 1,
-            format: (value) => `${Math.round(value)}d`
-          },
-          {
-            key: "grid",
-            label: "Grid",
-            min: 4,
-            max: 12,
-            step: 1,
-            format: (value) => `${Math.round(value)}`
-          }
+          { key: "shift", label: "Shift", min: 0, max: 0.72, step: 0.001, format: (value) => value.toFixed(2) },
+          { key: "orbit", label: "Orbit", min: 0, max: 360, step: 1, format: (value) => `${Math.round(value)}d` },
+          { key: "grid", label: "Grid", min: 4, max: 12, step: 1, format: (value) => `${Math.round(value)}` }
         ],
         defaults: { shift: 0.38, orbit: 22, grid: 7 }
       },
       hopf: {
         title: "Hopf Fibration",
-        copy: "Fibers from S3 project into linked circles that stack into tori across ordinary 3D space.",
-        formula: "S1 -> S3 -> S2",
+        copy: "Fibers from S^3 project into linked circles that fill nested tori across ordinary space.",
+        formula: "pi : S^3 -> S^2",
         mini: "Linked",
         hint: "drag orbit",
         controls: [
-          {
-            key: "twist",
-            label: "Twist",
-            min: 0,
-            max: 1,
-            step: 0.001,
-            format: (value) => `${Math.round(value * 100)}%`
-          },
-          {
-            key: "fibers",
-            label: "Fibers",
-            min: 10,
-            max: 36,
-            step: 1,
-            format: (value) => `${Math.round(value)}`
-          },
-          {
-            key: "tilt",
-            label: "Tilt",
-            min: 0.18,
-            max: 1,
-            step: 0.001,
-            format: (value) => value.toFixed(2)
-          }
+          { key: "twist", label: "Twist", min: 0, max: 1, step: 0.001, format: (value) => `${Math.round(value * 100)}%` },
+          { key: "fibers", label: "Fibers", min: 10, max: 36, step: 1, format: (value) => `${Math.round(value)}` },
+          { key: "tilt", label: "Tilt", min: 0.18, max: 1, step: 0.001, format: (value) => value.toFixed(2) }
         ],
         defaults: { twist: 0.26, fibers: 28, tilt: 0.58 }
+      },
+      lissajous: {
+        title: "Lissajous Figure",
+        copy: "Two sine waves on x and y lock into closed figures whenever the frequency ratio is rational.",
+        formula: "x = sin(a t + d), y = sin(b t)",
+        mini: "Ratio",
+        hint: "closed loop",
+        controls: [
+          { key: "fx", label: "X Freq", min: 1, max: 9, step: 1, format: (value) => `${Math.round(value)}` },
+          { key: "fy", label: "Y Freq", min: 1, max: 9, step: 1, format: (value) => `${Math.round(value)}` },
+          { key: "phase", label: "Phase", min: 0, max: 180, step: 1, format: (value) => `${Math.round(value)}d` }
+        ],
+        defaults: { fx: 3, fy: 4, phase: 90 }
+      },
+      wavelet: {
+        title: "Wavelet Transform",
+        copy: "Instead of only asking which frequency exists, ask when each frequency lives and fades.",
+        formula: "W(a,b) = int f(t) psi((t-b)/a) dt",
+        mini: "Morlet",
+        hint: "drag time",
+        controls: [
+          { key: "sweep", label: "Sweep", min: 0, max: 1, step: 0.001, format: (value) => `${Math.round(value * 100)}%` },
+          { key: "tone", label: "Tone", min: 0, max: 1, step: 0.001, format: (value) => `${Math.round(value * 100)}%` },
+          { key: "burst", label: "Burst", min: 0, max: 1, step: 0.001, format: (value) => `${Math.round(value * 100)}%` }
+        ],
+        defaults: { sweep: 0.56, tone: 0.62, burst: 0.42, scan: 0.18 }
+      },
+      laplace: {
+        title: "Poles & Zeros",
+        copy: "Move points in the s-plane and the filter response bends in real time around them.",
+        formula: "H(s) = prod(s-z) / prod(s-p)",
+        mini: "Stable",
+        hint: "drag points",
+        controls: [
+          { key: "gain", label: "Gain", min: 0.4, max: 2.2, step: 0.001, format: (value) => value.toFixed(2) },
+          { key: "scan", label: "Scan", min: 0, max: 1, step: 0.001, format: (value) => `${Math.round(value * 100)}%` },
+          { key: "decay", label: "Decay", min: 0.45, max: 1.5, step: 0.001, format: (value) => value.toFixed(2) }
+        ],
+        defaults: {
+          poleReal: -0.34,
+          poleImag: 1.45,
+          zeroReal: -0.04,
+          zeroImag: 2.18,
+          gain: 1.04,
+          scan: 0.28,
+          decay: 0.92
+        }
       }
     };
 
@@ -653,16 +632,33 @@
       params: {
         eversion: { ...MODE_CONFIG.eversion.defaults },
         disk: { ...MODE_CONFIG.disk.defaults },
-        hopf: { ...MODE_CONFIG.hopf.defaults }
+        hopf: { ...MODE_CONFIG.hopf.defaults },
+        lissajous: { ...MODE_CONFIG.lissajous.defaults },
+        wavelet: { ...MODE_CONFIG.wavelet.defaults },
+        laplace: { ...MODE_CONFIG.laplace.defaults }
       },
       drag: {
         active: false,
+        kind: null,
         lastX: 0,
         lastY: 0
       },
       camera: {
         eversion: { yaw: 0.9, pitch: -0.36 },
         hopf: { yaw: 0.76, pitch: -0.34 }
+      },
+      stageRefs: {
+        laplace: null,
+        wavelet: null
+      },
+      waveletCache: {
+        signature: "",
+        rows: 0,
+        cols: 0,
+        matrix: null,
+        signal: null,
+        freqs: null,
+        max: 1
       }
     };
 
@@ -677,6 +673,17 @@
     function smoothstep(t) {
       const x = clamp(t, 0, 1);
       return x * x * (3 - 2 * x);
+    }
+
+    function gcd(a, b) {
+      let x = Math.abs(a);
+      let y = Math.abs(b);
+      while (y) {
+        const r = x % y;
+        x = y;
+        y = r;
+      }
+      return x || 1;
     }
 
     function vec(x, y, z) {
@@ -725,9 +732,7 @@
     }
 
     function strokePolyline(points, strokeStyle, lineWidth, alpha = 1) {
-      if (points.length < 2) {
-        return;
-      }
+      if (points.length < 2) return;
       ctx.save();
       ctx.globalAlpha = alpha;
       ctx.strokeStyle = strokeStyle;
@@ -741,6 +746,39 @@
       }
       ctx.stroke();
       ctx.restore();
+    }
+
+    function complex(x, y) {
+      return { x, y };
+    }
+
+    function cAdd(a, b) {
+      return complex(a.x + b.x, a.y + b.y);
+    }
+
+    function cSub(a, b) {
+      return complex(a.x - b.x, a.y - b.y);
+    }
+
+    function cMul(a, b) {
+      return complex(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);
+    }
+
+    function cDiv(a, b) {
+      const d = b.x * b.x + b.y * b.y;
+      return complex((a.x * b.x + a.y * b.y) / d, (a.y * b.x - a.x * b.y) / d);
+    }
+
+    function cAbs(a) {
+      return Math.hypot(a.x, a.y);
+    }
+
+    function heatColor(value) {
+      const v = clamp(value, 0, 1);
+      const hue = mix(224, 16, Math.pow(v, 0.78));
+      const sat = mix(54, 92, v);
+      const light = mix(8, 71, Math.pow(v, 0.92));
+      return `hsla(${hue.toFixed(1)}, ${sat.toFixed(1)}%, ${light.toFixed(1)}%, 0.95)`;
     }
 
     function resizeCanvas() {
@@ -758,6 +796,14 @@
       state.size.height = rect.height;
       state.size.dpr = dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function syncControlByKey(key, value) {
+      const controls = MODE_CONFIG[state.mode].controls;
+      const index = controls.findIndex((control) => control.key === key);
+      if (index === -1) return;
+      sliders[index].input.value = String(value);
+      sliders[index].value.textContent = controls[index].format(value);
     }
 
     function setMode(mode) {
@@ -791,8 +837,8 @@
       hudTitle.textContent = config.title;
       hudCopy.textContent = config.copy;
       hudFormula.textContent = config.formula;
-      modeMini.textContent = config.mini;
       hintEl.textContent = config.hint;
+      modeMini.textContent = config.mini;
       statsWrap.innerHTML = "";
       stats.forEach((text) => {
         const pill = document.createElement("div");
@@ -804,6 +850,15 @@
 
     function resetMode() {
       state.params[state.mode] = { ...MODE_CONFIG[state.mode].defaults };
+      if (state.mode === "eversion") {
+        state.camera.eversion = { yaw: 0.9, pitch: -0.36 };
+      }
+      if (state.mode === "hopf") {
+        state.camera.hopf = { yaw: 0.76, pitch: -0.34 };
+      }
+      if (state.mode === "wavelet") {
+        state.waveletCache.signature = "";
+      }
       state.auto = true;
       updateControls();
       playBtn.textContent = "Pause";
@@ -812,6 +867,104 @@
     function setAuto(auto) {
       state.auto = auto;
       playBtn.textContent = auto ? "Pause" : "Play";
+    }
+
+    function handleDiskPointer(event) {
+      const box = canvas.getBoundingClientRect();
+      const x = event.clientX - box.left;
+      const y = event.clientY - box.top;
+      const centerX = box.width * 0.5;
+      const centerY = box.height * 0.54;
+      const radius = Math.min(box.width, box.height) * 0.35;
+      const dx = x - centerX;
+      const dy = y - centerY;
+      const orbit = ((Math.atan2(dy, dx) * 180) / Math.PI + 360) % 360;
+      const shift = clamp((Math.hypot(dx, dy) / radius) * 0.72, 0, 0.72);
+      state.params.disk.shift = shift;
+      state.params.disk.orbit = orbit;
+      syncControlByKey("shift", shift);
+      syncControlByKey("orbit", orbit);
+      setAuto(false);
+    }
+
+    function handleWaveletPointer(event) {
+      const rect = state.stageRefs.wavelet;
+      if (!rect) return;
+      const box = canvas.getBoundingClientRect();
+      const x = event.clientX - box.left;
+      const scan = clamp((x - rect.x) / rect.w, 0, 1);
+      state.params.wavelet.scan = scan;
+      setAuto(false);
+    }
+
+    function planeToScreen(rect, real, imag) {
+      const realMin = -2.4;
+      const realMax = 0.8;
+      const imagMax = 3.0;
+      return {
+        x: rect.x + ((real - realMin) / (realMax - realMin)) * rect.w,
+        y: rect.y + ((imagMax - imag) / (imagMax * 2)) * rect.h
+      };
+    }
+
+    function screenToPlane(rect, x, y) {
+      const realMin = -2.4;
+      const realMax = 0.8;
+      const imagMax = 3.0;
+      return {
+        real: realMin + ((x - rect.x) / rect.w) * (realMax - realMin),
+        imag: imagMax - ((y - rect.y) / rect.h) * imagMax * 2
+      };
+    }
+
+    function pickLaplaceHandle(event) {
+      const refs = state.stageRefs.laplace;
+      if (!refs) return null;
+      const box = canvas.getBoundingClientRect();
+      const x = event.clientX - box.left;
+      const y = event.clientY - box.top;
+      const pole = refs.handles.pole;
+      const zero = refs.handles.zero;
+      const poleDist = Math.hypot(x - pole.x, y - pole.y);
+      const zeroDist = Math.hypot(x - zero.x, y - zero.y);
+      if (poleDist < 24 || zeroDist < 24) {
+        return poleDist < zeroDist ? "pole" : "zero";
+      }
+      if (
+        x >= refs.response.x &&
+        x <= refs.response.x + refs.response.w &&
+        y >= refs.response.y &&
+        y <= refs.response.y + refs.response.h
+      ) {
+        return "scan";
+      }
+      return null;
+    }
+
+    function handleLaplacePointer(event, kind) {
+      const refs = state.stageRefs.laplace;
+      if (!refs) return;
+      const params = state.params.laplace;
+      const box = canvas.getBoundingClientRect();
+      const x = event.clientX - box.left;
+      const y = event.clientY - box.top;
+
+      if (kind === "scan") {
+        params.scan = clamp((x - refs.response.x) / refs.response.w, 0, 1);
+        syncControlByKey("scan", params.scan);
+        setAuto(false);
+        return;
+      }
+
+      const point = screenToPlane(refs.plane, x, y);
+      if (kind === "pole") {
+        params.poleReal = clamp(point.real, -2.2, -0.05);
+        params.poleImag = clamp(Math.abs(point.imag), 0.12, 2.8);
+      } else {
+        params.zeroReal = clamp(point.real, -1.5, 0.6);
+        params.zeroImag = clamp(Math.abs(point.imag), 0.12, 2.8);
+      }
+      setAuto(false);
     }
 
     function attachUi() {
@@ -827,6 +980,9 @@
           const nextValue = Number(event.target.value);
           state.params[state.mode][config.key] = nextValue;
           slider.value.textContent = config.format(nextValue);
+          if (state.mode === "wavelet") {
+            state.waveletCache.signature = "";
+          }
           setAuto(false);
         });
       });
@@ -839,66 +995,75 @@
         resetMode();
       });
 
-      function syncSlider(index, value) {
-        const control = MODE_CONFIG[state.mode].controls[index];
-        sliders[index].input.value = String(value);
-        sliders[index].value.textContent = control.format(value);
-      }
-
-      function handleDiskDrag(event) {
-        const box = canvas.getBoundingClientRect();
-        const x = event.clientX - box.left;
-        const y = event.clientY - box.top;
-        const centerX = box.width * 0.5;
-        const centerY = box.height * 0.53;
-        const radius = Math.min(box.width, box.height) * 0.37;
-        const dx = x - centerX;
-        const dy = y - centerY;
-        const orbit = ((Math.atan2(dy, dx) * 180) / Math.PI + 360) % 360;
-        const shift = clamp((Math.hypot(dx, dy) / radius) * 0.72, 0, 0.72);
-        state.params.disk.shift = shift;
-        state.params.disk.orbit = orbit;
-        syncSlider(0, shift);
-        syncSlider(1, orbit);
-        setAuto(false);
-      }
-
-      const pointerStart = (event) => {
-        if (state.mode === "disk") {
-          state.drag.active = true;
-          handleDiskDrag(event);
-          return;
-        }
+      canvas.addEventListener("pointerdown", (event) => {
         state.drag.active = true;
         state.drag.lastX = event.clientX;
         state.drag.lastY = event.clientY;
-      };
 
-      const pointerMove = (event) => {
-        if (!state.drag.active) {
-          return;
-        }
         if (state.mode === "disk") {
-          handleDiskDrag(event);
+          state.drag.kind = "disk";
+          handleDiskPointer(event);
           return;
         }
-        const dx = event.clientX - state.drag.lastX;
-        const dy = event.clientY - state.drag.lastY;
-        const camera = state.camera[state.mode];
-        camera.yaw += dx * 0.008;
-        camera.pitch = clamp(camera.pitch + dy * 0.006, -1.2, 1.2);
-        state.drag.lastX = event.clientX;
-        state.drag.lastY = event.clientY;
-      };
 
-      const pointerEnd = () => {
+        if (state.mode === "wavelet") {
+          state.drag.kind = "wavelet";
+          handleWaveletPointer(event);
+          return;
+        }
+
+        if (state.mode === "laplace") {
+          state.drag.kind = pickLaplaceHandle(event);
+          if (state.drag.kind) {
+            handleLaplacePointer(event, state.drag.kind);
+          }
+          return;
+        }
+
+        if (state.mode === "eversion" || state.mode === "hopf") {
+          state.drag.kind = "orbit";
+          return;
+        }
+
+        state.drag.kind = null;
+      });
+
+      window.addEventListener("pointermove", (event) => {
+        if (!state.drag.active) return;
+
+        if (state.mode === "disk" && state.drag.kind === "disk") {
+          handleDiskPointer(event);
+          return;
+        }
+
+        if (state.mode === "wavelet" && state.drag.kind === "wavelet") {
+          handleWaveletPointer(event);
+          return;
+        }
+
+        if (state.mode === "laplace" && state.drag.kind) {
+          handleLaplacePointer(event, state.drag.kind);
+          return;
+        }
+
+        if ((state.mode === "eversion" || state.mode === "hopf") && state.drag.kind === "orbit") {
+          const camera = state.camera[state.mode];
+          const dx = event.clientX - state.drag.lastX;
+          const dy = event.clientY - state.drag.lastY;
+          camera.yaw += dx * 0.008;
+          camera.pitch = clamp(camera.pitch + dy * 0.006, -1.2, 1.2);
+          state.drag.lastX = event.clientX;
+          state.drag.lastY = event.clientY;
+        }
+      });
+
+      const endDrag = () => {
         state.drag.active = false;
+        state.drag.kind = null;
       };
 
-      canvas.addEventListener("pointerdown", pointerStart);
-      window.addEventListener("pointermove", pointerMove);
-      window.addEventListener("pointerup", pointerEnd);
-      window.addEventListener("pointercancel", pointerEnd);
+      window.addEventListener("pointerup", endDrag);
+      window.addEventListener("pointercancel", endDrag);
       window.addEventListener("resize", resizeCanvas);
     }
 
@@ -906,32 +1071,32 @@
       ctx.clearRect(0, 0, rect.width, rect.height);
 
       const gradient = ctx.createLinearGradient(0, 0, rect.width, rect.height);
-      if (mode === "eversion") {
-        gradient.addColorStop(0, "#0e1b28");
-        gradient.addColorStop(0.55, "#131a2d");
-        gradient.addColorStop(1, "#22152a");
-      } else if (mode === "disk") {
+      if (mode === "wavelet") {
         gradient.addColorStop(0, "#09121b");
-        gradient.addColorStop(0.55, "#0b1726");
-        gradient.addColorStop(1, "#171c31");
+        gradient.addColorStop(0.56, "#10192b");
+        gradient.addColorStop(1, "#24132a");
+      } else if (mode === "laplace") {
+        gradient.addColorStop(0, "#08121b");
+        gradient.addColorStop(0.56, "#111a2b");
+        gradient.addColorStop(1, "#1a1423");
       } else {
-        gradient.addColorStop(0, "#071118");
-        gradient.addColorStop(0.5, "#101a2a");
-        gradient.addColorStop(1, "#1a1322");
+        gradient.addColorStop(0, "#0d1a28");
+        gradient.addColorStop(0.56, "#131a2d");
+        gradient.addColorStop(1, "#22152a");
       }
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, rect.width, rect.height);
 
       ctx.save();
-      ctx.globalAlpha = 0.26;
-      const glow = ctx.createRadialGradient(rect.width * 0.2, rect.height * 0.16, 0, rect.width * 0.2, rect.height * 0.16, rect.width * 0.56);
+      ctx.globalAlpha = 0.24;
+      const glow = ctx.createRadialGradient(rect.width * 0.18, rect.height * 0.16, 0, rect.width * 0.18, rect.height * 0.16, rect.width * 0.52);
       glow.addColorStop(0, "rgba(83, 224, 209, 0.5)");
       glow.addColorStop(1, "rgba(83, 224, 209, 0)");
       ctx.fillStyle = glow;
       ctx.fillRect(0, 0, rect.width, rect.height);
 
-      const glow2 = ctx.createRadialGradient(rect.width * 0.84, rect.height * 0.82, 0, rect.width * 0.84, rect.height * 0.82, rect.width * 0.58);
-      glow2.addColorStop(0, mode === "disk" ? "rgba(137, 170, 255, 0.44)" : "rgba(255, 126, 107, 0.44)");
+      const glow2 = ctx.createRadialGradient(rect.width * 0.82, rect.height * 0.86, 0, rect.width * 0.82, rect.height * 0.86, rect.width * 0.6);
+      glow2.addColorStop(0, mode === "wavelet" ? "rgba(244, 201, 107, 0.42)" : "rgba(255, 126, 107, 0.42)");
       glow2.addColorStop(1, "rgba(255, 126, 107, 0)");
       ctx.fillStyle = glow2;
       ctx.fillRect(0, 0, rect.width, rect.height);
@@ -948,12 +1113,8 @@
       const tangentU = vec(cu * cv, -su, cu * sv);
       const wave = Math.sin(2 * v);
       const fourFold = Math.cos(2 * v);
-
       const halfway = add3(
-        add3(
-          scale3(base, 0.32 + 0.08 * fourFold * su),
-          scale3(tangentV, 0.98 * cu)
-        ),
+        add3(scale3(base, 0.32 + 0.08 * fourFold * su), scale3(tangentV, 0.98 * cu)),
         add3(
           scale3(tangentU, 0.62 * wave),
           vec(0.36 * su * su * fourFold, 0.24 * su * Math.sin(4 * v), 0.36 * su * su * Math.sin(2 * v))
@@ -973,123 +1134,98 @@
       const params = state.params.eversion;
       const speed = 0.00022 + params.spin * 0.00042;
       if (state.auto) {
-        state.params.eversion.stage = 0.5 + 0.5 * Math.sin(state.clock * speed);
-        sliders[0].input.value = String(state.params.eversion.stage);
-        sliders[0].value.textContent = MODE_CONFIG.eversion.controls[0].format(state.params.eversion.stage);
+        params.stage = 0.5 + 0.5 * Math.sin(state.clock * speed);
+        syncControlByKey("stage", params.stage);
         state.camera.eversion.yaw += state.delta * (0.00012 + params.spin * 0.000096);
       }
 
-      const stage = state.params.eversion.stage;
       const bands = Math.round(params.bands);
       const camera = state.camera.eversion;
       const view = {
         cx: rect.width * 0.5,
-        cy: rect.height * 0.55,
-        scale: Math.min(rect.width, rect.height) * 0.26
+        cy: rect.height * 0.58,
+        scale: Math.min(rect.width, rect.height) * 0.25
       };
-
-      const depthCurves = [];
+      const curves = [];
       const samples = 90;
 
       for (let i = 0; i <= bands; i += 1) {
         const u = 0.12 + (Math.PI - 0.24) * (i / bands);
-        const projected = [];
+        const points = [];
         let zTotal = 0;
-
         for (let j = 0; j <= samples; j += 1) {
           const v = TAU * (j / samples);
-          const point = scale3(eversionPoint(u, v, stage), 1.15);
-          const p = projectPoint(point, camera, view, 4.8);
-          projected.push(p);
+          const p = projectPoint(scale3(eversionPoint(u, v, params.stage), 1.15), camera, view, 4.8);
+          points.push(p);
           zTotal += p.z;
         }
-
-        depthCurves.push({
-          z: zTotal / projected.length,
+        curves.push({
+          z: zTotal / points.length,
           color: i % 2 === 0 ? "rgba(83, 224, 209, 0.94)" : "rgba(244, 201, 107, 0.9)",
-          width: i % 2 === 0 ? 1.55 : 1.1,
-          alpha: i % 2 === 0 ? 0.85 : 0.58,
-          points: projected
+          width: i % 2 === 0 ? 1.5 : 1.08,
+          alpha: i % 2 === 0 ? 0.84 : 0.56,
+          points
         });
       }
 
       for (let i = 0; i < bands * 2; i += 1) {
         const v = TAU * (i / (bands * 2));
-        const projected = [];
+        const points = [];
         let zTotal = 0;
         for (let j = 0; j <= samples; j += 1) {
           const u = 0.04 + (Math.PI - 0.08) * (j / samples);
-          const point = scale3(eversionPoint(u, v, stage), 1.15);
-          const p = projectPoint(point, camera, view, 4.8);
-          projected.push(p);
+          const p = projectPoint(scale3(eversionPoint(u, v, params.stage), 1.15), camera, view, 4.8);
+          points.push(p);
           zTotal += p.z;
         }
-        depthCurves.push({
-          z: zTotal / projected.length,
-          color: "rgba(255, 126, 107, 0.82)",
-          width: 0.95,
-          alpha: 0.52,
-          points: projected
+        curves.push({
+          z: zTotal / points.length,
+          color: "rgba(255, 126, 107, 0.8)",
+          width: 0.92,
+          alpha: 0.5,
+          points
         });
       }
 
-      depthCurves.sort((a, b) => a.z - b.z);
-
+      curves.sort((a, b) => a.z - b.z);
       ctx.save();
       ctx.globalCompositeOperation = "screen";
-      depthCurves.forEach((curve) => {
+      curves.forEach((curve) => {
         strokePolyline(curve.points, curve.color, curve.width, curve.alpha);
       });
       ctx.restore();
 
       updateHud([
-        `turn ${Math.round(stage * 100)}%`,
+        `turn ${Math.round(params.stage * 100)}%`,
         `bands ${bands}`,
         "self x"
       ]);
-    }
-
-    function complex(x, y) {
-      return { x, y };
-    }
-
-    function complexMul(a, b) {
-      return complex(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);
-    }
-
-    function complexDiv(a, b) {
-      const d = b.x * b.x + b.y * b.y;
-      return complex((a.x * b.x + a.y * b.y) / d, (a.y * b.x - a.x * b.y) / d);
-    }
-
-    function mobius(z, a, angle) {
-      const numerator = complex(z.x + a.x, z.y + a.y);
-      const denominator = complex(1 + a.x * z.x + a.y * z.y, a.x * z.y - a.y * z.x);
-      const rotated = complexDiv(numerator, denominator);
-      const rot = complex(Math.cos(angle), Math.sin(angle));
-      return complexMul(rotated, rot);
     }
 
     function diskPoint(radius, angle) {
       return complex(radius * Math.cos(angle), radius * Math.sin(angle));
     }
 
+    function mobius(z, a, angle) {
+      const numerator = complex(z.x + a.x, z.y + a.y);
+      const denominator = complex(1 + a.x * z.x + a.y * z.y, a.x * z.y - a.y * z.x);
+      const rotated = cDiv(numerator, denominator);
+      const rot = complex(Math.cos(angle), Math.sin(angle));
+      return cMul(rotated, rot);
+    }
+
     function renderDisk(rect) {
       const params = state.params.disk;
       if (state.auto) {
-        state.params.disk.orbit = (state.params.disk.orbit + state.delta * 0.027) % 360;
-        sliders[1].input.value = String(state.params.disk.orbit);
-        sliders[1].value.textContent = MODE_CONFIG.disk.controls[1].format(state.params.disk.orbit);
+        params.orbit = (params.orbit + state.delta * 0.027) % 360;
+        syncControlByKey("orbit", params.orbit);
       }
 
       const shift = params.shift;
       const orbit = (params.orbit * Math.PI) / 180;
       const grid = Math.round(params.grid);
-      const center = {
-        x: rect.width * 0.5,
-        y: rect.height * 0.53
-      };
-      const radius = Math.min(rect.width, rect.height) * 0.37;
+      const center = { x: rect.width * 0.5, y: rect.height * 0.54 };
+      const radius = Math.min(rect.width, rect.height) * 0.35;
 
       ctx.save();
       ctx.translate(center.x, center.y);
@@ -1108,8 +1244,8 @@
 
       const a = diskPoint(shift, orbit);
       const rotation = orbit * 0.56;
-      const latticeDots = [];
       const rhoMax = 3.2;
+      const dots = [];
 
       ctx.save();
       ctx.translate(center.x, center.y);
@@ -1120,26 +1256,26 @@
       for (let ring = 1; ring <= grid; ring += 1) {
         const rho = (rhoMax * ring) / (grid + 0.4);
         const baseRadius = Math.tanh(rho / 2);
-        const projected = [];
+        const points = [];
         for (let sample = 0; sample <= 180; sample += 1) {
           const theta = (sample / 180) * TAU;
           const p = mobius(diskPoint(baseRadius, theta), a, rotation);
-          projected.push({ x: p.x * radius, y: p.y * radius });
+          points.push({ x: p.x * radius, y: p.y * radius });
         }
-        strokePolyline(projected, "rgba(137, 170, 255, 0.85)", 1.1, 0.56);
+        strokePolyline(points, "rgba(137, 170, 255, 0.85)", 1.1, 0.56);
       }
 
       for (let line = 0; line < grid * 2; line += 1) {
         const angle = (line / (grid * 2)) * Math.PI;
-        const projected = [];
+        const points = [];
         for (let sample = 0; sample <= 180; sample += 1) {
           const s = mix(-rhoMax, rhoMax, sample / 180);
           const r = Math.tanh(Math.abs(s) / 2);
           const p = diskPoint(r, s >= 0 ? angle : angle + Math.PI);
           const transformed = mobius(p, a, rotation);
-          projected.push({ x: transformed.x * radius, y: transformed.y * radius });
+          points.push({ x: transformed.x * radius, y: transformed.y * radius });
         }
-        strokePolyline(projected, "rgba(83, 224, 209, 0.8)", 1.05, 0.56);
+        strokePolyline(points, "rgba(83, 224, 209, 0.8)", 1.05, 0.56);
       }
 
       for (let ring = 1; ring <= grid; ring += 1) {
@@ -1149,15 +1285,11 @@
         for (let i = 0; i < count; i += 1) {
           const angle = (i / count) * TAU;
           const p = mobius(diskPoint(r, angle), a, rotation);
-          latticeDots.push({
-            x: p.x * radius,
-            y: p.y * radius,
-            size: 1.5 + (1 - r) * 2.2
-          });
+          dots.push({ x: p.x * radius, y: p.y * radius, size: 1.5 + (1 - r) * 2.2 });
         }
       }
 
-      latticeDots.forEach((dot, index) => {
+      dots.forEach((dot, index) => {
         ctx.fillStyle = index % 3 === 0 ? "rgba(244, 201, 107, 0.86)" : "rgba(255, 126, 107, 0.68)";
         ctx.beginPath();
         ctx.arc(dot.x, dot.y, dot.size, 0, TAU);
@@ -1191,9 +1323,7 @@
       const x3 = Math.sin(halfTheta) * Math.cos(a2);
       const x4 = Math.sin(halfTheta) * Math.sin(a2);
       const denom = 1 - x4;
-      if (denom < 0.08) {
-        return null;
-      }
+      if (denom < 0.08) return null;
       return vec(x1 / denom, x2 / denom, x3 / denom);
     }
 
@@ -1204,8 +1334,8 @@
         const t = bands === 1 ? 0.5 : band / (bands - 1);
         const z = mix(0.72, -0.72, t);
         const theta = Math.acos(z);
-        const bandWeight = Math.sqrt(Math.max(0, 1 - z * z));
-        const around = Math.max(3, Math.round((count / bands) * (0.7 + 1.15 * bandWeight)));
+        const weight = Math.sqrt(Math.max(0, 1 - z * z));
+        const around = Math.max(3, Math.round((count / bands) * (0.7 + 1.15 * weight)));
         for (let i = 0; i < around; i += 1) {
           const phi = ((i / around) * TAU + band * GOLDEN * 0.25 + twist * TAU * 0.35) % TAU;
           seeds.push({ theta, phi, z });
@@ -1222,9 +1352,8 @@
     function renderHopf(rect) {
       const params = state.params.hopf;
       if (state.auto) {
-        state.params.hopf.twist = (state.params.hopf.twist + state.delta * 0.000096) % 1;
-        sliders[0].input.value = String(state.params.hopf.twist);
-        sliders[0].value.textContent = MODE_CONFIG.hopf.controls[0].format(state.params.hopf.twist);
+        params.twist = (params.twist + state.delta * 0.000096) % 1;
+        syncControlByKey("twist", params.twist);
         state.camera.hopf.yaw += state.delta * 0.00015;
       }
 
@@ -1233,14 +1362,14 @@
 
       const count = Math.round(params.fibers);
       const seeds = buildHopfSeeds(count, params.twist);
-      const rect3d = {
+      const view = {
         cx: rect.width * 0.52,
-        cy: rect.height * 0.54,
+        cy: rect.height * 0.58,
         scale: Math.min(rect.width, rect.height) * 0.205
       };
-
       const curves = [];
       const samples = 180;
+
       seeds.forEach((seed) => {
         const points = [];
         const parts = [];
@@ -1260,7 +1389,7 @@
           }
           point = scale3(point, 0.92);
           point = rotateZ(point, params.twist * Math.PI * 0.42);
-          const projected = projectPoint(point, camera, rect3d, 5.2);
+          const projected = projectPoint(point, camera, view, 5.2);
           points.push(projected);
           zTotal += projected.z;
           zCount += 1;
@@ -1270,15 +1399,10 @@
           parts.push(points);
         }
 
-        curves.push({
-          z: zCount ? zTotal / zCount : 0,
-          color: hueFromSeed(seed),
-          parts
-        });
+        curves.push({ z: zCount ? zTotal / zCount : 0, color: hueFromSeed(seed), parts });
       });
 
       curves.sort((a, b) => a.z - b.z);
-
       ctx.save();
       ctx.globalCompositeOperation = "screen";
       curves.forEach((curve) => {
@@ -1295,6 +1419,480 @@
       ]);
     }
 
+    function renderLissajous(rect) {
+      const params = state.params.lissajous;
+      const fx = Math.round(params.fx);
+      const fy = Math.round(params.fy);
+      const phase = (params.phase * Math.PI) / 180;
+      const travel = (state.clock * 0.0015) % TAU;
+
+      const leftStrip = Math.min(52, rect.width * 0.15);
+      const topStrip = Math.min(44, rect.height * 0.11);
+      const size = Math.min(rect.width - leftStrip - 38, rect.height - topStrip - 104);
+      const plot = {
+        x: (rect.width - size) * 0.5 + leftStrip * 0.3,
+        y: rect.height * 0.24,
+        w: size,
+        h: size
+      };
+      const topRect = { x: plot.x, y: plot.y - topStrip - 12, w: plot.w, h: topStrip };
+      const leftRect = { x: plot.x - leftStrip - 12, y: plot.y, w: leftStrip, h: plot.h };
+
+      ctx.save();
+      ctx.strokeStyle = "rgba(255,255,255,0.08)";
+      ctx.lineWidth = 1;
+      for (let i = 1; i < 4; i += 1) {
+        const x = plot.x + (plot.w * i) / 4;
+        const y = plot.y + (plot.h * i) / 4;
+        ctx.beginPath();
+        ctx.moveTo(x, plot.y);
+        ctx.lineTo(x, plot.y + plot.h);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(plot.x, y);
+        ctx.lineTo(plot.x + plot.w, y);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = "rgba(255,255,255,0.12)";
+      ctx.strokeRect(plot.x, plot.y, plot.w, plot.h);
+      ctx.restore();
+
+      const fullCurve = [];
+      const trace = [];
+      const steps = 520;
+      for (let i = 0; i <= steps; i += 1) {
+        const t = (i / steps) * TAU;
+        const x = Math.sin(fx * t + phase);
+        const y = Math.sin(fy * t);
+        const pt = {
+          x: plot.x + plot.w * (0.5 + 0.46 * x),
+          y: plot.y + plot.h * (0.5 - 0.46 * y)
+        };
+        fullCurve.push(pt);
+        if (t <= travel) {
+          trace.push(pt);
+        }
+      }
+
+      strokePolyline(fullCurve, "rgba(244, 201, 107, 0.34)", 1.1, 1);
+      ctx.save();
+      ctx.globalCompositeOperation = "screen";
+      strokePolyline(trace, "rgba(83, 224, 209, 0.96)", 2.2, 0.98);
+      ctx.restore();
+
+      const pointX = Math.sin(fx * travel + phase);
+      const pointY = Math.sin(fy * travel);
+      const marker = {
+        x: plot.x + plot.w * (0.5 + 0.46 * pointX),
+        y: plot.y + plot.h * (0.5 - 0.46 * pointY)
+      };
+
+      const waveTop = [];
+      for (let i = 0; i <= 140; i += 1) {
+        const t = (i / 140) * TAU;
+        const y = Math.sin(fx * t + phase);
+        waveTop.push({
+          x: topRect.x + (topRect.w * i) / 140,
+          y: topRect.y + topRect.h * (0.5 - 0.34 * y)
+        });
+      }
+      strokePolyline(waveTop, "rgba(137, 170, 255, 0.9)", 1.55, 0.92);
+
+      const waveLeft = [];
+      for (let i = 0; i <= 140; i += 1) {
+        const t = (i / 140) * TAU;
+        const x = Math.sin(fy * t);
+        waveLeft.push({
+          x: leftRect.x + leftRect.w * (0.5 + 0.34 * x),
+          y: leftRect.y + (leftRect.h * i) / 140
+        });
+      }
+      strokePolyline(waveLeft, "rgba(255, 126, 107, 0.9)", 1.55, 0.92);
+
+      const topMarker = {
+        x: topRect.x + (topRect.w * travel) / TAU,
+        y: topRect.y + topRect.h * (0.5 - 0.34 * pointX)
+      };
+      const leftMarker = {
+        x: leftRect.x + leftRect.w * (0.5 + 0.34 * pointY),
+        y: leftRect.y + (leftRect.h * travel) / TAU
+      };
+
+      ctx.save();
+      ctx.strokeStyle = "rgba(255,255,255,0.2)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(topMarker.x, topMarker.y);
+      ctx.lineTo(topMarker.x, marker.y);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(leftMarker.x, leftMarker.y);
+      ctx.lineTo(marker.x, leftMarker.y);
+      ctx.stroke();
+      ctx.restore();
+
+      [topMarker, leftMarker, marker].forEach((dot, index) => {
+        ctx.save();
+        ctx.fillStyle = index === 2 ? "#f7f0de" : index === 0 ? "rgba(137, 170, 255, 0.95)" : "rgba(255, 126, 107, 0.95)";
+        ctx.shadowColor = "rgba(255,255,255,0.35)";
+        ctx.shadowBlur = 14;
+        ctx.beginPath();
+        ctx.arc(dot.x, dot.y, index === 2 ? 5.4 : 4.2, 0, TAU);
+        ctx.fill();
+        ctx.restore();
+      });
+
+      const reduced = `${fx / gcd(fx, fy)}:${fy / gcd(fx, fy)}`;
+      updateHud([
+        `${fx}:${fy}`,
+        `phase ${Math.round(params.phase)}d`,
+        `ratio ${reduced}`
+      ]);
+    }
+
+    function buildWaveletData(params) {
+      const signature = `${params.sweep.toFixed(3)}|${params.tone.toFixed(3)}|${params.burst.toFixed(3)}`;
+      if (state.waveletCache.signature === signature) {
+        return state.waveletCache;
+      }
+
+      const sampleCount = 144;
+      const rows = 26;
+      const cols = 88;
+      const signal = new Float32Array(sampleCount);
+      const matrix = new Float32Array(rows * cols);
+      const freqs = new Float32Array(rows);
+      let maxPower = 1e-6;
+
+      for (let i = 0; i < sampleCount; i += 1) {
+        const t = i / (sampleCount - 1);
+        const env = Math.pow(t + 0.02, 0.46) * Math.exp(-2.65 * t);
+        const chirp = Math.sin(TAU * (2.2 * t + (2.8 + 5.5 * params.sweep) * t * t + 1.4 * params.sweep * t * t * t));
+        const overtone = Math.sin(TAU * (5.5 * t + (5 + 8 * params.sweep) * t * t) + 0.6);
+        const burst = Math.sin(TAU * (13 * t + 1.8 * t * t)) * Math.exp(-145 * (t - 0.17) * (t - 0.17));
+        signal[i] = env * (chirp + params.tone * 0.7 * overtone) + params.burst * 0.9 * burst;
+      }
+
+      for (let row = 0; row < rows; row += 1) {
+        const rowT = row / (rows - 1);
+        const freq = mix(2.6, 24.5, 1 - rowT);
+        const sigma = mix(17.5, 4.5, rowT);
+        freqs[row] = freq;
+
+        for (let col = 0; col < cols; col += 1) {
+          const center = (col / (cols - 1)) * (sampleCount - 1);
+          let re = 0;
+          let im = 0;
+
+          for (let i = 0; i < sampleCount; i += 1) {
+            const d = i - center;
+            const g = Math.exp(-(d * d) / (2 * sigma * sigma));
+            const phase = (TAU * freq * d) / sampleCount;
+            re += signal[i] * g * Math.cos(phase);
+            im -= signal[i] * g * Math.sin(phase);
+          }
+
+          const power = Math.sqrt(re * re + im * im);
+          matrix[row * cols + col] = power;
+          maxPower = Math.max(maxPower, power);
+        }
+      }
+
+      state.waveletCache = {
+        signature,
+        rows,
+        cols,
+        matrix,
+        signal,
+        freqs,
+        max: maxPower
+      };
+      return state.waveletCache;
+    }
+
+    function renderWavelet(rect) {
+      const params = state.params.wavelet;
+      if (state.auto) {
+        params.scan = (state.clock * 0.00012) % 1;
+      }
+
+      const data = buildWaveletData(params);
+      const topRect = {
+        x: 18,
+        y: rect.height * 0.27,
+        w: rect.width - 36,
+        h: rect.height * 0.13
+      };
+      const heat = {
+        x: 18,
+        y: topRect.y + topRect.h + 12,
+        w: rect.width - 36,
+        h: rect.height - (topRect.y + topRect.h + 84)
+      };
+      state.stageRefs.wavelet = heat;
+
+      ctx.save();
+      ctx.fillStyle = "rgba(7, 14, 24, 0.46)";
+      ctx.fillRect(topRect.x, topRect.y, topRect.w, topRect.h);
+      ctx.fillRect(heat.x, heat.y, heat.w, heat.h);
+      ctx.strokeStyle = "rgba(255,255,255,0.08)";
+      ctx.strokeRect(topRect.x, topRect.y, topRect.w, topRect.h);
+      ctx.strokeRect(heat.x, heat.y, heat.w, heat.h);
+      ctx.restore();
+
+      const cellW = heat.w / data.cols;
+      const cellH = heat.h / data.rows;
+      for (let row = 0; row < data.rows; row += 1) {
+        for (let col = 0; col < data.cols; col += 1) {
+          const raw = data.matrix[row * data.cols + col];
+          const value = Math.log1p(raw * 2.4) / Math.log1p(data.max * 2.4);
+          ctx.fillStyle = heatColor(value);
+          ctx.fillRect(heat.x + col * cellW, heat.y + row * cellH, cellW + 0.5, cellH + 0.5);
+        }
+      }
+
+      const waveform = [];
+      for (let i = 0; i < data.signal.length; i += 1) {
+        waveform.push({
+          x: topRect.x + (topRect.w * i) / (data.signal.length - 1),
+          y: topRect.y + topRect.h * (0.5 - data.signal[i] * 0.36)
+        });
+      }
+      strokePolyline(waveform, "rgba(244, 201, 107, 0.96)", 1.8, 0.96);
+
+      const scanX = heat.x + heat.w * params.scan;
+      const topScanX = topRect.x + topRect.w * params.scan;
+      ctx.save();
+      ctx.strokeStyle = "rgba(247, 240, 222, 0.9)";
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(scanX, heat.y);
+      ctx.lineTo(scanX, heat.y + heat.h);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(topScanX, topRect.y);
+      ctx.lineTo(topScanX, topRect.y + topRect.h);
+      ctx.stroke();
+      ctx.restore();
+
+      const scanIndex = clamp(Math.round(params.scan * (data.cols - 1)), 0, data.cols - 1);
+      let bestRow = 0;
+      let bestValue = -Infinity;
+      for (let row = 0; row < data.rows; row += 1) {
+        const power = data.matrix[row * data.cols + scanIndex];
+        if (power > bestValue) {
+          bestValue = power;
+          bestRow = row;
+        }
+      }
+
+      ctx.save();
+      ctx.fillStyle = "#f7f0de";
+      ctx.shadowColor = "rgba(255,255,255,0.4)";
+      ctx.shadowBlur = 16;
+      ctx.beginPath();
+      ctx.arc(scanX, heat.y + (bestRow + 0.5) * cellH, 4.4, 0, TAU);
+      ctx.fill();
+      ctx.restore();
+
+      updateHud([
+        `time ${Math.round(params.scan * 100)}%`,
+        `peak ${data.freqs[bestRow].toFixed(1)}`,
+        `burst ${Math.round(params.burst * 100)}%`
+      ]);
+    }
+
+    function drawCross(x, y, size, stroke) {
+      ctx.save();
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x - size, y - size);
+      ctx.lineTo(x + size, y + size);
+      ctx.moveTo(x - size, y + size);
+      ctx.lineTo(x + size, y - size);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawZero(x, y, size, stroke) {
+      ctx.save();
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(x, y, size, 0, TAU);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function renderLaplace(rect) {
+      const params = state.params.laplace;
+      if (state.auto) {
+        params.scan = (params.scan + state.delta * 0.00018) % 1;
+        syncControlByKey("scan", params.scan);
+      }
+
+      const planeSize = Math.min(rect.width - 36, rect.height * 0.32);
+      const plane = {
+        x: (rect.width - planeSize) * 0.5,
+        y: rect.height * 0.27,
+        w: planeSize,
+        h: planeSize
+      };
+      const response = {
+        x: 18,
+        y: plane.y + plane.h + 12,
+        w: rect.width - 36,
+        h: rect.height - (plane.y + plane.h + 86)
+      };
+      const responseTop = {
+        x: response.x,
+        y: response.y,
+        w: response.w,
+        h: response.h * 0.62
+      };
+      const impulse = {
+        x: response.x,
+        y: response.y + response.h * 0.7,
+        w: response.w,
+        h: response.h * 0.26
+      };
+
+      const poleHandle = planeToScreen(plane, params.poleReal, params.poleImag);
+      const zeroHandle = planeToScreen(plane, params.zeroReal, params.zeroImag);
+      state.stageRefs.laplace = {
+        plane,
+        response: responseTop,
+        handles: {
+          pole: poleHandle,
+          zero: zeroHandle
+        }
+      };
+
+      ctx.save();
+      ctx.fillStyle = "rgba(7, 14, 24, 0.46)";
+      ctx.fillRect(plane.x, plane.y, plane.w, plane.h);
+      ctx.fillRect(response.x, response.y, response.w, response.h);
+      ctx.strokeStyle = "rgba(255,255,255,0.08)";
+      ctx.strokeRect(plane.x, plane.y, plane.w, plane.h);
+      ctx.strokeRect(response.x, response.y, response.w, response.h);
+      ctx.restore();
+
+      const imagZero = planeToScreen(plane, 0, 0).x;
+      const realZero = planeToScreen(plane, 0, 0).y;
+      ctx.save();
+      ctx.strokeStyle = "rgba(255,255,255,0.12)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(plane.x, realZero);
+      ctx.lineTo(plane.x + plane.w, realZero);
+      ctx.moveTo(imagZero, plane.y);
+      ctx.lineTo(imagZero, plane.y + plane.h);
+      ctx.stroke();
+      ctx.restore();
+
+      const z1 = complex(params.zeroReal, params.zeroImag);
+      const z2 = complex(params.zeroReal, -params.zeroImag);
+      const p1 = complex(params.poleReal, params.poleImag);
+      const p2 = complex(params.poleReal, -params.poleImag);
+
+      const responsePoints = [];
+      let peakDb = -120;
+      let peakOmega = 0;
+      for (let i = 0; i <= 220; i += 1) {
+        const omega = (i / 220) * 3.4;
+        const s = complex(0, omega);
+        const numerator = cMul(cSub(s, z1), cSub(s, z2));
+        const denominator = cMul(cSub(s, p1), cSub(s, p2));
+        const H = cDiv(scaleComplex(numerator, params.gain), denominator);
+        const mag = cAbs(H);
+        const db = 20 * Math.log10(mag + 1e-6);
+        if (db > peakDb) {
+          peakDb = db;
+          peakOmega = omega;
+        }
+        const clamped = clamp(db, -30, 24);
+        responsePoints.push({
+          x: responseTop.x + (responseTop.w * i) / 220,
+          y: responseTop.y + responseTop.h * (1 - (clamped + 30) / 54),
+          omega,
+          db
+        });
+      }
+
+      ctx.save();
+      ctx.strokeStyle = "rgba(255,255,255,0.08)";
+      ctx.lineWidth = 1;
+      for (let i = 1; i < 4; i += 1) {
+        const y = responseTop.y + (responseTop.h * i) / 4;
+        ctx.beginPath();
+        ctx.moveTo(responseTop.x, y);
+        ctx.lineTo(responseTop.x + responseTop.w, y);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      ctx.save();
+      ctx.globalCompositeOperation = "screen";
+      strokePolyline(responsePoints, "rgba(83, 224, 209, 0.96)", 2.1, 0.98);
+      ctx.restore();
+
+      const scanIndex = clamp(Math.round(params.scan * 220), 0, 220);
+      const scanPoint = responsePoints[scanIndex];
+      ctx.save();
+      ctx.strokeStyle = "rgba(247, 240, 222, 0.88)";
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(scanPoint.x, responseTop.y);
+      ctx.lineTo(scanPoint.x, responseTop.y + responseTop.h);
+      ctx.stroke();
+      ctx.fillStyle = "#f7f0de";
+      ctx.shadowColor = "rgba(255,255,255,0.45)";
+      ctx.shadowBlur = 18;
+      ctx.beginPath();
+      ctx.arc(scanPoint.x, scanPoint.y, 4.6, 0, TAU);
+      ctx.fill();
+      ctx.restore();
+
+      const impulsePts = [];
+      for (let i = 0; i <= 180; i += 1) {
+        const t = (i / 180) * (2.2 + params.decay * 2.2);
+        const ring = Math.exp(params.poleReal * t * 1.25) * Math.sin(params.poleImag * t * 2.05);
+        const notch = 0.36 * Math.exp(-Math.abs(params.zeroReal) * t * 0.7) * Math.cos(params.zeroImag * t * 1.18);
+        const sample = params.gain * (ring - notch);
+        impulsePts.push({
+          x: impulse.x + (impulse.w * i) / 180,
+          y: impulse.y + impulse.h * (0.5 - sample * 0.22)
+        });
+      }
+      strokePolyline(impulsePts, "rgba(244, 201, 107, 0.9)", 1.5, 0.94);
+
+      const mirrorPole = planeToScreen(plane, params.poleReal, -params.poleImag);
+      const mirrorZero = planeToScreen(plane, params.zeroReal, -params.zeroImag);
+      drawCross(poleHandle.x, poleHandle.y, 8, "rgba(255, 126, 107, 0.95)");
+      drawCross(mirrorPole.x, mirrorPole.y, 8, "rgba(255, 126, 107, 0.72)");
+      drawZero(zeroHandle.x, zeroHandle.y, 8, "rgba(137, 170, 255, 0.98)");
+      drawZero(mirrorZero.x, mirrorZero.y, 8, "rgba(137, 170, 255, 0.74)");
+
+      ctx.save();
+      ctx.fillStyle = "rgba(255,255,255,0.06)";
+      ctx.beginPath();
+      ctx.arc(poleHandle.x, poleHandle.y, 16, 0, TAU);
+      ctx.arc(zeroHandle.x, zeroHandle.y, 16, 0, TAU);
+      ctx.fill();
+      ctx.restore();
+
+      updateHud([
+        `peak ${peakDb.toFixed(1)}dB`,
+        `w ${peakOmega.toFixed(2)}`,
+        `scan ${Math.round(params.scan * 100)}%`
+      ]);
+    }
+
+    function scaleComplex(a, s) {
+      return complex(a.x * s, a.y * s);
+    }
+
     function renderFrame(time) {
       if (!state.lastTime) {
         state.lastTime = time;
@@ -1307,10 +1905,9 @@
       }
 
       resizeCanvas();
-      const rect = {
-        width: state.size.width,
-        height: state.size.height
-      };
+      const rect = { width: state.size.width, height: state.size.height };
+      state.stageRefs.laplace = null;
+      state.stageRefs.wavelet = null;
 
       drawBackground(state.mode, rect);
 
@@ -1318,8 +1915,14 @@
         renderEversion(rect);
       } else if (state.mode === "disk") {
         renderDisk(rect);
-      } else {
+      } else if (state.mode === "hopf") {
         renderHopf(rect);
+      } else if (state.mode === "lissajous") {
+        renderLissajous(rect);
+      } else if (state.mode === "wavelet") {
+        renderWavelet(rect);
+      } else {
+        renderLaplace(rect);
       }
 
       requestAnimationFrame(renderFrame);
