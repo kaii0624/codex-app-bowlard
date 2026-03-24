@@ -1,0 +1,1864 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"
+  />
+  <title>Periodic Parkour</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg-0: #050b12;
+      --bg-1: #0a1320;
+      --bg-2: #102338;
+      --panel: rgba(7, 18, 29, 0.78);
+      --panel-strong: rgba(10, 24, 39, 0.92);
+      --line: rgba(138, 211, 255, 0.18);
+      --line-strong: rgba(149, 223, 255, 0.42);
+      --text: #ecf8ff;
+      --muted: rgba(236, 248, 255, 0.7);
+      --faint: rgba(236, 248, 255, 0.42);
+      --cyan: #79f4ff;
+      --amber: #ffd070;
+      --coral: #ff8a67;
+      --mint: #74f3b8;
+      --glow: 0 24px 64px rgba(0, 0, 0, 0.34);
+      font-family: "Oxanium", "Hiragino Sans", "Yu Gothic", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background:
+        radial-gradient(90vmax 78vmax at 8% 10%, rgba(121, 244, 255, 0.18), transparent 60%),
+        radial-gradient(70vmax 55vmax at 92% 14%, rgba(255, 138, 103, 0.16), transparent 58%),
+        radial-gradient(64vmax 48vmax at 48% 100%, rgba(116, 243, 184, 0.16), transparent 60%),
+        linear-gradient(180deg, #0f1830 0%, #08111d 38%, #04080e 100%);
+    }
+
+    body {
+      position: fixed;
+      inset: 0;
+      color: var(--text);
+      touch-action: none;
+      user-select: none;
+      overscroll-behavior: none;
+    }
+
+    button {
+      font: inherit;
+      color: inherit;
+    }
+
+    .app {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 10px;
+      padding:
+        max(10px, env(safe-area-inset-top))
+        max(10px, env(safe-area-inset-right))
+        max(10px, env(safe-area-inset-bottom))
+        max(10px, env(safe-area-inset-left));
+      overflow: hidden;
+    }
+
+    .topbar,
+    .stage-shell,
+    .controls {
+      position: relative;
+      border-radius: 28px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      box-shadow: var(--glow);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 28%),
+        linear-gradient(140deg, rgba(9, 22, 36, 0.95), rgba(4, 10, 17, 0.92));
+    }
+
+    .topbar::before,
+    .stage-shell::before,
+    .controls::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(120deg, rgba(255, 255, 255, 0.06), transparent 28%),
+        repeating-linear-gradient(
+          -32deg,
+          rgba(255, 255, 255, 0.045) 0 1px,
+          transparent 1px 18px,
+          rgba(121, 244, 255, 0.03) 18px 19px,
+          transparent 19px 36px
+        );
+      opacity: 0.54;
+      mix-blend-mode: screen;
+    }
+
+    .topbar {
+      display: grid;
+      gap: 10px;
+      padding: 14px 15px 14px;
+      min-height: 174px;
+    }
+
+    .headline {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: start;
+    }
+
+    .eyebrow,
+    .chip,
+    .mini-number,
+    .stat,
+    .pad-label,
+    .action-btn,
+    .notice,
+    .result-label,
+    .hint {
+      font-family: "IBM Plex Mono", monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+    }
+
+    .eyebrow {
+      margin: 0 0 4px;
+      font-size: 10px;
+      color: rgba(121, 244, 255, 0.76);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 9vw, 44px);
+      line-height: 0.88;
+      letter-spacing: 0.02em;
+    }
+
+    .subtitle {
+      margin: 6px 0 0;
+      font-size: 12px;
+      line-height: 1.42;
+      color: var(--muted);
+      max-width: 28ch;
+    }
+
+    .chips {
+      display: grid;
+      gap: 8px;
+      justify-items: end;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 34px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(7, 18, 29, 0.56);
+      font-size: 10px;
+      color: rgba(236, 248, 255, 0.8);
+      white-space: nowrap;
+    }
+
+    .chip strong {
+      font-family: "Oxanium", sans-serif;
+      font-size: 17px;
+      letter-spacing: 0.02em;
+      color: var(--text);
+    }
+
+    .periodic-grid {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: repeat(9, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .queue-card {
+      position: relative;
+      aspect-ratio: 1.12;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.035);
+      overflow: hidden;
+      transition:
+        transform 180ms ease,
+        border-color 180ms ease,
+        background 180ms ease,
+        opacity 180ms ease;
+      opacity: 0.52;
+    }
+
+    .queue-card::after {
+      content: "";
+      position: absolute;
+      inset: auto 0 0 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, currentColor, transparent);
+      opacity: 0;
+      transition: opacity 180ms ease;
+    }
+
+    .queue-card.reached {
+      opacity: 0.76;
+      border-color: rgba(116, 243, 184, 0.28);
+      background: rgba(116, 243, 184, 0.08);
+    }
+
+    .queue-card.current {
+      opacity: 1;
+      transform: translateY(-2px);
+      border-color: rgba(255, 255, 255, 0.26);
+      background: rgba(255, 255, 255, 0.08);
+      box-shadow: 0 10px 18px rgba(0, 0, 0, 0.18);
+    }
+
+    .queue-card.reached::after,
+    .queue-card.current::after {
+      opacity: 1;
+    }
+
+    .mini-number {
+      position: absolute;
+      top: 6px;
+      left: 7px;
+      font-size: 8px;
+      color: rgba(236, 248, 255, 0.44);
+    }
+
+    .mini-symbol {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+
+    .stage-shell {
+      min-height: 0;
+    }
+
+    #stage {
+      width: 100%;
+      height: 100%;
+      display: block;
+      touch-action: none;
+    }
+
+    .hud {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      align-content: space-between;
+      padding: 14px;
+      pointer-events: none;
+    }
+
+    .hud-top {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: start;
+    }
+
+    .current-panel,
+    .next-panel,
+    .notice,
+    .result-card {
+      border-radius: 22px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(5, 12, 20, 0.48);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 18px 34px rgba(0, 0, 0, 0.22);
+    }
+
+    .current-panel {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 12px;
+      align-items: center;
+      min-width: 0;
+      padding: 12px 13px;
+      max-width: min(74vw, 320px);
+    }
+
+    .element-badge {
+      width: 68px;
+      aspect-ratio: 1;
+      border-radius: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      display: grid;
+      place-items: center;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    }
+
+    .element-symbol {
+      font-size: 30px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .element-number {
+      display: block;
+      margin-bottom: 3px;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 10px;
+      color: rgba(236, 248, 255, 0.62);
+    }
+
+    .element-name {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .element-trait {
+      margin: 5px 0 0;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .next-panel {
+      display: grid;
+      gap: 4px;
+      min-width: 94px;
+      padding: 10px 12px;
+      justify-items: end;
+      text-align: right;
+    }
+
+    .next-label {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      color: rgba(236, 248, 255, 0.54);
+      text-transform: uppercase;
+    }
+
+    .next-symbol {
+      font-size: 28px;
+      line-height: 1;
+      font-weight: 700;
+    }
+
+    .next-name {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .hud-bottom {
+      display: grid;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .stat {
+      min-height: 32px;
+      padding: 8px 11px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(5, 12, 20, 0.48);
+      font-size: 10px;
+      color: rgba(236, 248, 255, 0.82);
+    }
+
+    .hint {
+      justify-self: start;
+      padding: 8px 10px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(5, 12, 20, 0.42);
+      font-size: 10px;
+      color: rgba(236, 248, 255, 0.66);
+    }
+
+    .notice {
+      justify-self: center;
+      min-width: 124px;
+      padding: 10px 14px;
+      text-align: center;
+      font-size: 10px;
+      color: rgba(236, 248, 255, 0.76);
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(8px);
+      transition:
+        opacity 180ms ease,
+        transform 180ms ease;
+    }
+
+    .notice.show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .result-card {
+      position: absolute;
+      inset: 50% auto auto 50%;
+      width: min(72vw, 300px);
+      padding: 18px 18px 16px;
+      transform: translate(-50%, -46%);
+      display: grid;
+      gap: 10px;
+      text-align: center;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition:
+        opacity 180ms ease,
+        transform 180ms ease;
+    }
+
+    .result-card.show {
+      opacity: 1;
+      visibility: visible;
+      transform: translate(-50%, -50%);
+    }
+
+    .result-label {
+      font-size: 10px;
+      color: rgba(121, 244, 255, 0.72);
+    }
+
+    .result-title {
+      font-size: 32px;
+      line-height: 0.92;
+      margin: 0;
+    }
+
+    .result-copy {
+      margin: 0;
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--muted);
+    }
+
+    .result-metrics {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .metric {
+      padding: 10px 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.035);
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 18px;
+      color: var(--text);
+    }
+
+    .metric span {
+      display: block;
+      margin-top: 4px;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 9px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(236, 248, 255, 0.54);
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 14px;
+      align-items: center;
+      padding: 14px;
+      min-height: 148px;
+    }
+
+    .controls-inner {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 14px;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .stick-block {
+      display: grid;
+      gap: 8px;
+      justify-items: center;
+    }
+
+    .pad-label {
+      font-size: 10px;
+      color: rgba(236, 248, 255, 0.62);
+    }
+
+    .stick-pad {
+      position: relative;
+      width: clamp(96px, 22vw, 118px);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background:
+        radial-gradient(circle at 50% 50%, rgba(121, 244, 255, 0.08), transparent 54%),
+        rgba(255, 255, 255, 0.04);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      touch-action: none;
+    }
+
+    .stick-pad::before,
+    .stick-pad::after {
+      content: "";
+      position: absolute;
+      inset: 50%;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      pointer-events: none;
+    }
+
+    .stick-pad::before {
+      width: 62%;
+      height: 62%;
+    }
+
+    .stick-pad::after {
+      width: 30%;
+      height: 30%;
+    }
+
+    .stick-knob {
+      position: absolute;
+      inset: 50% auto auto 50%;
+      width: 38%;
+      aspect-ratio: 1;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background:
+        radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.4), transparent 36%),
+        linear-gradient(145deg, rgba(121, 244, 255, 0.3), rgba(255, 138, 103, 0.18));
+      box-shadow:
+        0 10px 20px rgba(0, 0, 0, 0.28),
+        inset 0 1px 0 rgba(255, 255, 255, 0.18);
+      transition: transform 70ms linear;
+    }
+
+    .control-copy {
+      min-width: 0;
+      display: grid;
+      gap: 8px;
+      align-content: center;
+    }
+
+    .control-title {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .control-sub {
+      margin: 0;
+      font-size: 12px;
+      line-height: 1.4;
+      color: var(--muted);
+      max-width: 26ch;
+    }
+
+    .action-column {
+      display: grid;
+      gap: 10px;
+      justify-items: end;
+    }
+
+    .jump-btn,
+    .action-btn {
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition:
+        transform 180ms ease,
+        border-color 180ms ease,
+        background 180ms ease,
+        box-shadow 180ms ease;
+    }
+
+    .jump-btn {
+      width: clamp(92px, 22vw, 116px);
+      aspect-ratio: 1;
+      border-radius: 28px;
+      background:
+        radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.34), transparent 34%),
+        linear-gradient(145deg, rgba(255, 208, 112, 0.96), rgba(255, 138, 103, 0.92));
+      box-shadow:
+        0 18px 28px rgba(255, 138, 103, 0.22),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+      color: #06111b;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      touch-action: none;
+    }
+
+    .jump-btn.pressed,
+    .action-btn:active,
+    .jump-btn:active {
+      transform: scale(0.97);
+    }
+
+    .action-row {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .action-btn {
+      min-width: 86px;
+      min-height: 44px;
+      padding: 0 14px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.12);
+      color: rgba(236, 248, 255, 0.82);
+      font-size: 10px;
+    }
+
+    .action-btn.primary {
+      background:
+        linear-gradient(135deg, rgba(121, 244, 255, 0.95), rgba(116, 243, 184, 0.9));
+      border-color: transparent;
+      color: #071019;
+      box-shadow: 0 12px 22px rgba(116, 243, 184, 0.16);
+    }
+
+    @media (max-height: 820px) {
+      .app {
+        gap: 8px;
+        padding:
+          max(8px, env(safe-area-inset-top))
+          max(8px, env(safe-area-inset-right))
+          max(8px, env(safe-area-inset-bottom))
+          max(8px, env(safe-area-inset-left));
+      }
+
+      .topbar {
+        min-height: 156px;
+        padding: 12px 13px;
+      }
+
+      .mini-symbol {
+        font-size: 16px;
+      }
+
+      .hud {
+        padding: 12px;
+      }
+
+      .current-panel {
+        max-width: min(72vw, 300px);
+      }
+
+      .element-badge {
+        width: 62px;
+      }
+
+      .element-symbol {
+        font-size: 28px;
+      }
+
+      .controls {
+        min-height: 132px;
+        padding: 12px;
+      }
+
+      .stick-pad {
+        width: clamp(90px, 20vw, 106px);
+      }
+
+      .jump-btn {
+        width: clamp(86px, 20vw, 106px);
+        border-radius: 24px;
+      }
+
+      .control-title {
+        font-size: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="headline">
+        <div>
+          <p class="eyebrow">3D / Element Run</p>
+          <h1>Periodic Parkour</h1>
+          <p class="subtitle">Jump across living element panels. Reach Ar without falling.</p>
+        </div>
+        <div class="chips">
+          <div class="chip"><span>step</span><strong id="progressValue">01 / 18</strong></div>
+          <div class="chip"><span>time</span><strong id="timeValue">00.0</strong></div>
+        </div>
+      </div>
+      <div class="periodic-grid" id="periodicGrid" aria-label="Element queue"></div>
+    </header>
+
+    <section class="stage-shell">
+      <canvas id="stage" aria-label="3D periodic table game"></canvas>
+      <div class="hud">
+        <div class="hud-top">
+          <div class="current-panel">
+            <div class="element-badge" id="elementBadge">
+              <div>
+                <span class="element-number" id="elementNumber">1</span>
+                <div class="element-symbol" id="elementSymbol">H</div>
+              </div>
+            </div>
+            <div>
+              <p class="element-name" id="elementName">Hydrogen</p>
+              <p class="element-trait" id="elementTrait">lift pulse</p>
+            </div>
+          </div>
+          <div class="next-panel">
+            <div class="next-label">Next</div>
+            <div class="next-symbol" id="nextSymbol">He</div>
+            <div class="next-name" id="nextName">Helium</div>
+          </div>
+        </div>
+
+        <div class="hud-bottom">
+          <div class="stats">
+            <div class="stat" id="fallValue">falls 0</div>
+            <div class="stat" id="statusValue">stable</div>
+            <div class="stat" id="checkpointValue">cp H</div>
+          </div>
+          <div class="notice" id="notice">checkpoint locked</div>
+          <div class="hint">keys / stick + jump</div>
+        </div>
+      </div>
+
+      <div class="result-card" id="resultCard" aria-live="polite">
+        <div class="result-label">argon reached</div>
+        <h2 class="result-title">Clear</h2>
+        <p class="result-copy">The whole first shell is yours. Hit restart for another run.</p>
+        <div class="result-metrics">
+          <div class="metric">
+            <strong id="resultTime">00.0</strong>
+            <span>time</span>
+          </div>
+          <div class="metric">
+            <strong id="resultFalls">0</strong>
+            <span>falls</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="controls">
+      <div class="controls-inner">
+        <div class="stick-block">
+          <div class="pad-label">move</div>
+          <div class="stick-pad" id="stickPad" aria-label="Move joystick">
+            <div class="stick-knob" id="stickKnob"></div>
+          </div>
+        </div>
+        <div class="control-copy">
+          <p class="control-title">One tile at a time.</p>
+          <p class="control-sub">Every element shifts differently. Commit your landing before the next jump.</p>
+        </div>
+      </div>
+
+      <div class="action-column">
+        <button class="jump-btn" id="jumpBtn" type="button" aria-label="Jump">Jump</button>
+        <div class="action-row">
+          <button class="action-btn primary" id="restartBtn" type="button">Restart</button>
+        </div>
+      </div>
+    </footer>
+  </main>
+
+  <script>
+    const TAU = Math.PI * 2;
+    const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+    const lerp = (start, end, t) => start + (end - start) * t;
+    const smooth = (current, target, amount) => current + (target - current) * amount;
+
+    function lerpAngle(start, end, amount) {
+      let delta = (end - start) % TAU;
+      if (delta > Math.PI) delta -= TAU;
+      if (delta < -Math.PI) delta += TAU;
+      return start + delta * amount;
+    }
+
+    function triangleWave(value) {
+      return 1 - 4 * Math.abs(Math.round(value - 0.25) - (value - 0.25));
+    }
+
+    function colorToRgb(color) {
+      if (color.startsWith("rgb")) {
+        const [r, g, b] = color.match(/[\d.]+/g).map(Number);
+        return { r, g, b };
+      }
+
+      const normalized = color.replace("#", "");
+      const value = normalized.length === 3
+        ? normalized.split("").map((part) => part + part).join("")
+        : normalized;
+      const int = Number.parseInt(value, 16);
+      return {
+        r: (int >> 16) & 255,
+        g: (int >> 8) & 255,
+        b: int & 255
+      };
+    }
+
+    function rgba(color, alpha) {
+      const { r, g, b } = colorToRgb(color);
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
+    function shade(color, amount) {
+      const { r, g, b } = colorToRgb(color);
+      return `rgb(${Math.round(r * (1 - amount))}, ${Math.round(g * (1 - amount))}, ${Math.round(b * (1 - amount))})`;
+    }
+
+    const canvas = document.getElementById("stage");
+    const ctx = canvas.getContext("2d");
+
+    const progressValue = document.getElementById("progressValue");
+    const timeValue = document.getElementById("timeValue");
+    const fallValue = document.getElementById("fallValue");
+    const checkpointValue = document.getElementById("checkpointValue");
+    const statusValue = document.getElementById("statusValue");
+    const elementBadge = document.getElementById("elementBadge");
+    const elementNumber = document.getElementById("elementNumber");
+    const elementSymbol = document.getElementById("elementSymbol");
+    const elementName = document.getElementById("elementName");
+    const elementTrait = document.getElementById("elementTrait");
+    const nextSymbol = document.getElementById("nextSymbol");
+    const nextName = document.getElementById("nextName");
+    const notice = document.getElementById("notice");
+    const periodicGrid = document.getElementById("periodicGrid");
+    const jumpBtn = document.getElementById("jumpBtn");
+    const restartBtn = document.getElementById("restartBtn");
+    const stickPad = document.getElementById("stickPad");
+    const stickKnob = document.getElementById("stickKnob");
+    const resultCard = document.getElementById("resultCard");
+    const resultTime = document.getElementById("resultTime");
+    const resultFalls = document.getElementById("resultFalls");
+
+    const elements = [
+      { number: 1, symbol: "H", name: "Hydrogen", trait: "lift pulse", motion: "bob", color: "#7cf5ff" },
+      { number: 2, symbol: "He", name: "Helium", trait: "side drift", motion: "drift", color: "#ffd16f" },
+      { number: 3, symbol: "Li", name: "Lithium", trait: "ion slide", motion: "skate", color: "#ff9168" },
+      { number: 4, symbol: "Be", name: "Beryllium", trait: "tight pulse", motion: "pulse", color: "#9df2b3" },
+      { number: 5, symbol: "B", name: "Boron", trait: "angled flex", motion: "rock", color: "#ffb565" },
+      { number: 6, symbol: "C", name: "Carbon", trait: "steady core", motion: "solid", color: "#82d4ff" },
+      { number: 7, symbol: "N", name: "Nitrogen", trait: "gust burst", motion: "gust", color: "#7fb4ff" },
+      { number: 8, symbol: "O", name: "Oxygen", trait: "air boost", motion: "lowgrav", color: "#ff7e7b" },
+      { number: 9, symbol: "F", name: "Fluorine", trait: "slick edge", motion: "slip", color: "#74f3b8" },
+      { number: 10, symbol: "Ne", name: "Neon", trait: "flash rise", motion: "blink", color: "#ffb36d" },
+      { number: 11, symbol: "Na", name: "Sodium", trait: "charge surge", motion: "surge", color: "#f5ce68" },
+      { number: 12, symbol: "Mg", name: "Magnesium", trait: "lift wave", motion: "lift", color: "#c4f17d" },
+      { number: 13, symbol: "Al", name: "Aluminium", trait: "hinge sway", motion: "hinge", color: "#e8f0ff" },
+      { number: 14, symbol: "Si", name: "Silicon", trait: "ripple logic", motion: "ripple", color: "#f1c58c" },
+      { number: 15, symbol: "P", name: "Phosphorus", trait: "spark jump", motion: "spark", color: "#ff8d8d" },
+      { number: 16, symbol: "S", name: "Sulfur", trait: "heat quake", motion: "quake", color: "#ffe27f" },
+      { number: 17, symbol: "Cl", name: "Chlorine", trait: "cross draft", motion: "draft", color: "#84ffb8" },
+      { number: 18, symbol: "Ar", name: "Argon", trait: "orbital crown", motion: "orbit", color: "#99b8ff" }
+    ];
+
+    const queueNodes = [];
+    elements.forEach((element) => {
+      const card = document.createElement("div");
+      card.className = "queue-card";
+      card.style.color = element.color;
+      card.innerHTML = `
+        <span class="mini-number">${element.number}</span>
+        <span class="mini-symbol">${element.symbol}</span>
+      `;
+      periodicGrid.appendChild(card);
+      queueNodes.push(card);
+    });
+
+    function buildPanels() {
+      return elements.map((element, index) => {
+        const baseX = Math.sin(index * 0.71) * 3.25 + Math.sin(index * 0.23 + 0.8) * 1.15;
+        const baseZ = index * 5.55;
+        const baseY = Math.sin(index * 0.42) * 0.2 - (index % 2 === 0 ? 0.05 : 0);
+        return {
+          id: index,
+          element,
+          baseX,
+          baseY,
+          baseZ,
+          x: baseX,
+          y: baseY,
+          z: baseZ,
+          prevX: baseX,
+          prevY: baseY,
+          prevZ: baseZ,
+          widthBase: index === 0 || index === elements.length - 1 ? 4.8 : 4.15 - (index % 5 === 0 ? 0.1 : 0),
+          depthBase: index === 0 || index === elements.length - 1 ? 4.8 : 4.05,
+          height: 0.86,
+          scale: 1,
+          yaw: 0,
+          tiltX: 0,
+          tiltZ: 0,
+          windX: 0,
+          windZ: 0,
+          jumpBoost: 1,
+          gravityMul: 1,
+          friction: 0.82,
+          phase: index * 0.67
+        };
+      });
+    }
+
+    const panels = buildPanels();
+
+    const player = {
+      x: panels[0].x,
+      y: panels[0].y + 0.44,
+      z: panels[0].z,
+      vx: 0,
+      vy: 0,
+      vz: 0,
+      radius: 0.44,
+      height: 1.42,
+      onGround: true,
+      groundId: 0,
+      bestIndex: 0,
+      checkpointIndex: 0,
+      falls: 0
+    };
+
+    const world = {
+      elapsed: 0,
+      started: false,
+      finished: false,
+      finishHold: 0,
+      noticeText: "",
+      noticeTime: 0,
+      inputX: 0,
+      inputY: 0,
+      jumpBuffer: 0,
+      keyboard: new Set()
+    };
+
+    const camera = {
+      x: panels[0].x,
+      y: 5.8,
+      z: panels[0].z - 9,
+      yaw: 0,
+      pitch: 0.56,
+      focal: 760
+    };
+
+    const viewport = { width: 1, height: 1, dpr: 1 };
+    const stars = Array.from({ length: 72 }, (_, index) => ({
+      x: (Math.sin(index * 78.233) * 43758.5453) % 1,
+      y: (Math.cos(index * 39.173) * 24634.6345) % 1,
+      size: 0.8 + (index % 3) * 0.55,
+      alpha: 0.18 + (index % 5) * 0.06
+    })).map((star) => ({
+      ...star,
+      x: Math.abs(star.x),
+      y: Math.abs(star.y)
+    }));
+
+    function formatTime(seconds) {
+      return seconds.toFixed(1).padStart(4, "0");
+    }
+
+    function showNotice(text, duration = 1.25) {
+      world.noticeText = text;
+      world.noticeTime = duration;
+      notice.textContent = text;
+      notice.classList.add("show");
+    }
+
+    function queueJump() {
+      if (world.finished) {
+        resetRun();
+        return;
+      }
+      world.started = true;
+      world.jumpBuffer = 0.18;
+      jumpBtn.classList.add("pressed");
+      window.setTimeout(() => jumpBtn.classList.remove("pressed"), 120);
+    }
+
+    function resetRun() {
+      panels.forEach((panel) => {
+        panel.x = panel.baseX;
+        panel.y = panel.baseY;
+        panel.z = panel.baseZ;
+        panel.prevX = panel.baseX;
+        panel.prevY = panel.baseY;
+        panel.prevZ = panel.baseZ;
+        panel.scale = 1;
+        panel.yaw = 0;
+        panel.tiltX = 0;
+        panel.tiltZ = 0;
+      });
+
+      player.x = panels[0].x;
+      player.y = panels[0].y + player.radius;
+      player.z = panels[0].z;
+      player.vx = 0;
+      player.vy = 0;
+      player.vz = 0;
+      player.onGround = true;
+      player.groundId = 0;
+      player.bestIndex = 0;
+      player.checkpointIndex = 0;
+      player.falls = 0;
+
+      world.elapsed = 0;
+      world.started = false;
+      world.finished = false;
+      world.finishHold = 0;
+      world.noticeText = "";
+      world.noticeTime = 0;
+      world.jumpBuffer = 0;
+
+      camera.x = panels[0].x;
+      camera.y = 5.8;
+      camera.z = panels[0].z - 9;
+      camera.yaw = 0;
+      camera.pitch = 0.56;
+
+      notice.classList.remove("show");
+      resultCard.classList.remove("show");
+      updateHud();
+    }
+
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      viewport.width = rect.width;
+      viewport.height = rect.height;
+      viewport.dpr = Math.min(2, window.devicePixelRatio || 1);
+      canvas.width = Math.round(rect.width * viewport.dpr);
+      canvas.height = Math.round(rect.height * viewport.dpr);
+      ctx.setTransform(viewport.dpr, 0, 0, viewport.dpr, 0, 0);
+      camera.focal = Math.max(480, rect.height * 1.22);
+    }
+
+    function updateQueue() {
+      queueNodes.forEach((node, index) => {
+        node.classList.toggle("reached", index <= player.bestIndex);
+        node.classList.toggle("current", index === player.bestIndex && !world.finished);
+      });
+      if (world.finished) {
+        queueNodes[queueNodes.length - 1].classList.add("current");
+      }
+    }
+
+    function currentPanelData() {
+      const index = player.groundId ?? player.bestIndex;
+      return panels[clamp(index, 0, panels.length - 1)];
+    }
+
+    function updateHud() {
+      const current = currentPanelData();
+      const next = panels[Math.min(player.bestIndex + 1, panels.length - 1)];
+
+      progressValue.textContent = `${String(player.bestIndex + 1).padStart(2, "0")} / ${String(panels.length).padStart(2, "0")}`;
+      timeValue.textContent = formatTime(world.elapsed);
+      fallValue.textContent = `falls ${player.falls}`;
+      checkpointValue.textContent = `cp ${panels[player.checkpointIndex].element.symbol}`;
+
+      if (world.finished) {
+        statusValue.textContent = "argon clear";
+      } else if (!player.onGround) {
+        statusValue.textContent = "air";
+      } else {
+        statusValue.textContent = current.element.trait;
+      }
+
+      elementNumber.textContent = current.element.number;
+      elementSymbol.textContent = current.element.symbol;
+      elementName.textContent = current.element.name;
+      elementTrait.textContent = current.element.trait;
+      elementBadge.style.background = `linear-gradient(145deg, ${rgba(current.element.color, 0.28)}, rgba(255, 255, 255, 0.04))`;
+      elementBadge.style.color = current.element.color;
+
+      nextSymbol.textContent = next.element.symbol;
+      nextName.textContent = next.element.name;
+
+      resultTime.textContent = formatTime(world.elapsed);
+      resultFalls.textContent = String(player.falls);
+      updateQueue();
+    }
+
+    function moveVector() {
+      let x = world.inputX;
+      let y = world.inputY;
+      if (world.keyboard.has("ArrowLeft") || world.keyboard.has("KeyA")) x -= 1;
+      if (world.keyboard.has("ArrowRight") || world.keyboard.has("KeyD")) x += 1;
+      if (world.keyboard.has("ArrowUp") || world.keyboard.has("KeyW")) y -= 1;
+      if (world.keyboard.has("ArrowDown") || world.keyboard.has("KeyS")) y += 1;
+      const length = Math.hypot(x, y);
+      if (length > 1) {
+        x /= length;
+        y /= length;
+      }
+      return { x, y };
+    }
+
+    function updatePanels(time) {
+      panels.forEach((panel) => {
+        panel.prevX = panel.x;
+        panel.prevY = panel.y;
+        panel.prevZ = panel.z;
+        panel.windX = 0;
+        panel.windZ = 0;
+        panel.jumpBoost = 1;
+        panel.gravityMul = 1;
+        panel.friction = 0.82;
+        panel.scale = 1;
+        panel.yaw = 0;
+        panel.tiltX = 0;
+        panel.tiltZ = 0;
+
+        const phase = time + panel.phase;
+        let x = panel.baseX;
+        let y = panel.baseY;
+        let z = panel.baseZ;
+
+        switch (panel.element.motion) {
+          case "bob":
+            y += Math.sin(phase * 1.9) * 0.36;
+            panel.jumpBoost = 1.16;
+            panel.tiltX = Math.sin(phase * 1.4) * 0.05;
+            break;
+          case "drift":
+            x += Math.sin(phase * 1.35) * 0.95;
+            y += Math.cos(phase * 1.35) * 0.12;
+            panel.tiltZ = Math.sin(phase * 1.35) * 0.08;
+            break;
+          case "skate": {
+            const slide = triangleWave((phase * 0.42) % 1);
+            x += slide * 1.18;
+            panel.windX = Math.sign(Math.cos(phase * 2.64)) * 1.4;
+            panel.tiltZ = slide * 0.12;
+            break;
+          }
+          case "pulse":
+            panel.scale = 1 + Math.sin(phase * 3.1) * 0.12;
+            y += Math.max(0, Math.sin(phase * 3.1)) * 0.18;
+            panel.jumpBoost = 1.08;
+            break;
+          case "rock":
+            panel.tiltZ = Math.sin(phase * 1.55) * 0.22;
+            panel.tiltX = Math.cos(phase * 1.55) * 0.09;
+            panel.yaw = Math.sin(phase * 1.08) * 0.12;
+            break;
+          case "solid":
+            panel.jumpBoost = 1.02;
+            panel.friction = 0.74;
+            break;
+          case "gust":
+            y += Math.sin(phase * 2.1) * 0.16;
+            panel.windZ = 2.2 * Math.max(0, Math.sin(phase * 2.4));
+            panel.tiltX = Math.sin(phase * 2.4) * 0.08;
+            break;
+          case "lowgrav":
+            y += Math.sin(phase * 1.7) * 0.24;
+            panel.jumpBoost = 1.2;
+            panel.gravityMul = 0.76;
+            panel.windZ = 0.5;
+            break;
+          case "slip":
+            x += Math.sin(phase * 2.55) * 0.34;
+            panel.friction = 0.94;
+            panel.tiltZ = Math.sin(phase * 2.55) * 0.06;
+            break;
+          case "blink": {
+            const flash = Math.sin(phase * 4.2);
+            y += flash > 0.82 ? 0.56 : flash * 0.08;
+            panel.scale = flash > 0.82 ? 0.92 : 1;
+            break;
+          }
+          case "surge":
+            z += Math.sin(phase * 1.6) * 0.92;
+            panel.windZ = Math.cos(phase * 1.6) * 2.4;
+            panel.tiltX = Math.sin(phase * 1.6) * 0.12;
+            break;
+          case "lift":
+            y += Math.sin(phase * 1.45) * 0.76;
+            panel.jumpBoost = 1.1;
+            break;
+          case "hinge":
+            x += Math.sin(phase * 1.18) * 0.62;
+            panel.tiltZ = Math.sin(phase * 1.18) * 0.24;
+            panel.yaw = Math.sin(phase * 0.82) * 0.1;
+            break;
+          case "ripple":
+            y += Math.sin(phase * 2.8) * 0.24 + Math.cos(phase * 1.2) * 0.08;
+            panel.scale = 1 + Math.sin(phase * 2.8) * 0.06;
+            break;
+          case "spark":
+            y += Math.max(0, Math.sin(phase * 5.1)) * 0.28;
+            panel.jumpBoost = 1.3;
+            panel.windZ = 0.9;
+            break;
+          case "quake":
+            x += Math.sin(phase * 7.6) * 0.1 + Math.sin(phase * 11.8) * 0.06;
+            z += Math.cos(phase * 8.8) * 0.08;
+            panel.tiltX = Math.sin(phase * 8.8) * 0.08;
+            panel.tiltZ = Math.cos(phase * 7.2) * 0.08;
+            break;
+          case "draft":
+            x += Math.sin(phase * 1.58) * 0.82;
+            panel.windX = Math.cos(phase * 1.58) * 2.1;
+            panel.tiltZ = Math.sin(phase * 1.58) * 0.16;
+            break;
+          case "orbit":
+            y += Math.sin(phase * 2.15) * 0.34;
+            panel.yaw = phase * 0.55;
+            panel.scale = 1 + Math.sin(phase * 2.15) * 0.04;
+            break;
+          default:
+            break;
+        }
+
+        panel.x = x;
+        panel.y = y;
+        panel.z = z;
+      });
+    }
+
+    function respawn() {
+      const checkpoint = panels[player.checkpointIndex];
+      player.x = checkpoint.x;
+      player.y = checkpoint.y + player.radius;
+      player.z = checkpoint.z;
+      player.vx = 0;
+      player.vy = 0;
+      player.vz = 0;
+      player.onGround = true;
+      player.groundId = checkpoint.id;
+      player.falls += 1;
+      world.jumpBuffer = 0;
+      world.finishHold = 0;
+      showNotice(`respawn ${checkpoint.element.symbol}`);
+    }
+
+    function updatePhysics(dt) {
+      updatePanels(world.elapsed);
+
+      if (player.onGround && player.groundId != null) {
+        const panel = panels[player.groundId];
+        player.x += panel.x - panel.prevX;
+        player.y += panel.y - panel.prevY;
+        player.z += panel.z - panel.prevZ;
+      }
+
+      const input = moveVector();
+      if (!world.finished && (Math.abs(input.x) > 0.04 || Math.abs(input.y) > 0.04 || world.jumpBuffer > 0)) {
+        world.started = true;
+      }
+
+      const rightX = Math.cos(camera.yaw);
+      const rightZ = -Math.sin(camera.yaw);
+      const forwardX = Math.sin(camera.yaw);
+      const forwardZ = Math.cos(camera.yaw);
+      const desiredX = rightX * input.x + forwardX * -input.y;
+      const desiredZ = rightZ * input.x + forwardZ * -input.y;
+      const desiredLength = Math.hypot(desiredX, desiredZ) || 1;
+      const moveX = desiredX / desiredLength;
+      const moveZ = desiredZ / desiredLength;
+
+      const groundPanel = player.groundId != null ? panels[player.groundId] : null;
+      const speedMul = groundPanel ? (groundPanel.element.motion === "slip" ? 1.08 : 1) : 1;
+      const accel = player.onGround ? 18 : 8;
+      const maxSpeed = (player.onGround ? 6.2 : 5.4) * speedMul;
+
+      if (!world.finished && Math.abs(input.x) + Math.abs(input.y) > 0.08) {
+        player.vx += moveX * accel * dt;
+        player.vz += moveZ * accel * dt;
+      }
+
+      const horizontalSpeed = Math.hypot(player.vx, player.vz);
+      if (horizontalSpeed > maxSpeed) {
+        const scale = maxSpeed / horizontalSpeed;
+        player.vx *= scale;
+        player.vz *= scale;
+      }
+
+      if (groundPanel) {
+        player.vx += groundPanel.windX * dt;
+        player.vz += groundPanel.windZ * dt;
+      }
+
+      const gravityMul = groundPanel && player.onGround ? groundPanel.gravityMul : 1;
+      const friction = player.onGround && groundPanel ? groundPanel.friction : 0.985;
+      const damping = Math.pow(friction, dt * 60);
+
+      player.vx *= damping;
+      player.vz *= damping;
+
+      if (!world.finished && world.jumpBuffer > 0 && player.onGround) {
+        const jumpBoost = groundPanel ? groundPanel.jumpBoost : 1;
+        player.vy = 7.45 * jumpBoost;
+        player.onGround = false;
+        player.groundId = null;
+        world.jumpBuffer = 0;
+      }
+
+      player.vy -= 18.5 * gravityMul * dt;
+
+      const previousFoot = player.y - player.radius;
+
+      player.x += player.vx * dt;
+      player.y += player.vy * dt;
+      player.z += player.vz * dt;
+
+      let bestLanding = null;
+      let bestTop = -Infinity;
+
+      panels.forEach((panel) => {
+        const halfW = panel.widthBase * panel.scale * 0.5 - 0.15;
+        const halfD = panel.depthBase * panel.scale * 0.5 - 0.15;
+        if (Math.abs(player.x - panel.x) > halfW || Math.abs(player.z - panel.z) > halfD) {
+          return;
+        }
+        const top = panel.y;
+        const foot = player.y - player.radius;
+        if (player.vy <= 2 && previousFoot >= top - 0.16 && foot <= top + 0.26 && top > bestTop) {
+          bestTop = top;
+          bestLanding = panel;
+        }
+      });
+
+      if (bestLanding) {
+        player.y = bestLanding.y + player.radius;
+        player.vy = 0;
+        player.onGround = true;
+        player.groundId = bestLanding.id;
+      } else {
+        player.onGround = false;
+        player.groundId = null;
+      }
+
+      if (player.groundId != null && player.groundId > player.bestIndex) {
+        player.bestIndex = player.groundId;
+        player.checkpointIndex = player.groundId;
+        showNotice(`checkpoint ${panels[player.checkpointIndex].element.symbol}`);
+      }
+
+      if (player.y < -10) {
+        respawn();
+      }
+
+      if (player.onGround && player.groundId === panels.length - 1) {
+        world.finishHold += dt;
+        if (world.finishHold > 0.9 && !world.finished) {
+          world.finished = true;
+          showNotice("argon clear", 1.6);
+          resultCard.classList.add("show");
+        }
+      } else if (!world.finished) {
+        world.finishHold = Math.max(0, world.finishHold - dt * 1.8);
+      }
+    }
+
+    function updateCamera(dt) {
+      const target = panels[Math.min(player.bestIndex + 1, panels.length - 1)];
+      const vx = player.vx;
+      const vz = player.vz;
+      const moveLength = Math.hypot(vx, vz);
+
+      let aimX = target.x - player.x;
+      let aimZ = target.z - player.z;
+      if (moveLength > 0.2) {
+        aimX = aimX * 0.55 + (vx / moveLength) * 2.8;
+        aimZ = aimZ * 0.55 + (vz / moveLength) * 2.8;
+      }
+      const aimYaw = Math.atan2(aimX, aimZ);
+      camera.yaw = lerpAngle(camera.yaw, aimYaw, 1 - Math.pow(0.001, dt));
+
+      const desiredPitch = 0.56 + clamp(player.vy * 0.014, -0.06, 0.08);
+      camera.pitch = smooth(camera.pitch, desiredPitch, 1 - Math.pow(0.001, dt));
+
+      const follow = 9.3;
+      const sideOffset = 1.15;
+      const desiredX = player.x - Math.sin(camera.yaw) * follow + Math.cos(camera.yaw) * sideOffset;
+      const desiredZ = player.z - Math.cos(camera.yaw) * follow - Math.sin(camera.yaw) * sideOffset;
+      const desiredY = player.y + 5.65;
+
+      camera.x = smooth(camera.x, desiredX, 1 - Math.pow(0.001, dt));
+      camera.y = smooth(camera.y, desiredY, 1 - Math.pow(0.001, dt));
+      camera.z = smooth(camera.z, desiredZ, 1 - Math.pow(0.001, dt));
+    }
+
+    function project(point) {
+      const dx = point.x - camera.x;
+      const dy = point.y - camera.y;
+      const dz = point.z - camera.z;
+
+      const cosYaw = Math.cos(camera.yaw);
+      const sinYaw = Math.sin(camera.yaw);
+      const rx = dx * cosYaw - dz * sinYaw;
+      const rz = dx * sinYaw + dz * cosYaw;
+
+      const cosPitch = Math.cos(camera.pitch);
+      const sinPitch = Math.sin(camera.pitch);
+      const ry = dy * cosPitch + rz * sinPitch;
+      const depth = rz * cosPitch - dy * sinPitch;
+
+      if (depth <= 0.2) {
+        return null;
+      }
+
+      const scale = camera.focal / depth;
+      return {
+        x: viewport.width * 0.5 + rx * scale,
+        y: viewport.height * 0.58 - ry * scale,
+        depth,
+        scale
+      };
+    }
+
+    function drawBackground() {
+      ctx.clearRect(0, 0, viewport.width, viewport.height);
+
+      const sky = ctx.createLinearGradient(0, 0, 0, viewport.height);
+      sky.addColorStop(0, "rgba(16, 34, 58, 0.84)");
+      sky.addColorStop(0.45, "rgba(8, 18, 29, 0.78)");
+      sky.addColorStop(1, "rgba(3, 7, 12, 0.96)");
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, viewport.width, viewport.height);
+
+      stars.forEach((star, index) => {
+        const twinkle = 0.75 + Math.sin(world.elapsed * (0.8 + index * 0.03) + index) * 0.25;
+        ctx.fillStyle = `rgba(235, 247, 255, ${star.alpha * twinkle})`;
+        const x = (star.x * viewport.width + world.elapsed * (index % 4 === 0 ? 3 : 1.4)) % viewport.width;
+        const y = (star.y * viewport.height * 0.56) + Math.sin(world.elapsed * 0.12 + index) * 5;
+        ctx.fillRect(x, y, star.size, star.size);
+      });
+
+      const glow = ctx.createRadialGradient(
+        viewport.width * 0.5,
+        viewport.height * 0.8,
+        20,
+        viewport.width * 0.5,
+        viewport.height * 0.8,
+        viewport.width * 0.48
+      );
+      glow.addColorStop(0, "rgba(121, 244, 255, 0.12)");
+      glow.addColorStop(0.55, "rgba(255, 138, 103, 0.08)");
+      glow.addColorStop(1, "rgba(0, 0, 0, 0)");
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, viewport.width, viewport.height);
+    }
+
+    function panelCorners(panel) {
+      const halfW = panel.widthBase * panel.scale * 0.5;
+      const halfD = panel.depthBase * panel.scale * 0.5;
+      const yawCos = Math.cos(panel.yaw);
+      const yawSin = Math.sin(panel.yaw);
+
+      return [
+        { lx: -halfW, lz: -halfD },
+        { lx: halfW, lz: -halfD },
+        { lx: halfW, lz: halfD },
+        { lx: -halfW, lz: halfD }
+      ].map((corner) => {
+        const wx = panel.x + corner.lx * yawCos - corner.lz * yawSin;
+        const wz = panel.z + corner.lx * yawSin + corner.lz * yawCos;
+        const wy = panel.y + (corner.lz / halfD) * panel.tiltX + (corner.lx / halfW) * panel.tiltZ;
+        return { x: wx, y: wy, z: wz };
+      });
+    }
+
+    function drawPolygon(points, fillStyle, strokeStyle) {
+      if (points.some((point) => !point)) {
+        return;
+      }
+      ctx.beginPath();
+      ctx.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length; i += 1) {
+        ctx.lineTo(points[i].x, points[i].y);
+      }
+      ctx.closePath();
+      ctx.fillStyle = fillStyle;
+      ctx.fill();
+      if (strokeStyle) {
+        ctx.strokeStyle = strokeStyle;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+    }
+
+    function drawPanels() {
+      const connectors = [];
+      const faces = [];
+
+      for (let i = 0; i < panels.length; i += 1) {
+        const panel = panels[i];
+        const corners3d = panelCorners(panel);
+        const topProjected = corners3d.map(project);
+        const bottomProjected = corners3d.map((corner) => project({ x: corner.x, y: corner.y - panel.height, z: corner.z }));
+        if (topProjected.some((point) => !point) || bottomProjected.some((point) => !point)) {
+          continue;
+        }
+
+        const center = project({ x: panel.x, y: panel.y, z: panel.z });
+        const depth = topProjected.reduce((sum, point) => sum + point.depth, 0) / topProjected.length;
+        const topColor = panel.element.color;
+        const sideColor = shade(topColor, 0.42);
+        const baseStroke = rgba(topColor, 0.3);
+
+        if (i < panels.length - 1) {
+          const next = panels[i + 1];
+          const from = project({ x: panel.x, y: panel.y + 0.08, z: panel.z });
+          const to = project({ x: next.x, y: next.y + 0.08, z: next.z });
+          if (from && to) {
+            connectors.push({ from, to, color: topColor, depth: (from.depth + to.depth) * 0.5 });
+          }
+        }
+
+        const topFace = {
+          depth,
+          draw() {
+            drawPolygon(topProjected, rgba(topColor, panel.id <= player.bestIndex ? 0.34 : 0.22), rgba("#ffffff", 0.06));
+
+            if (panel.id === player.bestIndex + 1 && !world.finished) {
+              ctx.fillStyle = rgba(topColor, 0.18);
+              drawPolygon(topProjected, rgba(topColor, 0.14), rgba(topColor, 0.42));
+            }
+
+            if (center) {
+              const fontSize = clamp(center.scale * 0.7, 12, 34);
+              ctx.textAlign = "center";
+              ctx.textBaseline = "middle";
+              ctx.fillStyle = rgba("#ffffff", 0.92);
+              ctx.font = `700 ${fontSize}px Oxanium`;
+              ctx.fillText(panel.element.symbol, center.x, center.y - fontSize * 0.08);
+              ctx.font = `${Math.max(8, fontSize * 0.26)}px "IBM Plex Mono"`;
+              ctx.fillStyle = rgba("#ffffff", 0.54);
+              ctx.fillText(String(panel.element.number), center.x, center.y - fontSize * 0.76);
+            }
+          }
+        };
+
+        faces.push(topFace);
+
+        for (let edge = 0; edge < 4; edge += 1) {
+          const nextEdge = (edge + 1) % 4;
+          const side = [
+            topProjected[edge],
+            topProjected[nextEdge],
+            bottomProjected[nextEdge],
+            bottomProjected[edge]
+          ];
+          const avgDepth = side.reduce((sum, point) => sum + point.depth, 0) / side.length;
+          faces.push({
+            depth: avgDepth,
+            draw() {
+              drawPolygon(side, rgba(sideColor, 0.76), baseStroke);
+            }
+          });
+        }
+      }
+
+      connectors
+        .sort((a, b) => b.depth - a.depth)
+        .forEach((connector) => {
+          const gradient = ctx.createLinearGradient(connector.from.x, connector.from.y, connector.to.x, connector.to.y);
+          gradient.addColorStop(0, rgba(connector.color, 0.05));
+          gradient.addColorStop(0.5, rgba(connector.color, 0.28));
+          gradient.addColorStop(1, rgba(connector.color, 0.05));
+          ctx.strokeStyle = gradient;
+          ctx.lineWidth = clamp(2.2 / connector.from.depth * 100, 1.2, 4.8);
+          ctx.beginPath();
+          ctx.moveTo(connector.from.x, connector.from.y);
+          ctx.lineTo(connector.to.x, connector.to.y);
+          ctx.stroke();
+        });
+
+      faces.sort((a, b) => b.depth - a.depth).forEach((face) => face.draw());
+    }
+
+    function drawTargetRing() {
+      const nextIndex = world.finished ? panels.length - 1 : Math.min(player.bestIndex + 1, panels.length - 1);
+      const panel = panels[nextIndex];
+      const center = project({ x: panel.x, y: panel.y + 0.04, z: panel.z });
+      const top = project({ x: panel.x, y: panel.y + 2.3, z: panel.z });
+      if (!center || !top) {
+        return;
+      }
+
+      ctx.strokeStyle = rgba(panel.element.color, 0.46);
+      ctx.lineWidth = clamp(center.scale * 0.05, 1.2, 4);
+      ctx.beginPath();
+      ctx.moveTo(center.x, center.y);
+      ctx.lineTo(top.x, top.y);
+      ctx.stroke();
+
+      const ringRadius = clamp(center.scale * 0.26, 12, 38);
+      ctx.beginPath();
+      ctx.ellipse(center.x, center.y, ringRadius, ringRadius * 0.38, 0, 0, TAU);
+      ctx.strokeStyle = rgba(panel.element.color, 0.86);
+      ctx.lineWidth = clamp(center.scale * 0.035, 1.4, 3.4);
+      ctx.stroke();
+
+      if (panel.element.motion === "orbit") {
+        for (let i = 0; i < 3; i += 1) {
+          const angle = world.elapsed * 2.2 + i * (TAU / 3);
+          const px = center.x + Math.cos(angle) * ringRadius * 0.82;
+          const py = center.y + Math.sin(angle) * ringRadius * 0.3;
+          ctx.beginPath();
+          ctx.arc(px, py, clamp(center.scale * 0.05, 2.5, 6), 0, TAU);
+          ctx.fillStyle = rgba(panel.element.color, 0.88);
+          ctx.fill();
+        }
+      }
+    }
+
+    function drawPlayer() {
+      const shadowHeight = player.onGround && player.groundId != null ? panels[player.groundId].y : player.y - player.radius;
+      const shadow = project({ x: player.x, y: shadowHeight + 0.02, z: player.z });
+      if (shadow) {
+        ctx.beginPath();
+        ctx.ellipse(
+          shadow.x,
+          shadow.y,
+          clamp(shadow.scale * 0.28, 8, 32),
+          clamp(shadow.scale * 0.1, 3, 10),
+          0,
+          0,
+          TAU
+        );
+        ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
+        ctx.fill();
+      }
+
+      const foot = project({ x: player.x, y: player.y - player.radius * 0.85, z: player.z });
+      const head = project({ x: player.x, y: player.y + player.height * 0.68, z: player.z });
+      const visor = project({ x: player.x, y: player.y + player.height * 0.82, z: player.z + 0.06 });
+
+      if (!foot || !head) {
+        return;
+      }
+
+      const width = clamp(head.scale * 0.18, 10, 22);
+      const bodyGradient = ctx.createLinearGradient(head.x, head.y, foot.x, foot.y);
+      bodyGradient.addColorStop(0, "rgba(121, 244, 255, 0.98)");
+      bodyGradient.addColorStop(1, "rgba(255, 138, 103, 0.96)");
+
+      ctx.strokeStyle = bodyGradient;
+      ctx.lineWidth = width;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(head.x, head.y + width * 0.45);
+      ctx.lineTo(foot.x, foot.y);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(head.x, head.y, width * 0.68, 0, TAU);
+      ctx.fillStyle = "rgba(244, 252, 255, 0.96)";
+      ctx.fill();
+
+      if (visor) {
+        ctx.beginPath();
+        ctx.ellipse(visor.x, visor.y, width * 0.44, width * 0.22, 0, 0, TAU);
+        ctx.fillStyle = "rgba(5, 17, 28, 0.9)";
+        ctx.fill();
+      }
+
+      if (!player.onGround) {
+        ctx.strokeStyle = "rgba(121, 244, 255, 0.26)";
+        ctx.lineWidth = width * 0.55;
+        ctx.beginPath();
+        ctx.moveTo(head.x, head.y);
+        ctx.lineTo(head.x - player.vx * 4.5, head.y + 8);
+        ctx.stroke();
+      }
+    }
+
+    function render() {
+      drawBackground();
+      drawPanels();
+      drawTargetRing();
+      drawPlayer();
+    }
+
+    let lastTime = performance.now();
+
+    function frame(now) {
+      const dt = Math.min(0.033, (now - lastTime) / 1000);
+      lastTime = now;
+
+      if (world.started && !world.finished) {
+        world.elapsed += dt;
+      }
+      if (world.jumpBuffer > 0) {
+        world.jumpBuffer = Math.max(0, world.jumpBuffer - dt);
+      }
+      if (world.noticeTime > 0) {
+        world.noticeTime = Math.max(0, world.noticeTime - dt);
+        if (world.noticeTime === 0) {
+          notice.classList.remove("show");
+        }
+      }
+
+      updatePhysics(dt);
+      updateCamera(dt);
+      updateHud();
+      render();
+
+      requestAnimationFrame(frame);
+    }
+
+    let stickPointerId = null;
+
+    function updateStickFromPointer(clientX, clientY) {
+      const rect = stickPad.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      const radius = rect.width * 0.34;
+      const dx = clientX - centerX;
+      const dy = clientY - centerY;
+      const length = Math.hypot(dx, dy);
+      const clamped = Math.min(radius, length);
+      const angle = Math.atan2(dy, dx);
+      const knobX = Math.cos(angle) * clamped;
+      const knobY = Math.sin(angle) * clamped;
+      world.inputX = clamp(knobX / radius, -1, 1);
+      world.inputY = clamp(knobY / radius, -1, 1);
+      stickKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`;
+    }
+
+    function resetStick() {
+      world.inputX = 0;
+      world.inputY = 0;
+      stickKnob.style.transform = "translate(-50%, -50%)";
+    }
+
+    stickPad.addEventListener("pointerdown", (event) => {
+      stickPointerId = event.pointerId;
+      world.started = true;
+      updateStickFromPointer(event.clientX, event.clientY);
+    });
+
+    window.addEventListener("pointermove", (event) => {
+      if (event.pointerId !== stickPointerId) {
+        return;
+      }
+      updateStickFromPointer(event.clientX, event.clientY);
+    });
+
+    window.addEventListener("pointerup", (event) => {
+      if (event.pointerId !== stickPointerId) {
+        return;
+      }
+      stickPointerId = null;
+      resetStick();
+    });
+
+    window.addEventListener("pointercancel", (event) => {
+      if (event.pointerId !== stickPointerId) {
+        return;
+      }
+      stickPointerId = null;
+      resetStick();
+    });
+
+    jumpBtn.addEventListener("pointerdown", () => queueJump());
+    restartBtn.addEventListener("click", () => resetRun());
+
+    window.addEventListener("keydown", (event) => {
+      if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Space", "KeyA", "KeyD", "KeyW", "KeyS", "KeyR"].includes(event.code)) {
+        event.preventDefault();
+      }
+      if (event.code === "Space") {
+        queueJump();
+        return;
+      }
+      if (event.code === "KeyR") {
+        resetRun();
+        return;
+      }
+      world.keyboard.add(event.code);
+    });
+
+    window.addEventListener("keyup", (event) => {
+      world.keyboard.delete(event.code);
+    });
+
+    window.addEventListener("resize", resizeCanvas);
+
+    window.__periodicParkour = {
+      getState() {
+        return {
+          bestIndex: player.bestIndex,
+          checkpointIndex: player.checkpointIndex,
+          falls: player.falls,
+          onGround: player.onGround,
+          groundId: player.groundId,
+          elapsed: Number(world.elapsed.toFixed(2)),
+          finished: world.finished,
+          player: {
+            x: Number(player.x.toFixed(2)),
+            y: Number(player.y.toFixed(2)),
+            z: Number(player.z.toFixed(2)),
+            vy: Number(player.vy.toFixed(2))
+          },
+          viewport: {
+            width: viewport.width,
+            height: viewport.height,
+            docScrollHeight: document.documentElement.scrollHeight,
+            docClientHeight: document.documentElement.clientHeight,
+            bodyScrollHeight: document.body.scrollHeight,
+            innerHeight: window.innerHeight
+          }
+        };
+      },
+      jump: queueJump,
+      reset: resetRun
+    };
+
+    resizeCanvas();
+    resetRun();
+    requestAnimationFrame(frame);
+  </script>
+</body>
+</html>
