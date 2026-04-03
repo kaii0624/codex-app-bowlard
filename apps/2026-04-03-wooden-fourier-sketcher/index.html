@@ -1,0 +1,1416 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"
+  />
+  <title>Wooden Fourier Sketcher</title>
+  <style>
+    :root {
+      --bg-0: #683c18;
+      --bg-1: #7e4c22;
+      --bg-2: #c99653;
+      --panel-0: rgba(62, 34, 11, 0.94);
+      --panel-1: rgba(95, 58, 24, 0.94);
+      --panel-line: rgba(255, 224, 169, 0.2);
+      --text: #fff1cf;
+      --muted: rgba(255, 237, 198, 0.68);
+      --shadow: 0 20px 36px rgba(36, 14, 0, 0.34);
+      --cream: #f5dfb6;
+      --teal: #2f8292;
+      --red: #c44a3b;
+      --yellow: #d6a63d;
+      --green: #5f9c4d;
+      --blue: #4479c8;
+      --orange: #d67b2d;
+      --wood: #c8954a;
+      --wood-deep: #8b5e3c;
+      --wood-dark: #5c3318;
+      color-scheme: dark;
+      font-family: "Avenir Next Condensed", "Trebuchet MS", "Hiragino Sans", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 18% 0%, rgba(255, 215, 144, 0.12), transparent 40%),
+        radial-gradient(circle at 100% 100%, rgba(59, 130, 246, 0.08), transparent 36%),
+        linear-gradient(180deg, #8f5528 0%, #6d3d1b 30%, #41210b 100%);
+    }
+
+    body {
+      position: fixed;
+      inset: 0;
+      color: var(--text);
+      user-select: none;
+      touch-action: manipulation;
+    }
+
+    button,
+    input {
+      font: inherit;
+      color: inherit;
+    }
+
+    .app {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 10px;
+      padding:
+        max(10px, env(safe-area-inset-top))
+        max(10px, env(safe-area-inset-right))
+        max(10px, env(safe-area-inset-bottom))
+        max(10px, env(safe-area-inset-left));
+      overflow: hidden;
+    }
+
+    .panel {
+      position: relative;
+      overflow: hidden;
+      border-radius: 28px;
+      border: 1px solid var(--panel-line);
+      background:
+        linear-gradient(180deg, rgba(255, 238, 199, 0.08), transparent 28%),
+        linear-gradient(135deg, var(--panel-1), var(--panel-0));
+      box-shadow: var(--shadow);
+    }
+
+    .panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      opacity: 0.15;
+      background:
+        repeating-linear-gradient(
+          10deg,
+          rgba(255, 239, 204, 0.8) 0 2px,
+          transparent 2px 14px,
+          rgba(100, 58, 20, 0.45) 14px 18px,
+          transparent 18px 30px
+        );
+      mix-blend-mode: soft-light;
+      pointer-events: none;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      min-height: 82px;
+    }
+
+    .brand {
+      min-width: 0;
+      display: grid;
+      gap: 4px;
+    }
+
+    .eyebrow,
+    .chip,
+    .range-label,
+    .toy-btn,
+    .overlay-badge {
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow {
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    h1 {
+      margin: 0;
+      font-family: Georgia, "Iowan Old Style", serif;
+      font-size: clamp(28px, 8vw, 38px);
+      line-height: 0.92;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .title-dot {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background:
+        radial-gradient(circle at 34% 34%, rgba(255, 247, 228, 0.95), rgba(255, 247, 228, 0) 32%),
+        radial-gradient(circle at 35% 35%, #f0bd63 0 18%, #b96f1f 48%, #5a3210 100%);
+      border: 1px solid rgba(255, 222, 154, 0.38);
+      box-shadow:
+        inset 0 1px 1px rgba(255, 245, 222, 0.4),
+        0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .chip {
+      min-width: 62px;
+      padding: 8px 11px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 223, 167, 0.26);
+      background: rgba(255, 239, 199, 0.08);
+      font-size: 10px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .chip.live {
+      color: #fbeab4;
+      background: rgba(214, 166, 61, 0.16);
+      border-color: rgba(255, 230, 158, 0.32);
+    }
+
+    .chip.good {
+      color: #ddf5cb;
+      background: rgba(95, 156, 77, 0.16);
+      border-color: rgba(146, 210, 124, 0.28);
+    }
+
+    .stage-shell {
+      min-height: 0;
+      padding: 10px;
+      background:
+        radial-gradient(circle at 18% 18%, rgba(255, 222, 160, 0.08), transparent 22%),
+        radial-gradient(circle at 88% 82%, rgba(60, 138, 160, 0.08), transparent 24%),
+        linear-gradient(180deg, rgba(69, 39, 14, 0.96), rgba(28, 15, 6, 0.96));
+    }
+
+    .stage-frame {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      border-radius: 22px;
+      border: 1px solid rgba(255, 231, 180, 0.14);
+      background: rgba(0, 0, 0, 0.08);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+      cursor: crosshair;
+    }
+
+    .overlay-badge {
+      position: absolute;
+      left: 16px;
+      top: 14px;
+      z-index: 2;
+      padding: 8px 10px;
+      border-radius: 999px;
+      font-size: 10px;
+      border: 1px solid rgba(255, 226, 168, 0.24);
+      background: rgba(68, 36, 11, 0.76);
+      color: rgba(255, 237, 198, 0.75);
+      backdrop-filter: blur(8px);
+    }
+
+    .overlay-badge.right {
+      left: auto;
+      right: 16px;
+    }
+
+    .hero {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      pointer-events: none;
+      z-index: 1;
+      transition: opacity 180ms ease;
+    }
+
+    .hero.hidden {
+      opacity: 0;
+    }
+
+    .hero-inner {
+      padding: 16px 20px;
+      border-radius: 22px;
+      background: rgba(66, 34, 10, 0.52);
+      border: 1px solid rgba(255, 228, 176, 0.16);
+      text-align: center;
+      backdrop-filter: blur(10px);
+    }
+
+    .hero-title {
+      font-family: Georgia, "Iowan Old Style", serif;
+      font-size: clamp(28px, 8vw, 42px);
+      letter-spacing: 0.12em;
+      color: rgba(255, 233, 188, 0.74);
+    }
+
+    .hero-sub {
+      margin-top: 8px;
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      color: rgba(255, 237, 198, 0.54);
+      text-transform: uppercase;
+    }
+
+    .busy {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      z-index: 3;
+      background: rgba(34, 15, 2, 0.46);
+      backdrop-filter: blur(4px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 160ms ease;
+    }
+
+    .busy.show {
+      opacity: 1;
+    }
+
+    .busy-pill {
+      padding: 12px 16px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 225, 161, 0.28);
+      background: rgba(76, 43, 15, 0.88);
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(255, 240, 212, 0.82);
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.24);
+    }
+
+    .dock {
+      display: grid;
+      gap: 10px;
+      padding: 12px 14px 14px;
+    }
+
+    .dock-main {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .toy-btn {
+      position: relative;
+      min-width: 78px;
+      padding: 12px 14px 10px;
+      border: 0;
+      border-radius: 16px;
+      cursor: pointer;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.22),
+        inset 0 -3px 0 rgba(67, 31, 8, 0.28),
+        0 7px 14px rgba(36, 14, 0, 0.24);
+      transition:
+        transform 140ms ease,
+        filter 140ms ease,
+        opacity 140ms ease;
+    }
+
+    .toy-btn::before {
+      content: "";
+      position: absolute;
+      inset: 4px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 252, 244, 0.18);
+      pointer-events: none;
+    }
+
+    .toy-btn:hover {
+      filter: brightness(1.04);
+      transform: translateY(-1px);
+    }
+
+    .toy-btn:active {
+      transform: translateY(1px);
+    }
+
+    .toy-btn:disabled {
+      opacity: 0.4;
+      cursor: default;
+      transform: none;
+      filter: none;
+    }
+
+    .toy-btn.amber {
+      background: linear-gradient(180deg, #e2be67 0%, #ca9442 100%);
+      color: #4b2a0c;
+    }
+
+    .toy-btn.teal {
+      background: linear-gradient(180deg, #64bec9 0%, #2f8292 100%);
+      color: #f0fbff;
+    }
+
+    .toy-btn.red {
+      background: linear-gradient(180deg, #e17763 0%, #c44a3b 100%);
+      color: #fff7f2;
+    }
+
+    .toy-btn.green {
+      background: linear-gradient(180deg, #8bcb70 0%, #5f9c4d 100%);
+      color: #f9fff5;
+    }
+
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .range-card {
+      position: relative;
+      padding: 10px 12px 12px;
+      border-radius: 18px;
+      border: 1px solid rgba(255, 229, 176, 0.14);
+      background:
+        linear-gradient(180deg, rgba(255, 239, 204, 0.08), rgba(46, 25, 8, 0.54)),
+        linear-gradient(135deg, rgba(109, 63, 22, 0.9), rgba(53, 28, 9, 0.9));
+    }
+
+    .range-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    .range-value {
+      color: var(--cream);
+      font-size: 12px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      margin: 0;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 4px;
+      border-radius: 999px;
+      background: rgba(43, 21, 4, 0.5);
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 0;
+      background:
+        radial-gradient(circle at 35% 35%, rgba(255, 248, 231, 0.92), rgba(255, 248, 231, 0) 28%),
+        radial-gradient(circle at 38% 38%, #f0c86e 0 24%, #c07d27 50%, #63340f 100%);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.28);
+      cursor: pointer;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 0;
+      background: #dca756;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.28);
+      cursor: pointer;
+    }
+
+    @media (max-width: 520px) {
+      .topbar {
+        grid-template-columns: 1fr;
+      }
+
+      .meta {
+        justify-content: flex-start;
+      }
+
+      .dock-main {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="panel topbar">
+      <div class="brand">
+        <div class="eyebrow">freehand fourier toy</div>
+        <div class="title-row">
+          <div class="title-dot" aria-hidden="true"></div>
+          <h1>Wooden Fourier Sketcher</h1>
+        </div>
+      </div>
+      <div class="meta">
+        <div class="chip live" id="modeChip">ready</div>
+        <div class="chip" id="pointsChip">0 pts</div>
+        <div class="chip good" id="energyChip">0%</div>
+      </div>
+    </header>
+
+    <section class="panel stage-shell">
+      <div class="stage-frame" id="stageFrame">
+        <div class="overlay-badge" id="termsBadge">terms 0</div>
+        <div class="overlay-badge right" id="timeBadge">t 0.000</div>
+        <canvas id="stage"></canvas>
+        <div class="hero" id="hero">
+          <div class="hero-inner">
+            <div class="hero-title" id="heroTitle">DRAW</div>
+            <div class="hero-sub" id="heroSub">release to convert</div>
+          </div>
+        </div>
+        <div class="busy" id="busy">
+          <div class="busy-pill">polishing gears</div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="panel dock">
+      <div class="dock-main">
+        <button class="toy-btn amber" id="drawBtn" type="button">draw</button>
+        <button class="toy-btn teal" id="playBtn" type="button" disabled>play</button>
+        <button class="toy-btn green" id="resetBtn" type="button" disabled>reset</button>
+        <button class="toy-btn red" id="clearBtn" type="button">clear</button>
+      </div>
+      <div class="controls-grid">
+        <label class="range-card">
+          <div class="range-label">
+            <span>speed</span>
+            <span class="range-value" id="speedValue">1.0x</span>
+          </div>
+          <input id="speedSlider" type="range" min="0.2" max="4" step="0.1" value="1" />
+        </label>
+        <label class="range-card">
+          <div class="range-label">
+            <span>terms</span>
+            <span class="range-value" id="termsValue">0</span>
+          </div>
+          <input id="termsSlider" type="range" min="1" max="1" step="1" value="1" disabled />
+        </label>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    const stageFrame = document.getElementById("stageFrame");
+    const canvas = document.getElementById("stage");
+    const ctx = canvas.getContext("2d");
+
+    const drawBtn = document.getElementById("drawBtn");
+    const playBtn = document.getElementById("playBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const speedSlider = document.getElementById("speedSlider");
+    const termsSlider = document.getElementById("termsSlider");
+
+    const modeChip = document.getElementById("modeChip");
+    const pointsChip = document.getElementById("pointsChip");
+    const energyChip = document.getElementById("energyChip");
+    const speedValue = document.getElementById("speedValue");
+    const termsValue = document.getElementById("termsValue");
+    const termsBadge = document.getElementById("termsBadge");
+    const timeBadge = document.getElementById("timeBadge");
+    const hero = document.getElementById("hero");
+    const heroTitle = document.getElementById("heroTitle");
+    const heroSub = document.getElementById("heroSub");
+    const busy = document.getElementById("busy");
+
+    const COLORS = {
+      plank: ["#C8954A", "#BF8A40", "#D4A055", "#C09048"],
+      gears: ["#C8954A", "#E84040", "#2E7BD5", "#F5C518", "#44BB55", "#FF7C1E", "#A855D6", "#F06090"],
+      trace: "#ffe06e",
+      traceSoft: "rgba(255, 244, 188, 0.55)",
+      sketch: "rgba(77, 38, 8, 0.55)",
+      sketchGlow: "rgba(232, 204, 120, 0.16)",
+      wood: "#C8954A",
+      woodDeep: "#8B5E3C",
+      woodDark: "#5C3318"
+    };
+
+    const N_SAMPLES = 512;
+    const PERIOD = 6;
+
+    let W = 0;
+    let H = 0;
+    let bgCache = null;
+
+    let state = "ready";
+    let isDrawing = false;
+    let rawPoints = [];
+    let fourier = [];
+    let tracePoints = [];
+    let animTime = 0;
+    let lastTimestamp = null;
+    let rafId = 0;
+
+    const sparks = [];
+
+    function hexAdjust(hex, delta) {
+      const value = parseInt(hex.replace("#", ""), 16);
+      const clamp = number => Math.min(255, Math.max(0, number));
+      const red = clamp((value >> 16) + delta);
+      const green = clamp(((value >> 8) & 0xff) + delta);
+      const blue = clamp((value & 0xff) + delta);
+      return `#${((1 << 24) + (red << 16) + (green << 8) + blue).toString(16).slice(1)}`;
+    }
+
+    const lighten = (hex, delta = 40) => hexAdjust(hex, delta);
+    const darken = (hex, delta = 40) => hexAdjust(hex, -delta);
+
+    function resize() {
+      const bounds = stageFrame.getBoundingClientRect();
+      W = Math.max(1, Math.floor(bounds.width));
+      H = Math.max(1, Math.floor(bounds.height));
+      canvas.width = W;
+      canvas.height = H;
+      bgCache = null;
+      renderScene(animTime);
+    }
+
+    function buildBackground() {
+      const offscreen = document.createElement("canvas");
+      offscreen.width = W;
+      offscreen.height = H;
+      const c = offscreen.getContext("2d");
+      const plankHeight = Math.max(58, H / 9);
+
+      for (let row = 0; row < Math.ceil(H / plankHeight) + 1; row++) {
+        const y = row * plankHeight;
+        const base = COLORS.plank[row % COLORS.plank.length];
+        const gradient = c.createLinearGradient(0, y, 0, y + plankHeight);
+        gradient.addColorStop(0, lighten(base, 18));
+        gradient.addColorStop(0.55, base);
+        gradient.addColorStop(1, darken(base, 16));
+        c.fillStyle = gradient;
+        c.fillRect(0, y, W, plankHeight);
+
+        for (let i = 0; i < Math.floor(plankHeight / 7); i++) {
+          const grainY = y + (i / Math.max(1, Math.floor(plankHeight / 7))) * plankHeight;
+          c.strokeStyle = `rgba(68, 32, 6, ${0.04 + Math.random() * 0.08})`;
+          c.lineWidth = 0.5 + Math.random() * 0.8;
+          c.beginPath();
+          c.moveTo(0, grainY + (Math.random() - 0.5) * 3);
+          for (let x = 0; x <= W; x += 72) {
+            c.lineTo(x, grainY + (Math.random() - 0.5) * 5);
+          }
+          c.stroke();
+        }
+
+        c.fillStyle = "rgba(38, 14, 0, 0.24)";
+        c.fillRect(0, y, W, 2);
+        c.fillStyle = "rgba(255, 208, 122, 0.08)";
+        c.fillRect(0, y + 2, W, 1);
+      }
+
+      const vignette = c.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.2, W / 2, H / 2, Math.max(W, H) * 0.78);
+      vignette.addColorStop(0, "rgba(0, 0, 0, 0)");
+      vignette.addColorStop(1, "rgba(0, 0, 0, 0.34)");
+      c.fillStyle = vignette;
+      c.fillRect(0, 0, W, H);
+
+      c.save();
+      c.globalAlpha = 0.12;
+      drawShelf(c, W * 0.66, H * 0.1, Math.min(120, W * 0.2));
+      drawBlock(c, W * 0.79, H * 0.078, 34, 34, COLORS.gears[1], "A", -0.12);
+      drawBlock(c, W * 0.84, H * 0.07, 34, 34, COLORS.gears[2], "B", 0.06);
+      drawShelf(c, W * 0.08, H * 0.82, Math.min(140, W * 0.24));
+      drawMiniStar(c, W * 0.16, H * 0.79, 14, COLORS.gears[3], 0.3);
+      drawMiniHeart(c, W * 0.22, H * 0.79, 12, COLORS.gears[7]);
+      c.restore();
+
+      bgCache = offscreen;
+    }
+
+    function drawBackground() {
+      if (!bgCache) buildBackground();
+      ctx.drawImage(bgCache, 0, 0);
+    }
+
+    function drawShelf(target, x, y, width) {
+      target.save();
+      target.shadowColor = "rgba(40, 15, 0, 0.45)";
+      target.shadowBlur = 10;
+      target.shadowOffsetY = 6;
+      target.beginPath();
+      target.roundRect(x, y, width, 16, 5);
+      const shelfGradient = target.createLinearGradient(x, y, x, y + 16);
+      shelfGradient.addColorStop(0, lighten(COLORS.woodDeep, 20));
+      shelfGradient.addColorStop(0.55, COLORS.woodDeep);
+      shelfGradient.addColorStop(1, darken(COLORS.woodDeep, 24));
+      target.fillStyle = shelfGradient;
+      target.fill();
+      target.restore();
+      target.strokeStyle = COLORS.woodDark;
+      target.lineWidth = 2;
+      target.beginPath();
+      target.roundRect(x, y, width, 16, 5);
+      target.stroke();
+    }
+
+    function drawBlock(target, centerX, centerY, width, height, color, letter, tilt) {
+      target.save();
+      target.translate(centerX, centerY);
+      target.rotate(tilt);
+      target.shadowColor = "rgba(40, 15, 0, 0.35)";
+      target.shadowBlur = 8;
+      target.shadowOffsetY = 5;
+      target.beginPath();
+      target.roundRect(-width / 2, -height / 2, width, height, 8);
+      const face = target.createLinearGradient(-width / 2, -height / 2, width / 2, height / 2);
+      face.addColorStop(0, lighten(color, 28));
+      face.addColorStop(0.5, color);
+      face.addColorStop(1, darken(color, 20));
+      target.fillStyle = face;
+      target.fill();
+      target.strokeStyle = darken(color, 52);
+      target.lineWidth = 2;
+      target.stroke();
+      target.shadowBlur = 0;
+      target.font = `bold ${height * 0.44}px Georgia, serif`;
+      target.textAlign = "center";
+      target.textBaseline = "middle";
+      target.fillStyle = "#fff8eb";
+      target.fillText(letter, 0, 0);
+      target.restore();
+    }
+
+    function drawMiniStar(target, x, y, radius, color, angle) {
+      target.save();
+      target.translate(x, y);
+      target.rotate(angle);
+      target.beginPath();
+      for (let i = 0; i < 10; i++) {
+        const theta = (i / 5 - 0.5) * Math.PI;
+        const r = i % 2 === 0 ? radius : radius * 0.42;
+        const px = Math.cos(theta) * r;
+        const py = Math.sin(theta) * r;
+        if (i === 0) target.moveTo(px, py);
+        else target.lineTo(px, py);
+      }
+      target.closePath();
+      const gradient = target.createRadialGradient(0, 0, 0, 0, 0, radius);
+      gradient.addColorStop(0, lighten(color, 45));
+      gradient.addColorStop(1, darken(color, 10));
+      target.fillStyle = gradient;
+      target.fill();
+      target.strokeStyle = darken(color, 40);
+      target.lineWidth = 1.5;
+      target.stroke();
+      target.restore();
+    }
+
+    function drawMiniHeart(target, x, y, size, color) {
+      target.save();
+      target.translate(x, y);
+      target.beginPath();
+      target.moveTo(0, size * 0.3);
+      target.bezierCurveTo(0, 0, -size, -size * 0.1, -size, -size * 0.55);
+      target.bezierCurveTo(-size, -size * 1.08, 0, -size * 1.06, 0, -size * 0.58);
+      target.bezierCurveTo(0, -size * 1.06, size, -size * 1.08, size, -size * 0.55);
+      target.bezierCurveTo(size, -size * 0.1, 0, 0, 0, size * 0.3);
+      const gradient = target.createRadialGradient(0, -size * 0.3, 0, 0, -size * 0.3, size);
+      gradient.addColorStop(0, lighten(color, 35));
+      gradient.addColorStop(1, darken(color, 8));
+      target.fillStyle = gradient;
+      target.fill();
+      target.strokeStyle = darken(color, 32);
+      target.lineWidth = 1.4;
+      target.stroke();
+      target.restore();
+    }
+
+    function drawGuide() {
+      ctx.save();
+      ctx.strokeStyle = "rgba(92, 51, 24, 0.18)";
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 8]);
+      for (let x = 54; x < W; x += 54) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, H);
+        ctx.stroke();
+      }
+      for (let y = 54; y < H; y += 54) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(W, y);
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+      ctx.strokeStyle = "rgba(203, 146, 58, 0.26)";
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(W / 2, 0);
+      ctx.lineTo(W / 2, H);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, H / 2);
+      ctx.lineTo(W, H / 2);
+      ctx.stroke();
+
+      for (let x = 30; x <= W - 30; x += 44) {
+        for (let y = 30; y <= H - 30; y += 44) {
+          ctx.beginPath();
+          ctx.arc(x, y, 2.8, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(88, 48, 18, 0.18)";
+          ctx.fill();
+        }
+      }
+      ctx.restore();
+    }
+
+    function drawBaseHub(x, y) {
+      const radius = 22;
+      ctx.save();
+      ctx.shadowColor = "rgba(20, 6, 0, 0.5)";
+      ctx.shadowBlur = 10;
+      ctx.shadowOffsetY = 4;
+      ctx.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const angle = (i / 6) * Math.PI * 2 - Math.PI / 6;
+        const px = x + radius * Math.cos(angle);
+        const py = y + radius * Math.sin(angle);
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      const body = ctx.createRadialGradient(x - radius * 0.3, y - radius * 0.3, 0, x, y, radius);
+      body.addColorStop(0, "#DA9E4A");
+      body.addColorStop(0.55, COLORS.woodDeep);
+      body.addColorStop(1, darken(COLORS.woodDeep, 22));
+      ctx.fillStyle = body;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = COLORS.woodDark;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.globalAlpha = 0.12;
+      for (let i = -radius; i < radius; i += 5) {
+        ctx.beginPath();
+        ctx.moveTo(x + i, y - radius);
+        ctx.lineTo(x + i + radius, y + radius);
+        ctx.strokeStyle = "#3D1A00";
+        ctx.lineWidth = 0.7;
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+
+      ctx.beginPath();
+      ctx.arc(x, y, 8, 0, Math.PI * 2);
+      const pin = ctx.createRadialGradient(x - 3, y - 3, 0, x, y, 8);
+      pin.addColorStop(0, "#f7efd0");
+      pin.addColorStop(1, "#8c7645");
+      ctx.fillStyle = pin;
+      ctx.fill();
+      ctx.strokeStyle = "#5a4820";
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawWoodGear(centerX, centerY, innerRadius, outerRadius, teeth, angle, color) {
+      const step = Math.PI * 2 / teeth;
+      const halfTooth = step * 0.37;
+      ctx.save();
+      ctx.translate(centerX, centerY);
+      ctx.rotate(angle);
+      ctx.shadowColor = "rgba(25, 8, 0, 0.5)";
+      ctx.shadowBlur = 10;
+      ctx.shadowOffsetY = 5;
+
+      ctx.beginPath();
+      for (let i = 0; i < teeth; i++) {
+        const a = i * step;
+        ctx.arc(0, 0, innerRadius, a - halfTooth + step * 0.1, a - halfTooth);
+        ctx.lineTo(outerRadius * Math.cos(a - halfTooth * 0.72), outerRadius * Math.sin(a - halfTooth * 0.72));
+        ctx.arc(0, 0, outerRadius, a - halfTooth * 0.72, a + halfTooth * 0.72);
+        ctx.lineTo(innerRadius * Math.cos(a + halfTooth), innerRadius * Math.sin(a + halfTooth));
+        ctx.arc(0, 0, innerRadius, a + halfTooth, a + step - halfTooth + step * 0.1);
+      }
+      ctx.closePath();
+
+      const fill = ctx.createRadialGradient(-innerRadius * 0.3, -innerRadius * 0.3, 0, 0, 0, outerRadius);
+      fill.addColorStop(0, lighten(color, 50));
+      fill.addColorStop(0.45, lighten(color, 12));
+      fill.addColorStop(1, darken(color, 20));
+      ctx.fillStyle = fill;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetY = 0;
+      ctx.strokeStyle = darken(color, 48);
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
+
+      ctx.save();
+      ctx.clip();
+      for (let i = 0; i < 8; i++) {
+        const grainY = -outerRadius + i * (outerRadius / 4);
+        ctx.strokeStyle = "rgba(50, 22, 4, 0.9)";
+        ctx.lineWidth = 0.7;
+        ctx.globalAlpha = 0.1;
+        ctx.beginPath();
+        ctx.moveTo(-outerRadius, grainY + (Math.random() - 0.5) * 3);
+        ctx.bezierCurveTo(-outerRadius / 3, grainY + (Math.random() - 0.5) * 5, outerRadius / 3, grainY + (Math.random() - 0.5) * 5, outerRadius, grainY + (Math.random() - 0.5) * 3);
+        ctx.stroke();
+      }
+      ctx.restore();
+      ctx.globalAlpha = 1;
+
+      const holes = Math.max(3, Math.floor(teeth / 3));
+      for (let i = 0; i < holes; i++) {
+        const theta = (i / holes) * Math.PI * 2;
+        const radius = (innerRadius + outerRadius) * 0.36;
+        ctx.beginPath();
+        ctx.arc(Math.cos(theta) * radius, Math.sin(theta) * radius, innerRadius * 0.14, 0, Math.PI * 2);
+        ctx.fillStyle = darken(color, 54);
+        ctx.fill();
+      }
+
+      ctx.beginPath();
+      ctx.arc(0, 0, innerRadius * 0.3, 0, Math.PI * 2);
+      const hub = ctx.createRadialGradient(-innerRadius * 0.1, -innerRadius * 0.1, 0, 0, 0, innerRadius * 0.3);
+      hub.addColorStop(0, lighten(color, 68));
+      hub.addColorStop(1, color);
+      ctx.fillStyle = hub;
+      ctx.fill();
+      ctx.strokeStyle = darken(color, 48);
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.28)";
+      ctx.lineWidth = 2;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(innerRadius * 0.58, 0);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawArm(x1, y1, x2, y2, color) {
+      const length = Math.hypot(x2 - x1, y2 - y1);
+      if (length < 1) return;
+      const angle = Math.atan2(y2 - y1, x2 - x1);
+      const thickness = Math.max(5, Math.min(12, length * 0.05 + 5));
+
+      ctx.save();
+      ctx.translate(x1, y1);
+      ctx.rotate(angle);
+      ctx.shadowColor = "rgba(20, 6, 0, 0.4)";
+      ctx.shadowBlur = 6;
+      ctx.shadowOffsetY = 3;
+      ctx.beginPath();
+      ctx.roundRect(0, -thickness / 2, length, thickness, thickness / 2);
+      const arm = ctx.createLinearGradient(0, -thickness / 2, 0, thickness / 2);
+      arm.addColorStop(0, lighten(color, 20));
+      arm.addColorStop(0.5, color);
+      arm.addColorStop(1, darken(color, 20));
+      ctx.fillStyle = arm;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = darken(color, 34);
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+
+      ctx.globalAlpha = 0.13;
+      for (let i = 1; i < 3; i++) {
+        ctx.beginPath();
+        ctx.moveTo(4, -thickness / 2 + (i * thickness) / 3);
+        ctx.lineTo(length - 4, -thickness / 2 + (i * thickness) / 3 + (Math.random() - 0.5) * 1.5);
+        ctx.strokeStyle = "rgba(30, 10, 0, 0.9)";
+        ctx.lineWidth = 0.6;
+        ctx.stroke();
+      }
+      ctx.restore();
+      ctx.globalAlpha = 1;
+    }
+
+    function drawPin(x, y, radius, isTip) {
+      ctx.save();
+      ctx.shadowColor = "rgba(20, 6, 0, 0.5)";
+      ctx.shadowBlur = 6;
+      ctx.shadowOffsetY = 3;
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      const fill = ctx.createRadialGradient(x - radius * 0.3, y - radius * 0.3, 0, x, y, radius);
+      fill.addColorStop(0, isTip ? "#fffdf6" : "#ffe7a5");
+      fill.addColorStop(0.4, isTip ? "#d9ecff" : "#d4a050");
+      fill.addColorStop(1, isTip ? "#7ea4c8" : "#7a4a18");
+      ctx.fillStyle = fill;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = isTip ? "#9abede" : COLORS.woodDark;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(x - radius * 0.28, y - radius * 0.28, radius * 0.32, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function addSparks(x, y) {
+      for (let i = 0; i < 10; i++) {
+        sparks.push({
+          x,
+          y,
+          vx: (Math.random() - 0.5) * 6,
+          vy: -Math.random() * 7 - 2,
+          radius: 2 + Math.random() * 3,
+          life: 1,
+          color: COLORS.gears[Math.floor(Math.random() * COLORS.gears.length)]
+        });
+      }
+    }
+
+    function drawSparks() {
+      for (let i = sparks.length - 1; i >= 0; i--) {
+        const spark = sparks[i];
+        spark.x += spark.vx;
+        spark.y += spark.vy;
+        spark.vy += 0.3;
+        spark.life -= 0.03;
+        if (spark.life <= 0) {
+          sparks.splice(i, 1);
+          continue;
+        }
+        ctx.save();
+        ctx.globalAlpha = spark.life;
+        ctx.beginPath();
+        ctx.arc(spark.x, spark.y, spark.radius * spark.life, 0, Math.PI * 2);
+        const glow = ctx.createRadialGradient(spark.x, spark.y, 0, spark.x, spark.y, spark.radius);
+        glow.addColorStop(0, "#fff");
+        glow.addColorStop(1, `${spark.color}00`);
+        ctx.fillStyle = glow;
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    function getPointerPosition(event) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: (event.clientX - rect.left) * (W / rect.width),
+        y: (event.clientY - rect.top) * (H / rect.height)
+      };
+    }
+
+    function beginDraw(point) {
+      cancelAnimation();
+      state = "drawing";
+      isDrawing = true;
+      rawPoints = [point];
+      fourier = [];
+      tracePoints = [];
+      animTime = 0;
+      lastTimestamp = null;
+      addSparks(point.x, point.y);
+      updateUI();
+      renderScene(0);
+    }
+
+    function appendPoint(point) {
+      rawPoints.push(point);
+      renderScene(animTime);
+    }
+
+    function finishDraw() {
+      if (!isDrawing) return;
+      isDrawing = false;
+      if (rawPoints.length < 8) {
+        state = "ready";
+        updateUI();
+        renderScene(0);
+        return;
+      }
+      computeFourier();
+    }
+
+    function resamplePath(points, sampleCount) {
+      if (points.length < 2) return points.slice();
+      const lengths = [0];
+      for (let i = 1; i < points.length; i++) {
+        lengths.push(lengths[i - 1] + Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y));
+      }
+      const totalLength = lengths[lengths.length - 1];
+      if (totalLength < 1) return points.slice();
+
+      const output = [];
+      let segment = 0;
+      for (let i = 0; i < sampleCount; i++) {
+        const target = (i / sampleCount) * totalLength;
+        while (segment < lengths.length - 2 && lengths[segment + 1] < target) segment++;
+        const length = lengths[segment + 1] - lengths[segment];
+        const ratio = length > 0 ? (target - lengths[segment]) / length : 0;
+        output.push({
+          x: points[segment].x * (1 - ratio) + points[segment + 1].x * ratio,
+          y: points[segment].y * (1 - ratio) + points[segment + 1].y * ratio
+        });
+      }
+      return output;
+    }
+
+    function computeDFT(points) {
+      const count = points.length;
+      const centerX = W / 2;
+      const centerY = H / 2;
+      const unit = (2 * Math.PI) / count;
+      const result = [];
+
+      for (let k = 0; k < count; k++) {
+        let re = 0;
+        let im = 0;
+        for (let n = 0; n < count; n++) {
+          const angle = unit * k * n;
+          const cos = Math.cos(angle);
+          const sin = Math.sin(angle);
+          const zr = points[n].x - centerX;
+          const zi = points[n].y - centerY;
+          re += zr * cos + zi * sin;
+          im -= zr * sin - zi * cos;
+        }
+        re /= count;
+        im /= count;
+        const frequency = k <= count / 2 ? k : k - count;
+        result.push({
+          amp: Math.hypot(re, im),
+          phase: Math.atan2(im, re),
+          freq: frequency
+        });
+      }
+
+      result.sort((a, b) => b.amp - a.amp);
+      return result;
+    }
+
+    function buildChain(terms, count, t) {
+      let x = W / 2;
+      let y = H / 2;
+      const links = [];
+      const activeCount = Math.min(count, terms.length);
+
+      for (let i = 0; i < activeCount; i++) {
+        const term = terms[i];
+        const angle = 2 * Math.PI * term.freq * t + term.phase;
+        const nextX = x + term.amp * Math.cos(angle);
+        const nextY = y + term.amp * Math.sin(angle);
+        links.push({
+          centerX: x,
+          centerY: y,
+          tipX: nextX,
+          tipY: nextY,
+          amp: term.amp,
+          angle,
+          rank: i
+        });
+        x = nextX;
+        y = nextY;
+      }
+
+      return { links, tipX: x, tipY: y };
+    }
+
+    function energyPercent(count) {
+      const total = fourier.reduce((sum, term) => sum + term.amp * term.amp, 0);
+      const used = fourier.slice(0, count).reduce((sum, term) => sum + term.amp * term.amp, 0);
+      return total > 0 ? (used / total) * 100 : 0;
+    }
+
+    function computeFourier() {
+      busy.classList.add("show");
+      window.setTimeout(() => {
+        fourier = computeDFT(resamplePath(rawPoints, N_SAMPLES));
+        const initialTerms = Math.min(80, fourier.length);
+        termsSlider.max = Math.max(1, fourier.length);
+        termsSlider.value = initialTerms;
+        termsSlider.disabled = false;
+        termsValue.textContent = String(initialTerms);
+        termsBadge.textContent = `terms ${initialTerms}`;
+        tracePoints = [];
+        animTime = 0;
+        state = "playing";
+        busy.classList.remove("show");
+        updateUI();
+        renderScene(0);
+        startAnimation();
+      }, 50);
+    }
+
+    function cancelAnimation() {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = 0;
+    }
+
+    function startAnimation() {
+      cancelAnimation();
+      lastTimestamp = null;
+      rafId = requestAnimationFrame(loop);
+    }
+
+    function loop(timestamp) {
+      if (state !== "playing") {
+        rafId = 0;
+        return;
+      }
+
+      if (!lastTimestamp) lastTimestamp = timestamp;
+      const dt = (timestamp - lastTimestamp) / 1000;
+      lastTimestamp = timestamp;
+      animTime += (parseFloat(speedSlider.value) * dt) / PERIOD;
+      if (animTime >= 1) {
+        animTime -= 1;
+        tracePoints = [];
+      }
+
+      const termCount = Math.min(parseInt(termsSlider.value, 10), fourier.length);
+      const chain = buildChain(fourier, termCount, animTime);
+      tracePoints.push({ x: chain.tipX, y: chain.tipY });
+      if (tracePoints.length > N_SAMPLES * 1.2) tracePoints.shift();
+      renderScene(animTime);
+      rafId = requestAnimationFrame(loop);
+    }
+
+    function drawRawPath() {
+      if (rawPoints.length < 2) return;
+      ctx.save();
+      ctx.strokeStyle = COLORS.sketch;
+      ctx.lineWidth = 3;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.shadowColor = COLORS.sketchGlow;
+      ctx.shadowBlur = 6;
+      ctx.beginPath();
+      rawPoints.forEach((point, index) => {
+        if (index === 0) ctx.moveTo(point.x, point.y);
+        else ctx.lineTo(point.x, point.y);
+      });
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.setLineDash([5, 9]);
+      ctx.strokeStyle = "rgba(255, 233, 188, 0.18)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      rawPoints.forEach((point, index) => {
+        if (index === 0) ctx.moveTo(point.x, point.y);
+        else ctx.lineTo(point.x, point.y);
+      });
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawTrace() {
+      if (tracePoints.length < 2) return;
+      ctx.save();
+      ctx.shadowColor = "rgba(255, 190, 55, 0.68)";
+      ctx.shadowBlur = 16;
+      ctx.strokeStyle = COLORS.trace;
+      ctx.lineWidth = 2.4;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.beginPath();
+      tracePoints.forEach((point, index) => {
+        if (index === 0) ctx.moveTo(point.x, point.y);
+        else ctx.lineTo(point.x, point.y);
+      });
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = COLORS.traceSoft;
+      ctx.lineWidth = 0.9;
+      ctx.beginPath();
+      tracePoints.forEach((point, index) => {
+        if (index === 0) ctx.moveTo(point.x, point.y);
+        else ctx.lineTo(point.x, point.y);
+      });
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawMechanism(time) {
+      if (!fourier.length) {
+        drawBaseHub(W / 2, H / 2);
+        return;
+      }
+
+      const termCount = Math.min(parseInt(termsSlider.value, 10), fourier.length);
+      const chain = buildChain(fourier, termCount, time);
+      drawBaseHub(W / 2, H / 2);
+
+      chain.links.forEach(link => {
+        if (link.amp < 0.8) return;
+        const color = COLORS.gears[link.rank % COLORS.gears.length];
+        drawArm(link.centerX, link.centerY, link.tipX, link.tipY, color);
+        const visualRadius = Math.max(13, Math.min(link.amp * 0.92, 78));
+        const innerRadius = visualRadius * 0.62;
+        const teeth = Math.max(6, Math.round((visualRadius * 1.2) / 8));
+        drawWoodGear(link.centerX, link.centerY, innerRadius, visualRadius, teeth, link.angle, color);
+        drawPin(link.centerX, link.centerY, Math.max(4, visualRadius * 0.12), false);
+      });
+
+      drawTrace();
+      if (chain.links.length > 0) {
+        drawPin(chain.tipX, chain.tipY, 7, true);
+      }
+    }
+
+    function renderScene(time) {
+      if (!W || !H) return;
+      drawBackground();
+      drawGuide();
+      drawRawPath();
+      drawMechanism(time);
+      drawSparks();
+      timeBadge.textContent = `t ${time.toFixed(3)}`;
+    }
+
+    function setReadyState() {
+      cancelAnimation();
+      state = "ready";
+      isDrawing = false;
+      rawPoints = [];
+      fourier = [];
+      tracePoints = [];
+      animTime = 0;
+      lastTimestamp = null;
+      termsSlider.value = 1;
+      termsSlider.max = 1;
+      termsSlider.disabled = true;
+      termsValue.textContent = "0";
+      termsBadge.textContent = "terms 0";
+      timeBadge.textContent = "t 0.000";
+      updateUI();
+      renderScene(0);
+    }
+
+    function updateUI() {
+      const termCount = fourier.length ? Math.min(parseInt(termsSlider.value, 10), fourier.length) : 0;
+      const energy = energyPercent(termCount);
+      modeChip.textContent = state;
+      pointsChip.textContent = `${rawPoints.length} pts`;
+      energyChip.textContent = `${energy.toFixed(1)}%`;
+      speedValue.textContent = `${parseFloat(speedSlider.value).toFixed(1)}x`;
+      termsValue.textContent = String(termCount);
+      termsBadge.textContent = `terms ${termCount}`;
+
+      hero.classList.toggle("hidden", state !== "ready");
+      heroTitle.textContent = state === "drawing" ? "DRAWING" : "DRAW";
+      heroSub.textContent = state === "drawing" ? "keep the line moving" : "release to convert";
+      drawBtn.textContent = state === "ready" || state === "drawing" ? "drawing" : "draw";
+      playBtn.disabled = !fourier.length;
+      playBtn.textContent = state === "playing" ? "pause" : "play";
+      resetBtn.disabled = !fourier.length;
+      clearBtn.textContent = fourier.length || rawPoints.length ? "clear" : "clear";
+    }
+
+    canvas.addEventListener("pointerdown", event => {
+      if (state !== "ready") return;
+      canvas.setPointerCapture(event.pointerId);
+      beginDraw(getPointerPosition(event));
+    });
+
+    canvas.addEventListener("pointermove", event => {
+      if (!isDrawing || state !== "drawing") return;
+      appendPoint(getPointerPosition(event));
+    });
+
+    canvas.addEventListener("pointerup", () => finishDraw());
+    canvas.addEventListener("pointercancel", () => finishDraw());
+    canvas.addEventListener("pointerleave", () => {
+      if (isDrawing) finishDraw();
+    });
+
+    drawBtn.addEventListener("click", () => {
+      setReadyState();
+    });
+
+    playBtn.addEventListener("click", () => {
+      if (!fourier.length) return;
+      if (state === "playing") {
+        cancelAnimation();
+        state = "paused";
+        updateUI();
+        renderScene(animTime);
+        return;
+      }
+      state = "playing";
+      updateUI();
+      startAnimation();
+    });
+
+    resetBtn.addEventListener("click", () => {
+      if (!fourier.length) return;
+      cancelAnimation();
+      state = "paused";
+      animTime = 0;
+      tracePoints = [];
+      lastTimestamp = null;
+      updateUI();
+      renderScene(0);
+    });
+
+    clearBtn.addEventListener("click", () => {
+      setReadyState();
+    });
+
+    speedSlider.addEventListener("input", () => {
+      speedValue.textContent = `${parseFloat(speedSlider.value).toFixed(1)}x`;
+    });
+
+    termsSlider.addEventListener("input", () => {
+      const count = Math.min(parseInt(termsSlider.value, 10), fourier.length);
+      termsValue.textContent = String(count);
+      termsBadge.textContent = `terms ${count}`;
+      energyChip.textContent = `${energyPercent(count).toFixed(1)}%`;
+      if (state === "paused" || state === "ready") {
+        tracePoints = [];
+        animTime = 0;
+        renderScene(0);
+      }
+      if (state === "playing") {
+        tracePoints = [];
+        animTime = 0;
+        lastTimestamp = null;
+      }
+    });
+
+    window.addEventListener("resize", resize);
+
+    resize();
+    setReadyState();
+  </script>
+</body>
+</html>
