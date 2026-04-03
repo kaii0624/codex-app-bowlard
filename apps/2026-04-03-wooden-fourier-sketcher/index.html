@@ -106,32 +106,20 @@
     }
 
     .topbar {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
+      display: flex;
       align-items: center;
-      gap: 12px;
       padding: 14px 16px;
-      min-height: 82px;
+      min-height: 72px;
     }
 
     .brand {
       min-width: 0;
-      display: grid;
-      gap: 4px;
     }
 
-    .eyebrow,
-    .chip,
     .range-label,
-    .toy-btn,
-    .overlay-badge {
+    .toy-btn {
       letter-spacing: 0.14em;
       text-transform: uppercase;
-    }
-
-    .eyebrow {
-      font-size: 10px;
-      color: var(--muted);
     }
 
     .title-row {
@@ -166,36 +154,6 @@
         0 4px 8px rgba(0, 0, 0, 0.2);
     }
 
-    .meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      justify-content: flex-end;
-    }
-
-    .chip {
-      min-width: 62px;
-      padding: 8px 11px;
-      border-radius: 999px;
-      border: 1px solid rgba(255, 223, 167, 0.26);
-      background: rgba(255, 239, 199, 0.08);
-      font-size: 10px;
-      color: var(--muted);
-      text-align: center;
-    }
-
-    .chip.live {
-      color: #fbeab4;
-      background: rgba(214, 166, 61, 0.16);
-      border-color: rgba(255, 230, 158, 0.32);
-    }
-
-    .chip.good {
-      color: #ddf5cb;
-      background: rgba(95, 156, 77, 0.16);
-      border-color: rgba(146, 210, 124, 0.28);
-    }
-
     .stage-shell {
       min-height: 0;
       padding: 10px;
@@ -221,25 +179,6 @@
       height: 100%;
       touch-action: none;
       cursor: crosshair;
-    }
-
-    .overlay-badge {
-      position: absolute;
-      left: 16px;
-      top: 14px;
-      z-index: 2;
-      padding: 8px 10px;
-      border-radius: 999px;
-      font-size: 10px;
-      border: 1px solid rgba(255, 226, 168, 0.24);
-      background: rgba(68, 36, 11, 0.76);
-      color: rgba(255, 237, 198, 0.75);
-      backdrop-filter: blur(8px);
-    }
-
-    .overlay-badge.right {
-      left: auto;
-      right: 16px;
     }
 
     .hero {
@@ -278,35 +217,6 @@
       letter-spacing: 0.12em;
       color: rgba(255, 237, 198, 0.54);
       text-transform: uppercase;
-    }
-
-    .busy {
-      position: absolute;
-      inset: 0;
-      display: grid;
-      place-items: center;
-      z-index: 3;
-      background: rgba(34, 15, 2, 0.46);
-      backdrop-filter: blur(4px);
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 160ms ease;
-    }
-
-    .busy.show {
-      opacity: 1;
-    }
-
-    .busy-pill {
-      padding: 12px 16px;
-      border-radius: 999px;
-      border: 1px solid rgba(255, 225, 161, 0.28);
-      background: rgba(76, 43, 15, 0.88);
-      font-size: 11px;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: rgba(255, 240, 212, 0.82);
-      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.24);
     }
 
     .dock {
@@ -450,14 +360,6 @@
     }
 
     @media (max-width: 520px) {
-      .topbar {
-        grid-template-columns: 1fr;
-      }
-
-      .meta {
-        justify-content: flex-start;
-      }
-
       .dock-main {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -469,32 +371,21 @@
   <div class="app">
     <header class="panel topbar">
       <div class="brand">
-        <div class="eyebrow">freehand fourier toy</div>
         <div class="title-row">
           <div class="title-dot" aria-hidden="true"></div>
           <h1>Wooden Fourier Sketcher</h1>
         </div>
       </div>
-      <div class="meta">
-        <div class="chip live" id="modeChip">ready</div>
-        <div class="chip" id="pointsChip">0 pts</div>
-        <div class="chip good" id="energyChip">0%</div>
-      </div>
     </header>
 
     <section class="panel stage-shell">
       <div class="stage-frame" id="stageFrame">
-        <div class="overlay-badge" id="termsBadge">terms 0</div>
-        <div class="overlay-badge right" id="timeBadge">t 0.000</div>
         <canvas id="stage"></canvas>
         <div class="hero" id="hero">
           <div class="hero-inner">
-            <div class="hero-title" id="heroTitle">DRAW</div>
-            <div class="hero-sub" id="heroSub">release to convert</div>
+            <div class="hero-title">DRAW</div>
+            <div class="hero-sub">drag anywhere</div>
           </div>
-        </div>
-        <div class="busy" id="busy">
-          <div class="busy-pill">polishing gears</div>
         </div>
       </div>
     </section>
@@ -517,9 +408,9 @@
         <label class="range-card">
           <div class="range-label">
             <span>terms</span>
-            <span class="range-value" id="termsValue">0</span>
+            <span class="range-value" id="termsValue">10</span>
           </div>
-          <input id="termsSlider" type="range" min="1" max="1" step="1" value="1" disabled />
+          <input id="termsSlider" type="range" min="1" max="10" step="1" value="10" disabled />
         </label>
       </div>
     </footer>
@@ -537,17 +428,9 @@
     const speedSlider = document.getElementById("speedSlider");
     const termsSlider = document.getElementById("termsSlider");
 
-    const modeChip = document.getElementById("modeChip");
-    const pointsChip = document.getElementById("pointsChip");
-    const energyChip = document.getElementById("energyChip");
     const speedValue = document.getElementById("speedValue");
     const termsValue = document.getElementById("termsValue");
-    const termsBadge = document.getElementById("termsBadge");
-    const timeBadge = document.getElementById("timeBadge");
     const hero = document.getElementById("hero");
-    const heroTitle = document.getElementById("heroTitle");
-    const heroSub = document.getElementById("heroSub");
-    const busy = document.getElementById("busy");
 
     const COLORS = {
       plank: ["#C8954A", "#BF8A40", "#D4A055", "#C09048"],
@@ -563,6 +446,7 @@
 
     const N_SAMPLES = 512;
     const PERIOD = 6;
+    const DEFAULT_TERMS = 10;
 
     let W = 0;
     let H = 0;
@@ -642,115 +526,12 @@
       c.fillStyle = vignette;
       c.fillRect(0, 0, W, H);
 
-      c.save();
-      c.globalAlpha = 0.12;
-      drawShelf(c, W * 0.66, H * 0.1, Math.min(120, W * 0.2));
-      drawBlock(c, W * 0.79, H * 0.078, 34, 34, COLORS.gears[1], "A", -0.12);
-      drawBlock(c, W * 0.84, H * 0.07, 34, 34, COLORS.gears[2], "B", 0.06);
-      drawShelf(c, W * 0.08, H * 0.82, Math.min(140, W * 0.24));
-      drawMiniStar(c, W * 0.16, H * 0.79, 14, COLORS.gears[3], 0.3);
-      drawMiniHeart(c, W * 0.22, H * 0.79, 12, COLORS.gears[7]);
-      c.restore();
-
       bgCache = offscreen;
     }
 
     function drawBackground() {
       if (!bgCache) buildBackground();
       ctx.drawImage(bgCache, 0, 0);
-    }
-
-    function drawShelf(target, x, y, width) {
-      target.save();
-      target.shadowColor = "rgba(40, 15, 0, 0.45)";
-      target.shadowBlur = 10;
-      target.shadowOffsetY = 6;
-      target.beginPath();
-      target.roundRect(x, y, width, 16, 5);
-      const shelfGradient = target.createLinearGradient(x, y, x, y + 16);
-      shelfGradient.addColorStop(0, lighten(COLORS.woodDeep, 20));
-      shelfGradient.addColorStop(0.55, COLORS.woodDeep);
-      shelfGradient.addColorStop(1, darken(COLORS.woodDeep, 24));
-      target.fillStyle = shelfGradient;
-      target.fill();
-      target.restore();
-      target.strokeStyle = COLORS.woodDark;
-      target.lineWidth = 2;
-      target.beginPath();
-      target.roundRect(x, y, width, 16, 5);
-      target.stroke();
-    }
-
-    function drawBlock(target, centerX, centerY, width, height, color, letter, tilt) {
-      target.save();
-      target.translate(centerX, centerY);
-      target.rotate(tilt);
-      target.shadowColor = "rgba(40, 15, 0, 0.35)";
-      target.shadowBlur = 8;
-      target.shadowOffsetY = 5;
-      target.beginPath();
-      target.roundRect(-width / 2, -height / 2, width, height, 8);
-      const face = target.createLinearGradient(-width / 2, -height / 2, width / 2, height / 2);
-      face.addColorStop(0, lighten(color, 28));
-      face.addColorStop(0.5, color);
-      face.addColorStop(1, darken(color, 20));
-      target.fillStyle = face;
-      target.fill();
-      target.strokeStyle = darken(color, 52);
-      target.lineWidth = 2;
-      target.stroke();
-      target.shadowBlur = 0;
-      target.font = `bold ${height * 0.44}px Georgia, serif`;
-      target.textAlign = "center";
-      target.textBaseline = "middle";
-      target.fillStyle = "#fff8eb";
-      target.fillText(letter, 0, 0);
-      target.restore();
-    }
-
-    function drawMiniStar(target, x, y, radius, color, angle) {
-      target.save();
-      target.translate(x, y);
-      target.rotate(angle);
-      target.beginPath();
-      for (let i = 0; i < 10; i++) {
-        const theta = (i / 5 - 0.5) * Math.PI;
-        const r = i % 2 === 0 ? radius : radius * 0.42;
-        const px = Math.cos(theta) * r;
-        const py = Math.sin(theta) * r;
-        if (i === 0) target.moveTo(px, py);
-        else target.lineTo(px, py);
-      }
-      target.closePath();
-      const gradient = target.createRadialGradient(0, 0, 0, 0, 0, radius);
-      gradient.addColorStop(0, lighten(color, 45));
-      gradient.addColorStop(1, darken(color, 10));
-      target.fillStyle = gradient;
-      target.fill();
-      target.strokeStyle = darken(color, 40);
-      target.lineWidth = 1.5;
-      target.stroke();
-      target.restore();
-    }
-
-    function drawMiniHeart(target, x, y, size, color) {
-      target.save();
-      target.translate(x, y);
-      target.beginPath();
-      target.moveTo(0, size * 0.3);
-      target.bezierCurveTo(0, 0, -size, -size * 0.1, -size, -size * 0.55);
-      target.bezierCurveTo(-size, -size * 1.08, 0, -size * 1.06, 0, -size * 0.58);
-      target.bezierCurveTo(0, -size * 1.06, size, -size * 1.08, size, -size * 0.55);
-      target.bezierCurveTo(size, -size * 0.1, 0, 0, 0, size * 0.3);
-      const gradient = target.createRadialGradient(0, -size * 0.3, 0, 0, -size * 0.3, size);
-      gradient.addColorStop(0, lighten(color, 35));
-      gradient.addColorStop(1, darken(color, 8));
-      target.fillStyle = gradient;
-      target.fill();
-      target.strokeStyle = darken(color, 32);
-      target.lineWidth = 1.4;
-      target.stroke();
-      target.restore();
     }
 
     function drawGuide() {
@@ -1145,26 +926,17 @@
       return { links, tipX: x, tipY: y };
     }
 
-    function energyPercent(count) {
-      const total = fourier.reduce((sum, term) => sum + term.amp * term.amp, 0);
-      const used = fourier.slice(0, count).reduce((sum, term) => sum + term.amp * term.amp, 0);
-      return total > 0 ? (used / total) * 100 : 0;
-    }
-
     function computeFourier() {
-      busy.classList.add("show");
       window.setTimeout(() => {
         fourier = computeDFT(resamplePath(rawPoints, N_SAMPLES));
-        const initialTerms = Math.min(80, fourier.length);
+        const initialTerms = Math.min(DEFAULT_TERMS, fourier.length);
         termsSlider.max = Math.max(1, fourier.length);
         termsSlider.value = initialTerms;
         termsSlider.disabled = false;
         termsValue.textContent = String(initialTerms);
-        termsBadge.textContent = `terms ${initialTerms}`;
         tracePoints = [];
         animTime = 0;
         state = "playing";
-        busy.classList.remove("show");
         updateUI();
         renderScene(0);
         startAnimation();
@@ -1294,7 +1066,6 @@
       drawRawPath();
       drawMechanism(time);
       drawSparks();
-      timeBadge.textContent = `t ${time.toFixed(3)}`;
     }
 
     function setReadyState() {
@@ -1306,34 +1077,22 @@
       tracePoints = [];
       animTime = 0;
       lastTimestamp = null;
-      termsSlider.value = 1;
-      termsSlider.max = 1;
+      termsSlider.value = DEFAULT_TERMS;
+      termsSlider.max = DEFAULT_TERMS;
       termsSlider.disabled = true;
-      termsValue.textContent = "0";
-      termsBadge.textContent = "terms 0";
-      timeBadge.textContent = "t 0.000";
+      termsValue.textContent = String(DEFAULT_TERMS);
       updateUI();
       renderScene(0);
     }
 
     function updateUI() {
-      const termCount = fourier.length ? Math.min(parseInt(termsSlider.value, 10), fourier.length) : 0;
-      const energy = energyPercent(termCount);
-      modeChip.textContent = state;
-      pointsChip.textContent = `${rawPoints.length} pts`;
-      energyChip.textContent = `${energy.toFixed(1)}%`;
       speedValue.textContent = `${parseFloat(speedSlider.value).toFixed(1)}x`;
-      termsValue.textContent = String(termCount);
-      termsBadge.textContent = `terms ${termCount}`;
-
+      termsValue.textContent = String(fourier.length ? Math.min(parseInt(termsSlider.value, 10), fourier.length) : DEFAULT_TERMS);
       hero.classList.toggle("hidden", state !== "ready");
-      heroTitle.textContent = state === "drawing" ? "DRAWING" : "DRAW";
-      heroSub.textContent = state === "drawing" ? "keep the line moving" : "release to convert";
-      drawBtn.textContent = state === "ready" || state === "drawing" ? "drawing" : "draw";
+      drawBtn.textContent = "draw";
       playBtn.disabled = !fourier.length;
       playBtn.textContent = state === "playing" ? "pause" : "play";
       resetBtn.disabled = !fourier.length;
-      clearBtn.textContent = fourier.length || rawPoints.length ? "clear" : "clear";
     }
 
     canvas.addEventListener("pointerdown", event => {
@@ -1393,8 +1152,6 @@
     termsSlider.addEventListener("input", () => {
       const count = Math.min(parseInt(termsSlider.value, 10), fourier.length);
       termsValue.textContent = String(count);
-      termsBadge.textContent = `terms ${count}`;
-      energyChip.textContent = `${energyPercent(count).toFixed(1)}%`;
       if (state === "paused" || state === "ready") {
         tracePoints = [];
         animTime = 0;
