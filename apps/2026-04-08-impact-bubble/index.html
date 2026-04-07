@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <title>Impact Bubble</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --accent: #ff4747;
+      --deep: #360000;
+      --glow: rgba(255, 71, 71, 0.55);
+      --tag-bg: #fff13b;
+      --tag-fg: #ea2121;
+      --burst: #fff200;
+      --panel: rgba(16, 16, 16, 0.56);
+      --line: rgba(255, 255, 255, 0.12);
+      --text: #fff;
+      --muted: rgba(255, 255, 255, 0.66);
+      --headline-size: clamp(1.5rem, 5.1vw, 3rem);
+      font-family: "Arial Black", "Helvetica Neue", "Hiragino Sans", "Yu Gothic", sans-serif;
+    }
+
+    body[data-theme="shock"] {
+      --accent: #ff8b2d;
+      --deep: #4d1100;
+      --glow: rgba(255, 139, 45, 0.5);
+      --tag-bg: #ffe270;
+      --tag-fg: #ff5f00;
+      --burst: #fff8cf;
+    }
+
+    body[data-theme="secret"] {
+      --accent: #63ff62;
+      --deep: #042a08;
+      --glow: rgba(99, 255, 98, 0.34);
+      --tag-bg: #d9ff56;
+      --tag-fg: #156a0d;
+      --burst: #f6ff8a;
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 18% 0, rgba(255,255,255,0.16), transparent 34%),
+        linear-gradient(180deg, #747474 0, #5e5e5e 55%, #494949 100%);
+    }
+
+    body {
+      position: fixed;
+      inset: 0;
+      color: var(--text);
+      touch-action: manipulation;
+      user-select: none;
+    }
+
+    button, input { font: inherit; color: inherit; }
+
+    .app {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 10px;
+      padding:
+        max(12px, env(safe-area-inset-top))
+        max(12px, env(safe-area-inset-right))
+        max(12px, env(safe-area-inset-bottom))
+        max(12px, env(safe-area-inset-left));
+      overflow: hidden;
+    }
+
+    .panel {
+      border-radius: 24px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      box-shadow: 0 20px 44px rgba(0,0,0,0.34);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      overflow: hidden;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      min-height: 72px;
+    }
+
+    h1 { margin: 0; font-size: clamp(1.3rem, 5vw, 2rem); letter-spacing: 0.06em; line-height: 1; }
+    .sub { margin-top: 6px; font-size: 0.72rem; letter-spacing: 0.24em; color: var(--muted); }
+    .themes { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+
+    .pill, .preset, .action {
+      border: 1px solid rgba(255,255,255,0.14);
+      cursor: pointer;
+      transition: transform 140ms ease, background 140ms ease, border-color 140ms ease;
+    }
+
+    .pill {
+      min-width: 56px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      font-size: 0.72rem;
+      letter-spacing: 0.18em;
+    }
+
+    .pill.active { background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.34); transform: translateY(-1px); }
+
+    .stage {
+      position: relative;
+      min-height: 0;
+      border-radius: 28px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 20% 18%, rgba(255,255,255,0.23), transparent 34%),
+        linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.06));
+    }
+
+    .poly {
+      position: absolute;
+      background: linear-gradient(180deg, rgba(255,255,255,0.76), rgba(72,72,72,0.38));
+      clip-path: polygon(50% 0, 100% 100%, 0 100%);
+      opacity: 0.78;
+      mix-blend-mode: screen;
+    }
+
+    .p1 { inset: -6% auto auto -6%; width: 42%; height: 40%; transform: rotate(-24deg); }
+    .p2 { inset: -10% 13% auto auto; width: 35%; height: 44%; transform: rotate(18deg); }
+    .p3 { inset: 18% auto auto 6%; width: 34%; height: 40%; transform: rotate(64deg); opacity: 0.44; }
+    .p4 { inset: 18% 20% auto auto; width: 28%; height: 28%; transform: rotate(8deg); opacity: 0.48; }
+    .p5 { inset: auto 0 14% auto; width: 42%; height: 40%; transform: rotate(18deg); opacity: 0.46; }
+    .p6 { inset: auto auto -12% -8%; width: 54%; height: 52%; transform: rotate(-6deg); opacity: 0.4; }
+    .p7 { inset: auto 20% -16% auto; width: 26%; height: 34%; transform: rotate(-34deg); opacity: 0.66; }
+
+    .city {
+      position: absolute;
+      left: 4%;
+      top: 20%;
+      width: 28%;
+      height: 28%;
+      opacity: 0.18;
+      background:
+        linear-gradient(90deg, rgba(255,255,255,0.4) 0 18%, transparent 18% 28%, rgba(255,255,255,0.3) 28% 44%, transparent 44% 55%, rgba(255,255,255,0.35) 55% 72%, transparent 72% 82%, rgba(255,255,255,0.3) 82% 100%),
+        repeating-linear-gradient(180deg, rgba(255,255,255,0.4) 0 11%, transparent 11% 18%);
+      mask: linear-gradient(180deg, transparent, #000 18%, #000 100%);
+    }
+
+    .spark, .spark::before, .spark::after { position: absolute; border-radius: 999px; background: rgba(0,0,0,0.48); }
+    .spark { width: 18px; height: 18px; opacity: 0.24; }
+    .spark::before, .spark::after { content: ""; left: 50%; top: 50%; width: 2px; height: 100%; transform: translate(-50%, -50%); }
+    .spark::after { transform: translate(-50%, -50%) rotate(90deg); }
+    .s1 { right: 10%; bottom: 14%; transform: rotate(18deg) scale(3.8); }
+    .s2 { left: 12%; top: 20%; transform: rotate(-12deg) scale(1.8); opacity: 0.18; }
+
+    .scene { position: absolute; inset: 0; display: grid; place-items: center; padding: 16px; z-index: 2; }
+    .speed { position: absolute; inset: 0; opacity: 0; background: linear-gradient(112deg, transparent 0 20%, rgba(255,255,255,0.2) 20% 21%, transparent 21% 30%, rgba(255,255,255,0.16) 30% 31%, transparent 31% 100%); }
+    .banner { position: relative; width: min(100%, 960px); aspect-ratio: 5 / 1.65; filter: drop-shadow(0 18px 26px rgba(0,0,0,0.36)); }
+    .ring {
+      position: absolute;
+      left: 6%;
+      top: 50%;
+      width: 19%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,255,255,0.95) 0 10%, rgba(255,255,255,0.55) 18%, rgba(255,255,255,0.18) 46%, transparent 74%);
+      transform: translate(-14%, -50%) scale(0.9);
+      opacity: 0.86;
+      filter: blur(2px);
+    }
+
+    .burst {
+      position: absolute;
+      left: 0;
+      top: 50%;
+      width: 20%;
+      aspect-ratio: 1;
+      transform: translate(-12%, -50%);
+      display: grid;
+      place-items: center;
+      z-index: 3;
+    }
+
+    .burst::before, .burst::after {
+      content: "";
+      position: absolute;
+      inset: 3%;
+      background: linear-gradient(180deg, var(--accent) 0, #f10000 100%);
+      clip-path: polygon(50% 0, 57% 24%, 79% 8%, 68% 33%, 100% 50%, 68% 67%, 79% 92%, 57% 76%, 50% 100%, 43% 76%, 21% 92%, 32% 67%, 0 50%, 32% 33%, 21% 8%, 43% 24%);
+      filter: drop-shadow(0 0 16px var(--glow));
+    }
+
+    .burst::after {
+      inset: 15%;
+      clip-path: none;
+      border-radius: 50%;
+      background: radial-gradient(circle at 50% 42%, rgba(255,255,255,0.95) 0 18%, rgba(255,255,255,0.08) 60%, transparent 76%);
+    }
+
+    .burst-label {
+      position: relative;
+      z-index: 1;
+      max-width: 76%;
+      text-align: center;
+      white-space: pre-line;
+      line-height: 0.95;
+      font-size: clamp(0.8rem, 2.7vw, 1.35rem);
+      color: var(--burst);
+      text-shadow: -2px 0 #ff2200, 0 2px #ff2200, 2px 0 #ff2200, 0 -2px #ff2200, 0 8px 16px rgba(0,0,0,0.38);
+      transform: rotate(-8deg);
+    }
+
+    .frame {
+      position: absolute;
+      inset: 17% 4% 19% 12%;
+      clip-path: polygon(0 0, 89% 0, 100% 22%, 96% 100%, 0 100%, 4% 50%);
+      background: linear-gradient(90deg, #8b0000 0, var(--accent) 100%);
+    }
+
+    .core {
+      position: absolute;
+      inset: 10%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 10% 0 8%;
+      clip-path: polygon(0 0, 91% 0, 100% 23%, 96% 100%, 0 100%, 4% 50%);
+      background: linear-gradient(180deg, rgba(0,0,0,0.14), transparent 30%), linear-gradient(90deg, rgba(30,0,0,0.84) 0, rgba(73,7,7,0.95) 42%, rgba(23,2,2,0.96) 100%);
+      overflow: hidden;
+    }
+
+    .core::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.22), transparent 24%), linear-gradient(90deg, rgba(255,255,255,0.08), transparent 18%, transparent 82%, rgba(255,255,255,0.12));
+      pointer-events: none;
+    }
+
+    .headline {
+      position: relative;
+      z-index: 1;
+      margin: 0;
+      width: 100%;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.02;
+      font-size: var(--headline-size);
+      text-shadow: 0 3px 0 rgba(0,0,0,0.55), 0 12px 24px rgba(0,0,0,0.32);
+    }
+
+    .headline.compact { font-size: clamp(1.26rem, 4.2vw, 2.36rem); }
+    .headline.tight { font-size: clamp(1.04rem, 3.5vw, 1.84rem); letter-spacing: -0.02em; }
+
+    .tag {
+      position: absolute;
+      right: 6%;
+      bottom: 6%;
+      width: 27%;
+      height: 26%;
+      display: grid;
+      place-items: center;
+      background: var(--tag-bg);
+      color: var(--tag-fg);
+      clip-path: polygon(9% 0, 100% 0, 88% 100%, 0 100%, 7% 45%);
+      box-shadow: 0 8px 16px rgba(0,0,0,0.24);
+      font-size: clamp(0.62rem, 2.2vw, 1.12rem);
+      transform: skewX(-12deg);
+    }
+
+    .tag span { transform: skewX(12deg); white-space: nowrap; }
+
+    .controls { display: grid; gap: 10px; padding: 14px; }
+    .composer { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; }
+
+    input {
+      min-width: 0;
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 18px;
+      padding: 0 16px;
+      font-size: 16px;
+      background: rgba(255,255,255,0.08);
+      outline: none;
+    }
+
+    input:focus { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.32); }
+
+    .action {
+      border-radius: 18px;
+      padding: 0 16px;
+      font-size: 0.88rem;
+      letter-spacing: 0.08em;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.2);
+    }
+
+    .primary { background: linear-gradient(180deg, var(--accent) 0, #c81818 100%); color: #fff; border: 0; }
+    .secondary { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.9); }
+
+    .presets { display: flex; gap: 8px; overflow: hidden; }
+    .preset {
+      flex: 1;
+      min-width: 0;
+      padding: 12px 10px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.06);
+      font-size: 0.75rem;
+      letter-spacing: 0.06em;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
+
+    .meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 0.72rem;
+      letter-spacing: 0.16em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      margin-right: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 14px var(--glow);
+      vertical-align: middle;
+    }
+
+    .stage.play .banner { animation: pop 600ms cubic-bezier(.16,1,.3,1); }
+    .stage.play .burst { animation: spin 620ms ease-out; }
+    .stage.play .ring { animation: ring 560ms ease-out; }
+    .stage.play .speed { animation: speed 540ms ease-out; }
+    .stage.play .headline { animation: flash 440ms ease-out; }
+
+    @keyframes pop { 0% { transform: scale(.85) translateY(10px); opacity: .2; } 55% { transform: scale(1.04) translateY(-2px); opacity: 1; } 100% { transform: scale(1); } }
+    @keyframes spin { 0% { transform: translate(-18%,-50%) scale(.7) rotate(-40deg); } 60% { transform: translate(-12%,-50%) scale(1.08) rotate(6deg); } 100% { transform: translate(-12%,-50%) scale(1) rotate(0); } }
+    @keyframes ring { 0% { opacity: .12; transform: translate(-14%,-50%) scale(.46); } 54% { opacity: 1; transform: translate(-14%,-50%) scale(1.02); } 100% { opacity: .86; transform: translate(-14%,-50%) scale(.9); } }
+    @keyframes speed { 0% { opacity: 0; transform: translateX(-4%); } 25% { opacity: .8; } 100% { opacity: 0; transform: translateX(4%); } }
+    @keyframes flash { 0% { filter: brightness(1.35); } 100% { filter: brightness(1); } }
+
+    @media (max-width: 520px) {
+      .app { gap: 8px; }
+      .topbar { padding: 12px 14px; min-height: 64px; }
+      .pill { min-width: 52px; padding: 9px 10px; font-size: 0.68rem; }
+      .banner { aspect-ratio: 4.6 / 2; }
+      .frame { inset: 20% 1% 22% 15%; }
+      .burst, .ring { width: 24%; }
+      .headline { font-size: clamp(1.16rem, 5.8vw, 2.2rem); }
+      .headline.compact { font-size: clamp(.98rem, 4.8vw, 1.8rem); }
+      .headline.tight { font-size: clamp(.88rem, 4vw, 1.52rem); }
+      .tag { width: 32%; height: 24%; }
+      .composer { grid-template-columns: minmax(0, 1fr) auto; }
+      .secondary { display: none; }
+      .controls { padding: 12px; }
+      .preset { padding: 11px 9px; font-size: .7rem; }
+    }
+  </style>
+</head>
+<body data-theme="news">
+  <main class="app">
+    <header class="panel topbar">
+      <div>
+        <h1>Impact Bubble</h1>
+        <div class="sub">TV STYLE BURST</div>
+      </div>
+      <div class="themes" role="tablist" aria-label="theme">
+        <button class="pill active" data-theme="news" type="button">速報</button>
+        <button class="pill" data-theme="shock" type="button">衝撃</button>
+        <button class="pill" data-theme="secret" type="button">極秘</button>
+      </div>
+    </header>
+
+    <section class="panel stage" id="stage" aria-live="polite">
+      <div class="poly p1"></div><div class="poly p2"></div><div class="poly p3"></div><div class="poly p4"></div><div class="poly p5"></div><div class="poly p6"></div><div class="poly p7"></div>
+      <div class="city" aria-hidden="true"></div>
+      <div class="spark s1" aria-hidden="true"></div>
+      <div class="spark s2" aria-hidden="true"></div>
+      <div class="scene">
+        <div class="speed" aria-hidden="true"></div>
+        <div class="banner">
+          <div class="ring" aria-hidden="true"></div>
+          <div class="burst" aria-hidden="true"><div class="burst-label" id="burstLabel">カッ\nコイイ</div></div>
+          <div class="frame"><div class="core"><p class="headline" id="headline">木曜深夜にお引っ越し</p></div></div>
+          <div class="tag"><span id="tagLabel">Ki-My-F2</span></div>
+        </div>
+      </div>
+    </section>
+
+    <form class="panel controls" id="composer">
+      <div class="composer">
+        <input id="textInput" name="text" type="text" maxlength="22" enterkeyhint="go" autocomplete="off" spellcheck="false" value="木曜深夜にお引っ越し" aria-label="headline" />
+        <button class="action primary" type="submit">出す</button>
+        <button class="action secondary" id="randomButton" type="button">おまかせ</button>
+      </div>
+      <div class="presets">
+        <button class="preset" type="button" data-copy="10月から木曜深夜にお引っ越し">引っ越し</button>
+        <button class="preset" type="button" data-copy="緊急発表があります">緊急</button>
+        <button class="preset" type="button" data-copy="今夜ついに新企画スタート">今夜</button>
+      </div>
+      <div class="meta">
+        <div><span class="dot"></span><span id="statusText">LIVE</span></div>
+        <div id="countText">16 / 22</div>
+      </div>
+    </form>
+  </main>
+
+  <script>
+    const themes = {
+      news: { burst: "カッ\nコイイ", tag: "Ki-My-F2", status: "LIVE" },
+      shock: { burst: "ズバ\nーン", tag: "SHOCK", status: "FLASH" },
+      secret: { burst: "ヒソ\nヒソ", tag: "SECRET", status: "HUSH" }
+    };
+    const samples = ["木曜深夜にお引っ越し", "重大発表があります", "このあと新企画スタート", "本日ついに解禁です", "今夜だけの特別映像"];
+    const stage = document.getElementById("stage");
+    const headline = document.getElementById("headline");
+    const burstLabel = document.getElementById("burstLabel");
+    const tagLabel = document.getElementById("tagLabel");
+    const textInput = document.getElementById("textInput");
+    const composer = document.getElementById("composer");
+    const countText = document.getElementById("countText");
+    const statusText = document.getElementById("statusText");
+    const randomButton = document.getElementById("randomButton");
+    const pills = [...document.querySelectorAll(".pill")];
+    const presets = [...document.querySelectorAll(".preset")];
+    let currentTheme = "news";
+
+    function fitHeadline(text) {
+      headline.classList.remove("compact", "tight");
+      if (text.length >= 16) headline.classList.add("compact");
+      if (text.length >= 20) headline.classList.add("tight");
+    }
+
+    function sanitize(value) {
+      const clean = value.replace(/\s+/g, " ").trim();
+      return clean || samples[0];
+    }
+
+    function updateCount() {
+      countText.textContent = `${textInput.value.length} / ${textInput.maxLength}`;
+    }
+
+    function applyTheme(theme) {
+      currentTheme = theme;
+      document.body.dataset.theme = theme;
+      burstLabel.textContent = themes[theme].burst;
+      tagLabel.textContent = themes[theme].tag;
+      statusText.textContent = themes[theme].status;
+      pills.forEach((pill) => pill.classList.toggle("active", pill.dataset.theme === theme));
+    }
+
+    function trigger(text) {
+      const message = sanitize(text);
+      headline.textContent = message;
+      fitHeadline(message);
+      stage.classList.remove("play");
+      void stage.offsetWidth;
+      stage.classList.add("play");
+    }
+
+    composer.addEventListener("submit", (event) => {
+      event.preventDefault();
+      trigger(textInput.value);
+      textInput.blur();
+    });
+
+    randomButton.addEventListener("click", () => {
+      const pick = samples[Math.floor(Math.random() * samples.length)];
+      textInput.value = pick;
+      updateCount();
+      trigger(pick);
+    });
+
+    textInput.addEventListener("input", updateCount);
+    textInput.addEventListener("focus", () => { statusText.textContent = "TYPE"; });
+    textInput.addEventListener("blur", () => { statusText.textContent = themes[currentTheme].status; });
+    pills.forEach((pill) => pill.addEventListener("click", () => { applyTheme(pill.dataset.theme); trigger(textInput.value); }));
+    presets.forEach((button) => button.addEventListener("click", () => {
+      textInput.value = button.dataset.copy;
+      updateCount();
+      trigger(textInput.value);
+    }));
+
+    function updateViewportState() {
+      document.body.dataset.scrollfit = document.scrollingElement.scrollHeight <= window.innerHeight ? "fit" : "overflow";
+      document.body.dataset.viewport = window.innerWidth + "x" + window.innerHeight;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const requestedTheme = params.get("theme");
+    const requestedText = params.get("text");
+
+    if (requestedText) {
+      textInput.value = requestedText.slice(0, textInput.maxLength);
+    }
+
+    window.addEventListener("resize", updateViewportState);
+    updateCount();
+    applyTheme(themes[requestedTheme] ? requestedTheme : "news");
+    trigger(textInput.value);
+    requestAnimationFrame(updateViewportState);
+  </script>
+</body>
+</html>
