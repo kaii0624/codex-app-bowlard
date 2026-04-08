@@ -429,6 +429,245 @@
       word-break: keep-all;
     }
 
+    .label-layer.impact-mode {
+      overflow: hidden;
+    }
+
+    .impact-factor {
+      --impact-scale: 1;
+      --impact-accent: #ff4747;
+      --impact-glow: rgba(255, 71, 71, 0.55);
+      --impact-tag-fill: linear-gradient(180deg, #fff13b 0%, #f3d930 100%);
+      --impact-tag-fg: #ea2121;
+      --impact-burst-text: #fff200;
+      --impact-frame-shell: linear-gradient(90deg, #8b0000 0%, #ff4747 100%);
+      --impact-core-fill:
+        linear-gradient(180deg, rgba(0, 0, 0, 0.14), transparent 30%),
+        linear-gradient(90deg, rgba(30, 0, 0, 0.84) 0%, rgba(73, 7, 7, 0.95) 42%, rgba(23, 2, 2, 0.96) 100%);
+      --impact-headline-shadow: 0 3px 0 rgba(0, 0, 0, 0.55), 0 12px 24px rgba(0, 0, 0, 0.32);
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: clamp(138px, 40vw, 188px);
+      aspect-ratio: 1.9;
+      opacity: 0;
+      transform: translateY(14px) scale(calc(var(--impact-scale) - 0.08));
+      filter: drop-shadow(0 18px 24px rgba(0, 0, 0, 0.32));
+      animation: impact-factor-in 0.42s var(--ease) forwards;
+      will-change: transform, left, top;
+    }
+
+    .impact-factor::before {
+      content: "";
+      position: absolute;
+      inset: 10% 6% 12% 12%;
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0 10%, rgba(255, 255, 255, 0.5) 18%, rgba(255, 255, 255, 0.12) 44%, transparent 72%);
+      transform: translate(-16%, -6%) scale(0.82);
+      opacity: 0.82;
+      filter: blur(1.4px);
+      pointer-events: none;
+    }
+
+    .impact-factor.high {
+      --impact-scale: 1.02;
+    }
+
+    .impact-factor.medium {
+      --impact-scale: 0.97;
+    }
+
+    .impact-factor.low {
+      --impact-scale: 0.92;
+    }
+
+    .impact-factor.negative {
+      --impact-accent: #11b2a9;
+      --impact-glow: rgba(17, 178, 169, 0.44);
+      --impact-tag-fill: linear-gradient(180deg, #9737ff 0%, #5b18c9 100%);
+      --impact-tag-fg: #f4e9ff;
+      --impact-burst-text: #ffe246;
+      --impact-frame-shell: linear-gradient(90deg, #0c7068 0%, #1bc3ba 100%);
+      --impact-core-fill:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 24%),
+        linear-gradient(90deg, #03090a 0%, #071213 50%, #040708 100%);
+      --impact-headline-shadow: 0 0 18px rgba(50, 255, 232, 0.16), 0 8px 20px rgba(0, 0, 0, 0.42);
+    }
+
+    .impact-factor.negative::before {
+      background: radial-gradient(circle, rgba(0, 0, 0, 0.94) 0 24%, rgba(0, 0, 0, 0.14) 46%, transparent 70%);
+      opacity: 1;
+      filter: none;
+    }
+
+    .impact-factor__burst {
+      position: absolute;
+      left: 0;
+      top: 50%;
+      width: 28%;
+      aspect-ratio: 1;
+      transform: translate(-8%, -50%);
+      display: grid;
+      place-items: center;
+      z-index: 3;
+    }
+
+    .impact-factor__burst::before,
+    .impact-factor__burst::after {
+      content: "";
+      position: absolute;
+      inset: 4%;
+    }
+
+    .impact-factor__burst::before {
+      background: linear-gradient(180deg, var(--impact-accent) 0%, #f10000 100%);
+      clip-path: polygon(50% 0, 57% 24%, 79% 8%, 68% 33%, 100% 50%, 68% 67%, 79% 92%, 57% 76%, 50% 100%, 43% 76%, 21% 92%, 32% 67%, 0 50%, 32% 33%, 21% 8%, 43% 24%);
+      filter: drop-shadow(0 0 16px var(--impact-glow));
+    }
+
+    .impact-factor__burst::after {
+      inset: 16%;
+      border-radius: 50%;
+      background: radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.95) 0 18%, rgba(255, 255, 255, 0.08) 60%, transparent 76%);
+    }
+
+    .impact-factor.negative .impact-factor__burst::before {
+      inset: -6%;
+      background: linear-gradient(180deg, #161616 0%, #020202 100%);
+      clip-path: polygon(50% 0, 56% 24%, 82% 4%, 68% 32%, 100% 50%, 70% 66%, 86% 96%, 58% 76%, 50% 100%, 42% 76%, 14% 96%, 30% 66%, 0 50%, 32% 32%, 18% 4%, 44% 24%);
+      filter: drop-shadow(0 0 24px rgba(0, 0, 0, 0.44));
+    }
+
+    .impact-factor.negative .impact-factor__burst::after {
+      inset: 19%;
+      background: radial-gradient(circle at 50% 42%, #1ca59e 0 42%, #061716 44% 58%, transparent 60%);
+    }
+
+    .impact-factor__burst-text {
+      position: relative;
+      z-index: 1;
+      max-width: 74%;
+      text-align: center;
+      line-height: 0.95;
+      font-size: clamp(10px, 2.2vw, 12px);
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--impact-burst-text);
+      text-shadow: -2px 0 #ff2200, 0 2px #ff2200, 2px 0 #ff2200, 0 -2px #ff2200, 0 8px 16px rgba(0, 0, 0, 0.38);
+      transform: rotate(-8deg);
+      white-space: pre-line;
+    }
+
+    .impact-factor.negative .impact-factor__burst-text {
+      text-shadow: 0 2px 0 rgba(0, 0, 0, 0.72), 0 8px 14px rgba(0, 0, 0, 0.46);
+      transform: translateY(6px);
+    }
+
+    .impact-factor__frame {
+      position: absolute;
+      inset: 17% 4% 18% 13%;
+      background: var(--impact-frame-shell);
+      clip-path: polygon(0 0, 89% 0, 100% 22%, 96% 100%, 0 100%, 4% 50%);
+    }
+
+    .impact-factor.negative .impact-factor__frame {
+      inset: 17% 3% 18% 12%;
+      clip-path: polygon(4% 0, 100% 0, 94% 100%, 0 100%, 6% 50%);
+    }
+
+    .impact-factor__core {
+      position: absolute;
+      inset: 10%;
+      display: grid;
+      place-items: center;
+      padding: 0 12% 0 10%;
+      overflow: hidden;
+      clip-path: polygon(0 0, 91% 0, 100% 23%, 96% 100%, 0 100%, 4% 50%);
+      background: var(--impact-core-fill);
+    }
+
+    .impact-factor.negative .impact-factor__core {
+      clip-path: polygon(4% 0, 100% 0, 94% 100%, 0 100%, 6% 50%);
+    }
+
+    .impact-factor__core::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.22), transparent 24%),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.08), transparent 18%, transparent 82%, rgba(255, 255, 255, 0.12));
+      pointer-events: none;
+    }
+
+    .impact-factor.negative .impact-factor__core::before {
+      background:
+        linear-gradient(180deg, rgba(45, 255, 228, 0.12), transparent 18%),
+        linear-gradient(90deg, rgba(0, 255, 235, 0.08), transparent 20%, transparent 82%, rgba(0, 255, 235, 0.08));
+    }
+
+    .impact-factor__text {
+      position: relative;
+      z-index: 1;
+      max-width: 100%;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      overflow: hidden;
+      font-family: "Noto Sans JP", sans-serif;
+      font-size: clamp(17px, 4.4vw, 22px);
+      line-height: 1.04;
+      font-weight: 700;
+      letter-spacing: -0.05em;
+      text-align: center;
+      text-shadow: var(--impact-headline-shadow);
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      text-wrap: balance;
+    }
+
+    .impact-factor__text.compact {
+      font-size: clamp(16px, 4vw, 20px);
+    }
+
+    .impact-factor__text.tight {
+      font-size: clamp(14px, 3.7vw, 18px);
+      line-height: 1;
+      letter-spacing: -0.04em;
+    }
+
+    .impact-factor__tag {
+      position: absolute;
+      right: 6%;
+      bottom: 6%;
+      width: 28%;
+      height: 24%;
+      display: grid;
+      place-items: center;
+      background: var(--impact-tag-fill);
+      color: var(--impact-tag-fg);
+      clip-path: polygon(9% 0, 100% 0, 88% 100%, 0 100%, 7% 45%);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.24);
+      font-size: clamp(9px, 2vw, 11px);
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      transform: skewX(-12deg);
+    }
+
+    .impact-factor.negative .impact-factor__tag {
+      width: 30%;
+      clip-path: polygon(14% 0, 100% 0, 92% 100%, 20% 100%, 0 42%);
+      box-shadow: 0 10px 18px rgba(34, 0, 86, 0.3);
+    }
+
+    .impact-factor__tag span {
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transform: skewX(12deg);
+      white-space: nowrap;
+    }
+
     .privacy-card {
       position: absolute;
       left: 14px;
@@ -556,6 +795,13 @@
       }
     }
 
+    @keyframes impact-factor-in {
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(var(--impact-scale));
+      }
+    }
+
     @keyframes panel-in {
       from {
         opacity: 0;
@@ -572,6 +818,9 @@
         font-size: 24px;
       }
 
+      .impact-factor {
+        width: clamp(130px, 44vw, 172px);
+      }
     }
   </style>
 </head>
@@ -613,9 +862,8 @@
           <button class="mini-btn ghost" id="objectModeButton" type="button">Object</button>
           <button class="mini-btn ghost" id="babyModeButton" type="button">Baby</button>
         </div>
-        <div class="settings-row actions actions-3">
-          <button class="mini-btn ghost" id="negativeModeButton" type="button">Neg</button>
-          <button class="mini-btn ghost" id="hypeModeButton" type="button">Hype</button>
+        <div class="settings-row actions">
+          <button class="mini-btn ghost" id="impactModeButton" type="button">Impact</button>
           <button class="mini-btn ghost" id="questModeButton" type="button">Quest</button>
         </div>
       </div>
@@ -729,40 +977,6 @@
           "- text は安全確認の短い注意点",
         ].join("\n"),
       },
-      negative: {
-        chip: "NEG",
-        idleSummary: "まずケチをつける",
-        idleDetail: "scene roast mode",
-        prompt: [
-          "あなたは写っている環境や物体に対して、何が何でも否定的な意見を言いたい辛口レビュアーです。",
-          "対象は環境や物体だけ。空間の見た目、配置、雑然さ、暗さ、圧迫感、古さ、使いにくさを短く辛口で表現してください。",
-          "画面に重ねるので text は 2-8 文字の短い日本語。",
-          "JSON only.",
-          "{\"factors\":[{\"text\":\"ごちゃつく\",\"x\":0.52,\"y\":0.30,\"level\":\"high\"},{\"text\":\"暗すぎ\",\"x\":0.22,\"y\":0.18,\"level\":\"medium\"}]}",
-          "rules:",
-          "- factors は 1-4 件",
-          "- x と y は 0.08 以上 0.92 以下",
-          "- level は low / medium / high",
-          "- text は環境や物体への辛口コメント",
-        ].join("\n"),
-      },
-      hype: {
-        chip: "HYPE",
-        idleSummary: "全部盛って褒める",
-        idleDetail: "promo copy lens",
-        prompt: [
-          "あなたは写っている環境や物体を、何でも魅力的に盛って伝えたい宣伝担当です。",
-          "対象は環境や物体だけ。光、色、形、抜け感、存在感を、短い褒め言葉や宣伝コピーとして返してください。",
-          "画面に重ねるので text は 2-8 文字の短い日本語。",
-          "JSON only.",
-          "{\"factors\":[{\"text\":\"光きれい\",\"x\":0.74,\"y\":0.18,\"level\":\"high\"},{\"text\":\"主役感\",\"x\":0.52,\"y\":0.42,\"level\":\"medium\"}]}",
-          "rules:",
-          "- factors は 1-4 件",
-          "- x と y は 0.08 以上 0.92 以下",
-          "- level は low / medium / high",
-          "- text は褒め言葉か宣伝語",
-        ].join("\n"),
-      },
       quest: {
         chip: "QUEST",
         idleSummary: "RPG視点で見る",
@@ -778,6 +992,27 @@
           "- x と y は 0.08 以上 0.92 以下",
           "- level は low / medium / high",
           "- text はゲーム内タグ",
+        ].join("\n"),
+      },
+      impact: {
+        chip: "IMPACT",
+        idleSummary: "良し悪しを同時表示",
+        idleDetail: "positive and negative lens",
+        prompt: [
+          "あなたは写っている環境や物体を、褒める視点と辛口視点の両方で同時に短く見直す補助役です。",
+          "対象は環境や物体だけ。人の属性、性格、能力、感情は推定しないでください。",
+          "良い点には tone を positive、気になる点には tone を negative と付けてください。",
+          "positive と negative を最低 1 件ずつ含め、合計 2-6 件にしてください。",
+          "画面に重ねるので text は 2-8 文字の短い日本語。",
+          "JSON only.",
+          "{\"factors\":[{\"text\":\"光きれい\",\"x\":0.74,\"y\":0.18,\"level\":\"high\",\"tone\":\"positive\"},{\"text\":\"暗すぎ\",\"x\":0.22,\"y\":0.18,\"level\":\"medium\",\"tone\":\"negative\"}]}",
+          "rules:",
+          "- factors は 2-6 件",
+          "- positive と negative を両方含める",
+          "- x と y は 0.08 以上 0.92 以下",
+          "- level は low / medium / high",
+          "- tone は positive / negative",
+          "- text は褒め言葉か辛口コメント",
         ].join("\n"),
       },
     };
@@ -805,6 +1040,7 @@
       lastMode: "local",
       latestSummary: "思いやりのきっかけ",
       lastMaskedAt: "",
+      renderedFactors: [],
       sessionToken: 0,
       demoFrame: 0,
       demoLoopActive: true,
@@ -816,6 +1052,9 @@
       demoCanvas: document.getElementById("demoCanvas"),
       maskCanvas: document.getElementById("maskCanvas"),
       labelLayer: document.getElementById("labelLayer"),
+      topbar: document.querySelector(".topbar"),
+      privacyCard: document.querySelector(".privacy-card"),
+      dock: document.querySelector(".dock"),
       privacyChip: document.getElementById("privacyChip"),
       intervalChip: document.getElementById("intervalChip"),
       analysisChip: document.getElementById("analysisChip"),
@@ -836,8 +1075,7 @@
       careModeButton: document.getElementById("careModeButton"),
       objectModeButton: document.getElementById("objectModeButton"),
       babyModeButton: document.getElementById("babyModeButton"),
-      negativeModeButton: document.getElementById("negativeModeButton"),
-      hypeModeButton: document.getElementById("hypeModeButton"),
+      impactModeButton: document.getElementById("impactModeButton"),
       questModeButton: document.getElementById("questModeButton"),
       interval5Button: document.getElementById("interval5Button"),
       interval10Button: document.getElementById("interval10Button"),
@@ -919,8 +1157,7 @@
       el.careModeButton.classList.toggle("active", state.analysisMode === "care");
       el.objectModeButton.classList.toggle("active", state.analysisMode === "object");
       el.babyModeButton.classList.toggle("active", state.analysisMode === "baby");
-      el.negativeModeButton.classList.toggle("active", state.analysisMode === "negative");
-      el.hypeModeButton.classList.toggle("active", state.analysisMode === "hype");
+      el.impactModeButton.classList.toggle("active", state.analysisMode === "impact");
       el.questModeButton.classList.toggle("active", state.analysisMode === "quest");
       if (el.analysisChip) {
         el.analysisChip.textContent = currentAnalysisConfig().chip;
@@ -1019,23 +1256,40 @@
         : el.settingsPanel.hidden;
       el.settingsPanel.hidden = !shouldOpen;
       el.settingsToggle.setAttribute("aria-expanded", String(shouldOpen));
+      if (state.analysisMode === "impact" && state.renderedFactors.length) {
+        renderLabels(state.renderedFactors);
+      }
     }
 
     function renderLabels(factors) {
+      const items = Array.isArray(factors) ? factors : [];
+      state.renderedFactors = items.map((item) => ({ ...item }));
       el.labelLayer.innerHTML = "";
-      factors.forEach((item, index) => {
-        const node = document.createElement("div");
-        const level = normalizeLevel(item?.level);
-        node.className = `factor ${level}`;
-        node.style.left = `${clamp(Number(item?.x) * 100 || 50, 8, 92)}%`;
-        node.style.top = `${clamp(Number(item?.y) * 100 || 50, 12, 88)}%`;
-        node.style.animationDelay = `${index * 80}ms`;
-        node.innerHTML = `
-          <span class="eyebrow">${level}</span>
-          <span class="text">${escapeHtml(String(item?.text || ""))}</span>
-        `;
+      const impactMode = state.analysisMode === "impact";
+      el.labelLayer.classList.toggle("impact-mode", impactMode);
+      if (!items.length) {
+        return;
+      }
+
+      const nodes = items.map((item, index) => {
+        const node = impactMode
+          ? createImpactLabelNode(item, index)
+          : createStandardLabelNode(item, index);
         el.labelLayer.appendChild(node);
+        return node;
       });
+
+      if (impactMode) {
+        const relayout = () => {
+          if (nodes.every((node) => node.isConnected)) {
+            layoutImpactLabels(nodes, items);
+          }
+        };
+        window.requestAnimationFrame(() => {
+          window.requestAnimationFrame(relayout);
+        });
+        document.fonts?.ready?.then(relayout).catch(() => {});
+      }
     }
 
     function normalizeLevel(level) {
@@ -1045,12 +1299,233 @@
       return "medium";
     }
 
+    function normalizeCoord(value, fallback, min, max) {
+      const number = Number(value);
+      return Number.isFinite(number) ? clamp(number, min, max) : fallback;
+    }
+
+    function normalizeTone(value, text = "") {
+      const source = String(value || "").trim().toLowerCase();
+      if (/(^|\b)(positive|pos|good|plus|hype)(\b|$)/.test(source)) {
+        return "positive";
+      }
+      if (/(^|\b)(negative|neg|bad|minus|meh)(\b|$)/.test(source)) {
+        return "negative";
+      }
+      const hint = String(text || "");
+      if (/[暗圧微妙雑騒キツ注意]/.test(hint) || /ごちゃ|うるさ|いまいち|暗すぎ|圧が強い|足元/.test(hint)) {
+        return "negative";
+      }
+      if (/[映主役光空気抜け]/.test(hint) || /きれい|盛れる|素材つよい|色映え/.test(hint)) {
+        return "positive";
+      }
+      return "";
+    }
+
     function escapeHtml(text) {
       return String(text)
         .replaceAll("&", "&amp;")
         .replaceAll("<", "&lt;")
         .replaceAll(">", "&gt;")
         .replaceAll("\"", "&quot;");
+    }
+
+    function impactTagLabel(tone) {
+      return tone === "negative" ? "NEG" : "HYPE";
+    }
+
+    function impactBurstLabel(tone) {
+      return tone === "negative" ? "MEH" : "PUSH";
+    }
+
+    function impactTextClass(text) {
+      const length = Array.from(String(text || "")).length;
+      if (length >= 8) return "tight";
+      if (length >= 6) return "compact";
+      return "";
+    }
+
+    function createStandardLabelNode(item, index) {
+      const node = document.createElement("div");
+      const level = normalizeLevel(item?.level);
+      node.className = `factor ${level}`;
+      node.style.left = `${normalizeCoord(item?.x, 0.5, 0.08, 0.92) * 100}%`;
+      node.style.top = `${normalizeCoord(item?.y, 0.5, 0.12, 0.88) * 100}%`;
+      node.style.animationDelay = `${index * 80}ms`;
+      node.innerHTML = `
+        <span class="eyebrow">${level}</span>
+        <span class="text">${escapeHtml(String(item?.text || ""))}</span>
+      `;
+      return node;
+    }
+
+    function createImpactLabelNode(item, index) {
+      const node = document.createElement("div");
+      const level = normalizeLevel(item?.level);
+      const text = normalizeShortText(item?.text || "");
+      const tone = normalizeTone(item?.tone || item?.kind || item?.sentiment, text) || (index % 2 === 0 ? "positive" : "negative");
+      node.className = `impact-factor ${tone} ${level}`;
+      node.dataset.anchorX = String(normalizeCoord(item?.x, 0.5, 0.08, 0.92));
+      node.dataset.anchorY = String(normalizeCoord(item?.y, 0.5, 0.12, 0.88));
+      node.style.animationDelay = `${index * 70}ms`;
+      node.innerHTML = `
+        <div class="impact-factor__burst" aria-hidden="true">
+          <span class="impact-factor__burst-text">${impactBurstLabel(tone)}</span>
+        </div>
+        <div class="impact-factor__frame">
+          <div class="impact-factor__core">
+            <span class="impact-factor__text ${impactTextClass(text)}">${escapeHtml(text)}</span>
+          </div>
+        </div>
+        <div class="impact-factor__tag" aria-hidden="true"><span>${impactTagLabel(tone)}</span></div>
+      `;
+      return node;
+    }
+
+    function levelWeight(level) {
+      if (level === "high") return 3;
+      if (level === "medium") return 2;
+      return 1;
+    }
+
+    function clampAxis(position, size, extent, padding) {
+      if (size >= extent - padding * 2) {
+        return Math.max(0, (extent - size) / 2);
+      }
+      return clamp(position, padding, extent - size - padding);
+    }
+
+    function rectsOverlap(a, b, gap = 10) {
+      return !(
+        a.x + a.width + gap <= b.x ||
+        b.x + b.width + gap <= a.x ||
+        a.y + a.height + gap <= b.y ||
+        b.y + b.height + gap <= a.y
+      );
+    }
+
+    function rectIntersectionArea(a, b) {
+      const overlapWidth = Math.max(0, Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x));
+      const overlapHeight = Math.max(0, Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y));
+      return overlapWidth * overlapHeight;
+    }
+
+    function relativeRect(target, rootRect) {
+      if (!target || !rootRect) return null;
+      const rect = target.getBoundingClientRect();
+      if (!(rect.width > 0 && rect.height > 0)) {
+        return null;
+      }
+      return {
+        x: rect.left - rootRect.left,
+        y: rect.top - rootRect.top,
+        width: rect.width,
+        height: rect.height,
+      };
+    }
+
+    function impactObstacles(layerRect) {
+      const nodes = [el.topbar, el.privacyCard, el.dock, el.maskHint];
+      if (!el.settingsPanel.hidden) {
+        nodes.push(el.settingsPanel);
+      }
+      return nodes
+        .map((node) => relativeRect(node, layerRect))
+        .filter(Boolean);
+    }
+
+    function layoutImpactLabels(nodes, factors) {
+      const layerRect = el.labelLayer.getBoundingClientRect();
+      const layerWidth = layerRect.width;
+      const layerHeight = layerRect.height;
+      if (!(layerWidth > 0 && layerHeight > 0)) {
+        return;
+      }
+
+      const placedRects = impactObstacles(layerRect);
+      const padding = 10;
+      const order = nodes
+        .map((node, index) => ({
+          index,
+          node,
+          priority: levelWeight(normalizeLevel(factors[index]?.level)),
+        }))
+        .sort((a, b) => b.priority - a.priority || a.index - b.index);
+
+      order.forEach(({ index, node }) => {
+        if (!node.isConnected) {
+          return;
+        }
+
+        const width = node.offsetWidth || node.getBoundingClientRect().width;
+        const height = node.offsetHeight || node.getBoundingClientRect().height;
+        if (!(width > 0 && height > 0)) {
+          return;
+        }
+
+        const anchorX = normalizeCoord(node.dataset.anchorX, 0.5, 0.08, 0.92) * layerWidth;
+        const anchorY = normalizeCoord(node.dataset.anchorY, 0.5, 0.12, 0.88) * layerHeight;
+        const baseX = anchorX - width / 2;
+        const baseY = anchorY - height / 2;
+        const xStep = Math.max(20, width * 0.34);
+        const yStep = Math.max(18, height * 0.3);
+        const offsets = [
+          [0, 0],
+          [0, -1], [0, 1], [-1, 0], [1, 0],
+          [-1, -1], [1, -1], [-1, 1], [1, 1],
+          [0, -2], [0, 2], [-2, 0], [2, 0],
+          [-2, -1], [2, -1], [-2, 1], [2, 1],
+          [-1, -2], [1, -2], [-1, 2], [1, 2],
+          [-2, -2], [2, -2], [-2, 2], [2, 2],
+        ];
+
+        let bestRect = null;
+        let bestScore = null;
+
+        for (const [dx, dy] of offsets) {
+          const rect = {
+            x: clampAxis(baseX + dx * xStep, width, layerWidth, padding),
+            y: clampAxis(baseY + dy * yStep, height, layerHeight, padding),
+            width,
+            height,
+          };
+
+          let overlaps = 0;
+          let overlapArea = 0;
+          placedRects.forEach((placed) => {
+            if (rectsOverlap(rect, placed, 12)) {
+              overlaps += 1;
+              overlapArea += rectIntersectionArea(rect, placed);
+            }
+          });
+
+          const travel = Math.abs(rect.x - baseX) + Math.abs(rect.y - baseY);
+          const score = [overlaps, overlapArea, travel];
+          if (
+            !bestScore ||
+            score[0] < bestScore[0] ||
+            (score[0] === bestScore[0] && score[1] < bestScore[1]) ||
+            (score[0] === bestScore[0] && score[1] === bestScore[1] && score[2] < bestScore[2])
+          ) {
+            bestRect = rect;
+            bestScore = score;
+          }
+        }
+
+        if (!bestRect) {
+          bestRect = {
+            x: clampAxis(baseX, width, layerWidth, padding),
+            y: clampAxis(baseY, height, layerHeight, padding),
+            width,
+            height,
+          };
+        }
+
+        node.style.left = `${bestRect.x}px`;
+        node.style.top = `${bestRect.y}px`;
+        node.style.zIndex = String(30 + levelWeight(normalizeLevel(factors[index]?.level)));
+        placedRects.push(bestRect);
+      });
     }
 
     function updateSummary(summary) {
@@ -1704,17 +2179,30 @@
     }
 
     function normalizeLivePayload(raw) {
+      const impactMode = state.analysisMode === "impact";
       const summary = String(raw?.summary || "").trim() || currentAnalysisConfig().idleSummary;
       const sourceFactors = Array.isArray(raw?.factors) ? raw.factors : [];
-      const factors = sourceFactors
-        .map((item, index) => ({
-          text: normalizeShortText(item?.text || item?.label || item || ""),
-          x: clamp(Number(item?.x), 0.08, 0.92),
-          y: clamp(Number(item?.y), 0.12, 0.88),
-          level: normalizeLevel(item?.level || (index === 0 ? "high" : "medium")),
-        }))
-        .filter((item) => item.text)
-        .slice(0, 4);
+      const normalized = sourceFactors
+        .map((item, index) => {
+          const text = normalizeShortText(item?.text || item?.label || item || "");
+          const tone = impactMode
+            ? (normalizeTone(item?.tone || item?.kind || item?.sentiment, text) || (index % 2 === 0 ? "positive" : "negative"))
+            : "";
+          return {
+            text,
+            x: normalizeCoord(item?.x, 0.5, 0.08, 0.92),
+            y: normalizeCoord(item?.y, 0.5, 0.12, 0.88),
+            level: normalizeLevel(item?.level || (index === 0 ? "high" : "medium")),
+            ...(impactMode ? { tone } : {}),
+          };
+        })
+        .filter((item) => item.text);
+      const factors = impactMode
+        ? pickImpactFactors(
+          normalized.filter((item) => item.tone === "positive"),
+          normalized.filter((item) => item.tone === "negative")
+        )
+        : normalized.slice(0, 4);
       if (!factors.length) {
         throw new Error("empty live factors");
       }
@@ -1859,13 +2347,34 @@
     function uniqueFactors(factors) {
       const seen = new Set();
       return factors.filter((item) => {
-        const key = `${item.text}:${item.x}:${item.y}`;
+        const key = `${item.text}:${item.x}:${item.y}:${item.tone || ""}`;
         if (!item.text || seen.has(key)) {
           return false;
         }
         seen.add(key);
         return true;
       });
+    }
+
+    function pickImpactFactors(positiveFactors, negativeFactors) {
+      const positive = uniqueFactors(positiveFactors).slice(0, 3);
+      const negative = uniqueFactors(negativeFactors).slice(0, 3);
+      const merged = [];
+      const maxCount = Math.max(positive.length, negative.length);
+      for (let index = 0; index < maxCount; index += 1) {
+        if (positive[index]) {
+          merged.push({ ...positive[index], tone: "positive" });
+        }
+        if (negative[index]) {
+          merged.push({ ...negative[index], tone: "negative" });
+        }
+      }
+      return uniqueFactors(merged).slice(0, 4);
+    }
+
+    function hasImpactBalance(factors) {
+      return factors.some((item) => normalizeTone(item?.tone, item?.text) === "positive")
+        && factors.some((item) => normalizeTone(item?.tone, item?.text) === "negative");
     }
 
     function buildCareLocalFallback(metrics) {
@@ -2111,6 +2620,16 @@
       };
     }
 
+    function buildImpactLocalFallback(metrics) {
+      const positive = buildHypeLocalFallback(metrics).factors.map((item) => ({ ...item, tone: "positive" }));
+      const negative = buildNegativeLocalFallback(metrics).factors.map((item) => ({ ...item, tone: "negative" }));
+      const factors = pickImpactFactors(positive, negative);
+      return {
+        summary: hasImpactBalance(factors) ? "良い点も難点もある" : "良し悪しを同時表示",
+        factors,
+      };
+    }
+
     function analyzeLocally(modeId = state.analysisMode) {
       const metrics = readFrameSignals();
       if (modeId === "object") {
@@ -2119,14 +2638,11 @@
       if (modeId === "baby") {
         return buildBabyLocalFallback(metrics);
       }
-      if (modeId === "negative") {
-        return buildNegativeLocalFallback(metrics);
-      }
-      if (modeId === "hype") {
-        return buildHypeLocalFallback(metrics);
-      }
       if (modeId === "quest") {
         return buildQuestLocalFallback(metrics);
+      }
+      if (modeId === "impact") {
+        return buildImpactLocalFallback(metrics);
       }
       return buildCareLocalFallback(metrics);
     }
@@ -2165,6 +2681,13 @@
         } else {
           result = analyzeLocally(state.analysisMode);
           mode = "local";
+        }
+
+        if (state.analysisMode === "impact" && !hasImpactBalance(result.factors)) {
+          result = {
+            ...buildImpactLocalFallback(readFrameSignals()),
+            summary: result.summary || currentAnalysisConfig().idleSummary,
+          };
         }
 
         if (token !== state.sessionToken) {
@@ -2313,12 +2836,8 @@
         void handleModeChange("baby");
       });
 
-      el.negativeModeButton.addEventListener("click", () => {
-        void handleModeChange("negative");
-      });
-
-      el.hypeModeButton.addEventListener("click", () => {
-        void handleModeChange("hype");
+      el.impactModeButton.addEventListener("click", () => {
+        void handleModeChange("impact");
       });
 
       el.questModeButton.addEventListener("click", () => {
@@ -2340,11 +2859,17 @@
       window.addEventListener("resize", () => {
         setViewportHeight();
         resizeCanvases();
+        if (state.renderedFactors.length) {
+          renderLabels(state.renderedFactors);
+        }
       });
 
       window.visualViewport?.addEventListener("resize", () => {
         setViewportHeight();
         resizeCanvases();
+        if (state.renderedFactors.length) {
+          renderLabels(state.renderedFactors);
+        }
       });
 
       document.addEventListener("visibilitychange", () => {
