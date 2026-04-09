@@ -429,7 +429,8 @@
       word-break: keep-all;
     }
 
-    .label-layer.impact-mode {
+    .label-layer.impact-mode,
+    .label-layer.baby-mode {
       overflow: hidden;
     }
 
@@ -668,6 +669,134 @@
       white-space: nowrap;
     }
 
+    .baby-factor {
+      --baby-tilt: -2deg;
+      --baby-paper-start: #fffef8;
+      --baby-paper-end: #fff5df;
+      --baby-line: rgba(209, 170, 89, 0.28);
+      --baby-tag-fill: rgba(255, 232, 188, 0.95);
+      --baby-tag-ink: #855912;
+      --baby-text-ink: #433522;
+      --baby-tail-fill: #fff6e4;
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: clamp(112px, 34vw, 172px);
+      min-height: 78px;
+      padding: 10px 12px 12px;
+      border-radius: 22px;
+      border: 2px dashed var(--baby-line);
+      background:
+        radial-gradient(circle at top right, rgba(255, 255, 255, 0.88), transparent 24%),
+        linear-gradient(180deg, var(--baby-paper-start) 0%, var(--baby-paper-end) 100%);
+      color: var(--baby-text-ink);
+      box-shadow: 0 16px 26px rgba(99, 78, 39, 0.16);
+      opacity: 0;
+      transform: translateY(14px) rotate(var(--baby-tilt)) scale(0.92);
+      animation: baby-factor-in 0.42s var(--ease) forwards;
+      will-change: transform, left, top;
+    }
+
+    .baby-factor::after {
+      content: "";
+      position: absolute;
+      left: 16px;
+      bottom: -8px;
+      width: 18px;
+      height: 18px;
+      background: var(--baby-tail-fill);
+      border-right: 2px dashed var(--baby-line);
+      border-bottom: 2px dashed var(--baby-line);
+      border-bottom-right-radius: 6px;
+      transform: rotate(38deg);
+      pointer-events: none;
+    }
+
+    .baby-factor.right::after {
+      left: auto;
+      right: 18px;
+      transform: rotate(-140deg);
+    }
+
+    .baby-factor.high {
+      --baby-paper-start: #fffaf0;
+      --baby-paper-end: #ffe2af;
+      --baby-line: rgba(227, 164, 61, 0.36);
+      --baby-tag-fill: rgba(255, 211, 112, 0.96);
+      --baby-tag-ink: #7f5311;
+      --baby-tail-fill: #ffefc8;
+    }
+
+    .baby-factor.medium {
+      --baby-paper-start: #fffef8;
+      --baby-paper-end: #fff5df;
+    }
+
+    .baby-factor.low {
+      --baby-paper-start: #f7fbff;
+      --baby-paper-end: #e2f0ff;
+      --baby-line: rgba(122, 171, 220, 0.28);
+      --baby-tag-fill: rgba(165, 198, 236, 0.24);
+      --baby-tag-ink: #366187;
+      --baby-text-ink: #36516d;
+      --baby-tail-fill: #edf5ff;
+    }
+
+    .baby-factor__tag {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 22px;
+      padding: 0 9px;
+      border-radius: 999px;
+      background: var(--baby-tag-fill);
+      color: var(--baby-tag-ink);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .baby-factor__text {
+      display: -webkit-box;
+      margin-top: 8px;
+      overflow: hidden;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      font-family: "Noto Sans JP", sans-serif;
+      font-size: clamp(16px, 4.2vw, 21px);
+      line-height: 1.05;
+      font-weight: 800;
+      letter-spacing: -0.05em;
+      text-wrap: balance;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    .baby-factor__text.compact {
+      font-size: clamp(15px, 3.9vw, 19px);
+    }
+
+    .baby-factor__text.tight {
+      font-size: clamp(14px, 3.6vw, 17px);
+      line-height: 1.02;
+      letter-spacing: -0.04em;
+    }
+
+    .baby-factor__sub {
+      display: block;
+      margin-top: 7px;
+      font-size: 11px;
+      line-height: 1.36;
+      color: rgba(67, 53, 34, 0.62);
+      letter-spacing: 0.02em;
+    }
+
+    .baby-factor.low .baby-factor__sub {
+      color: rgba(44, 82, 118, 0.7);
+    }
+
     .privacy-card {
       position: absolute;
       left: 14px;
@@ -799,6 +928,13 @@
       to {
         opacity: 1;
         transform: translateY(0) scale(var(--impact-scale));
+      }
+    }
+
+    @keyframes baby-factor-in {
+      to {
+        opacity: 1;
+        transform: translateY(0) rotate(var(--baby-tilt)) scale(1);
       }
     }
 
@@ -1250,13 +1386,17 @@
       }, state.scanIntervalMs);
     }
 
+    function usesFloatingLabelLayout(modeId = state.analysisMode) {
+      return modeId === "impact" || modeId === "baby";
+    }
+
     function toggleSettings(force) {
       const shouldOpen = typeof force === "boolean"
         ? force
         : el.settingsPanel.hidden;
       el.settingsPanel.hidden = !shouldOpen;
       el.settingsToggle.setAttribute("aria-expanded", String(shouldOpen));
-      if (state.analysisMode === "impact" && state.renderedFactors.length) {
+      if (usesFloatingLabelLayout() && state.renderedFactors.length) {
         renderLabels(state.renderedFactors);
       }
     }
@@ -1266,7 +1406,10 @@
       state.renderedFactors = items.map((item) => ({ ...item }));
       el.labelLayer.innerHTML = "";
       const impactMode = state.analysisMode === "impact";
+      const babyMode = state.analysisMode === "baby";
+      const floatingLabelMode = usesFloatingLabelLayout();
       el.labelLayer.classList.toggle("impact-mode", impactMode);
+      el.labelLayer.classList.toggle("baby-mode", babyMode);
       if (!items.length) {
         return;
       }
@@ -1274,12 +1417,14 @@
       const nodes = items.map((item, index) => {
         const node = impactMode
           ? createImpactLabelNode(item, index)
-          : createStandardLabelNode(item, index);
+          : babyMode
+            ? createBabyLabelNode(item, index)
+            : createStandardLabelNode(item, index);
         el.labelLayer.appendChild(node);
         return node;
       });
 
-      if (impactMode) {
+      if (floatingLabelMode) {
         const relayout = () => {
           if (nodes.every((node) => node.isConnected)) {
             layoutImpactLabels(nodes, items);
@@ -1343,6 +1488,42 @@
       if (length >= 8) return "tight";
       if (length >= 6) return "compact";
       return "";
+    }
+
+    function babyTagLabel(level) {
+      if (level === "high") return "WATCH";
+      if (level === "low") return "LIGHT";
+      return "CHECK";
+    }
+
+    function babySubLabel(level) {
+      if (level === "high") return "先に見ておく";
+      if (level === "low") return "今は穏やか";
+      return "軽く見直す";
+    }
+
+    function babyTilt(index, level) {
+      const base = [-3.2, 2.8, -1.8, 3.4][index % 4];
+      const offset = level === "high" ? -0.4 : level === "low" ? 0.35 : 0;
+      return `${base + offset}deg`;
+    }
+
+    function createBabyLabelNode(item, index) {
+      const node = document.createElement("div");
+      const level = normalizeLevel(item?.level);
+      const text = normalizeShortText(item?.text || "");
+      const anchorX = normalizeCoord(item?.x, 0.5, 0.08, 0.92);
+      node.className = `baby-factor ${level}${anchorX >= 0.55 ? " right" : ""}`;
+      node.dataset.anchorX = String(anchorX);
+      node.dataset.anchorY = String(normalizeCoord(item?.y, 0.5, 0.12, 0.88));
+      node.style.setProperty("--baby-tilt", babyTilt(index, level));
+      node.style.animationDelay = `${index * 70}ms`;
+      node.innerHTML = `
+        <span class="baby-factor__tag">${babyTagLabel(level)}</span>
+        <span class="baby-factor__text ${impactTextClass(text)}">${escapeHtml(text)}</span>
+        <span class="baby-factor__sub">${babySubLabel(level)}</span>
+      `;
+      return node;
     }
 
     function createStandardLabelNode(item, index) {
