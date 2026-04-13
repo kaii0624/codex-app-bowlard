@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Orbit Racer</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{
+  width:100%;height:100dvh;
+  background:#030510;color:#cce;
+  font-family:'Courier New',monospace;
+  overflow:hidden;user-select:none;touch-action:none;
+}
+#app{width:100%;height:100%;display:flex;flex-direction:column;position:relative;}
+
+/* ── Top bar ── */
+#topbar{
+  height:48px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 14px;
+  background:rgba(3,5,16,.96);border-bottom:1px solid #141e38;
+}
+#top-title{font-size:11px;color:#2a4080;letter-spacing:.1em;}
+#top-phase{font-size:13px;font-weight:700;color:#88aaff;letter-spacing:.08em;}
+#top-dv{font-size:11px;color:#3a5888;text-align:right;min-width:80px;}
+
+/* ── Canvas wrap ── */
+#cw{flex:1;position:relative;overflow:hidden;}
+#c{display:block;width:100%;height:100%;}
+
+/* ── Overlays ── */
+.ov{
+  position:absolute;top:0;left:0;right:0;bottom:0;
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  background:rgba(3,5,16,.9);z-index:10;
+}
+.ov.on{display:flex;}
+
+/* Title */
+#title-ov h1{
+  font-size:36px;font-weight:900;color:#88aaff;
+  letter-spacing:.18em;text-shadow:0 0 30px #4466ff;margin-bottom:6px;
+}
+#title-ov .sub{font-size:10px;color:#2a4060;letter-spacing:.22em;margin-bottom:30px;}
+.scn-btn{
+  width:84%;margin-bottom:14px;padding:18px 18px;
+  background:rgba(8,14,34,.92);border:1px solid #1a2e58;border-radius:14px;
+  cursor:pointer;text-align:left;transition:all .15s;touch-action:manipulation;
+}
+.scn-btn:active{transform:scale(.97);background:rgba(18,28,58,.95);}
+.scn-num{font-size:9px;color:#2a4a7a;letter-spacing:.18em;margin-bottom:5px;}
+.scn-name{font-size:19px;font-weight:700;margin-bottom:4px;}
+.scn-desc{font-size:11px;color:#3a5878;}
+
+/* Result */
+#result-ov .rtitle{font-size:11px;color:#3a5888;letter-spacing:.15em;margin-bottom:4px;}
+#result-ov .grade{
+  font-size:80px;font-weight:900;line-height:1;
+  margin:4px 0 6px;text-shadow:0 0 40px currentColor;
+}
+#result-ov .pts{font-size:28px;font-weight:700;color:#88aaff;margin-bottom:20px;}
+.rd{font-size:11px;color:#3a5878;margin-bottom:5px;text-align:center;}
+.res-btns{display:flex;gap:10px;margin-top:20px;}
+.rbtn{
+  padding:12px 24px;border-radius:9px;border:1px solid #1e3860;
+  background:#080f24;color:#88aaff;font-family:'Courier New',monospace;
+  font-size:13px;cursor:pointer;touch-action:manipulation;transition:all .12s;
+}
+.rbtn:active{background:#122040;transform:scale(.97);}
+.rbtn.pri{background:#0f1e44;border-color:#2a4ea0;}
+
+/* ── Fuel bar ── */
+#fuel-row{
+  height:30px;flex-shrink:0;
+  display:flex;align-items:center;padding:0 14px;gap:9px;
+  background:rgba(3,5,16,.97);border-top:1px solid #0e1830;
+}
+#fl-label{font-size:9px;color:#1e3060;letter-spacing:.1em;width:36px;}
+#fl-track{flex:1;height:5px;background:#080f22;border-radius:3px;overflow:hidden;}
+#fl-fill{height:100%;border-radius:3px;background:#22cc66;transition:width .1s,background .3s;}
+#fl-val{font-size:10px;color:#2a4060;width:56px;text-align:right;}
+
+/* ── BURN button ── */
+#burn-wrap{
+  flex-shrink:0;height:158px;
+  padding:8px 14px;
+  padding-bottom:max(8px,env(safe-area-inset-bottom));
+  background:rgba(3,5,16,.98);border-top:1px solid #0e1830;
+  display:flex;flex-direction:column;align-items:center;gap:7px;
+}
+#burn-hint{font-size:10px;color:#1e3060;letter-spacing:.1em;text-align:center;height:14px;}
+#burn-btn{
+  width:100%;flex:1;border-radius:16px;border:2px solid #162840;
+  background:#050c1a;color:#2a5080;
+  font-family:'Courier New',monospace;font-size:26px;font-weight:900;
+  letter-spacing:.2em;cursor:pointer;touch-action:manipulation;transition:all .1s;
+}
+#burn-btn.armed{
+  border-color:#00bb55;color:#00ff88;
+  box-shadow:0 0 28px rgba(0,255,100,.4);
+  animation:ap .55s ease-in-out infinite alternate;
+}
+#burn-btn.firing{
+  border-color:#ffaa22;background:#120b00;color:#ffcc44;
+  box-shadow:0 0 40px rgba(255,180,0,.6);animation:none;
+}
+@keyframes ap{
+  from{box-shadow:0 0 12px rgba(0,255,100,.3);}
+  to{box-shadow:0 0 40px rgba(0,255,100,.75);border-color:#55ff44;}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="topbar">
+    <div id="top-title">ORBIT RACER</div>
+    <div id="top-phase">—</div>
+    <div id="top-dv">ΔV —</div>
+  </div>
+
+  <div id="cw">
+    <canvas id="c"></canvas>
+
+    <!-- Title -->
+    <div id="title-ov" class="ov on">
+      <h1>ORBIT RACER</h1>
+      <div class="sub">ORBITAL MANEUVER CHALLENGE</div>
+      <div class="scn-btn" ontouchstart="startScenario(0)" onclick="startScenario(0)">
+        <div class="scn-num">MISSION 01</div>
+        <div class="scn-name" style="color:#ff8833">GEO TRANSFER</div>
+        <div class="scn-desc">LEO → GEO 35,786 km · Hohmann · 2 Burns</div>
+      </div>
+      <div class="scn-btn" ontouchstart="startScenario(1)" onclick="startScenario(1)">
+        <div class="scn-num">MISSION 02</div>
+        <div class="scn-name" style="color:#aa88ff">MOON SHOT</div>
+        <div class="scn-desc">LEO → Moon Intercept · TLI Burn · 1 Shot</div>
+      </div>
+    </div>
+
+    <!-- Result -->
+    <div id="result-ov" class="ov">
+      <div class="rtitle">MISSION RESULT</div>
+      <div class="grade" id="rg">S</div>
+      <div class="pts"   id="rp">0 pt</div>
+      <div class="rd"    id="rd1">—</div>
+      <div class="rd"    id="rd2">—</div>
+      <div class="res-btns">
+        <div class="rbtn"     ontouchstart="showTitle()" onclick="showTitle()">MENU</div>
+        <div class="rbtn pri" ontouchstart="retry()"     onclick="retry()">RETRY</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="fuel-row">
+    <div id="fl-label">FUEL</div>
+    <div id="fl-track"><div id="fl-fill"></div></div>
+    <div id="fl-val">—</div>
+  </div>
+
+  <div id="burn-wrap">
+    <div id="burn-hint">SELECT A MISSION</div>
+    <button id="burn-btn" disabled>BURN</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+// ── constants ─────────────────────────────────────────────────
+const GM         = 3.986004418e14;
+const RE         = 6.371e6;
+const R_MOON     = 384400e3;
+const MOON_OMEGA = 2*Math.PI/(27.3*86400); // rad/s (real time)
+const THRUST_DV  = 18;   // m/s added to velocity per animation frame while held
+const TRAIL_MAX  = 480;
+
+// ── scenarios ─────────────────────────────────────────────────
+// Phase: { hint, optAngle(rad)|null, zoneHalf(rad), canBurn }
+const SCN = [
+  {
+    id:'geo', simSpeed:2000, startAlt:400e3, targetR:RE+35786e3,
+    fuelMax:5400, color:'#ff8833', moonVis:false,
+    phases:[
+      { hint:'BURN AT PERIGEE',  optAngle:0,        zoneHalf:Math.PI/9,  canBurn:true  },
+      { hint:'COASTING...',      optAngle:null,      zoneHalf:0,          canBurn:false },
+      { hint:'BURN AT APOGEE',   optAngle:Math.PI,   zoneHalf:Math.PI/9,  canBurn:true  },
+    ]
+  },
+  {
+    id:'moon', simSpeed:3000, startAlt:185e3, targetR:R_MOON,
+    fuelMax:3600, color:'#aa88ff', moonVis:true,
+    phases:[
+      { hint:'BURN OPPOSITE MOON', optAngle:null, zoneHalf:Math.PI/10, canBurn:true },
+    ]
+  }
+];
+
+// ── physics ───────────────────────────────────────────────────
+function accel(s){
+  const r2=s.x*s.x+s.y*s.y, r=Math.sqrt(r2), r3=r2*r;
+  return{ax:-GM*s.x/r3, ay:-GM*s.y/r3};
+}
+function rk4(s,dt){
+  const d=s0=>{const a=accel(s0);return{dx:s0.vx,dy:s0.vy,dvx:a.ax,dvy:a.ay};};
+  const add=(s0,k,h)=>({x:s0.x+k.dx*h,y:s0.y+k.dy*h,vx:s0.vx+k.dvx*h,vy:s0.vy+k.dvy*h});
+  const k1=d(s),k2=d(add(s,k1,dt/2)),k3=d(add(s,k2,dt/2)),k4=d(add(s,k3,dt));
+  return{
+    x: s.x +dt/6*(k1.dx +2*k2.dx +2*k3.dx +k4.dx),
+    y: s.y +dt/6*(k1.dy +2*k2.dy +2*k3.dy +k4.dy),
+    vx:s.vx+dt/6*(k1.dvx+2*k2.dvx+2*k3.dvx+k4.dvx),
+    vy:s.vy+dt/6*(k1.dvy+2*k2.dvy+2*k3.dvy+k4.dvy)
+  };
+}
+function orbElems(s){
+  const{x,y,vx,vy}=s;
+  const r=Math.hypot(x,y),v2=vx*vx+vy*vy;
+  const eps=v2/2-GM/r;
+  const a=-GM/(2*eps);
+  const h=x*vy-y*vx;
+  const e2=Math.max(0,1-h*h/(GM*a));
+  const e=Math.sqrt(e2);
+  const ex=(vy*h)/GM-x/r, ey=(-vx*h)/GM-y/r;
+  const omega=Math.atan2(ey,ex);
+  return{a,e,omega,rp:a>0?a*(1-e):null,ra:a>0?a*(1+e):null};
+}
+
+// ── state ─────────────────────────────────────────────────────
+let scn=null, scnIdx=0;
+let sat={x:0,y:0,vx:0,vy:0};
+let simTime=0, fuel=0, phase=0;
+let burning=false, gameState='title';
+let moonAngle=0;
+let trail=[], lastTrailT=-9999;
+let dvUsed=0, burnFlash=0;
+let closestMoon=Infinity;
+let phaseChangeT=-9999;
+let endTimer=0;   // countdown frames after mission ends
+
+// ── canvas / view ─────────────────────────────────────────────
+const canvas=document.getElementById('c');
+const ctx=canvas.getContext('2d');
+let cW=0,cH=0,cX=0,cY=0,vScale=1;
+
+function resize(){
+  const w=document.getElementById('cw');
+  cW=canvas.width=w.clientWidth;
+  cH=canvas.height=w.clientHeight;
+  cX=cW/2; cY=cH/2;
+  if(scn) autoZoom();
+  else { vScale=(RE*8)/Math.min(cW,cH); }
+}
+window.addEventListener('resize',resize);
+
+function autoZoom(){
+  if(!scn) return;
+  const{a,e}=orbElems(sat);
+  let maxR=(a>0&&isFinite(a))?a*(1+(e||0)):Math.hypot(sat.x,sat.y)*1.5;
+  if(scn.moonVis) maxR=Math.max(maxR,R_MOON*1.15);
+  vScale=(maxR*2.4)/Math.min(cW,cH);
+}
+const wToC=(wx,wy)=>[cX+wx/vScale, cY-wy/vScale];
+const mToPx=m=>m/vScale;
+
+// ── stars ─────────────────────────────────────────────────────
+const stars=[];
+(()=>{for(let i=0;i<280;i++) stars.push({nx:Math.random(),ny:Math.random(),r:Math.random()*1.1+.2,a:Math.random()*.6+.2});})();
+
+// ── draw helpers ──────────────────────────────────────────────
+function drawStars(){
+  for(const s of stars){
+    ctx.beginPath();ctx.arc(s.nx*cW,s.ny*cH,s.r,0,Math.PI*2);
+    ctx.fillStyle=`rgba(200,220,255,${s.a})`;ctx.fill();
+  }
+}
+
+function drawEarth(){
+  const rPx=mToPx(RE); if(rPx<1)return;
+  const atG=ctx.createRadialGradient(cX,cY,rPx*.88,cX,cY,rPx*1.28);
+  atG.addColorStop(0,'rgba(60,140,255,.13)');atG.addColorStop(1,'rgba(60,140,255,0)');
+  ctx.beginPath();ctx.arc(cX,cY,rPx*1.28,0,Math.PI*2);ctx.fillStyle=atG;ctx.fill();
+  const eG=ctx.createRadialGradient(cX-rPx*.28,cY-rPx*.28,rPx*.06,cX,cY,rPx);
+  eG.addColorStop(0,'#3d99dd');eG.addColorStop(.38,'#1e5a99');
+  eG.addColorStop(.65,'#1a6644');eG.addColorStop(1,'#0a1e33');
+  ctx.beginPath();ctx.arc(cX,cY,rPx,0,Math.PI*2);ctx.fillStyle=eG;ctx.fill();
+  ctx.strokeStyle='rgba(80,140,220,.18)';ctx.lineWidth=1;ctx.stroke();
+}
+
+function drawMoon(){
+  if(!scn||!scn.moonVis)return;
+  const mx=R_MOON*Math.cos(moonAngle),my=R_MOON*Math.sin(moonAngle);
+  const[px,py]=wToC(mx,my);
+  // orbit ring
+  ctx.beginPath();ctx.arc(cX,cY,mToPx(R_MOON),0,Math.PI*2);
+  ctx.strokeStyle='rgba(160,130,255,.18)';ctx.lineWidth=1;
+  ctx.setLineDash([3,10]);ctx.stroke();ctx.setLineDash([]);
+  // body
+  const mr=Math.max(5,mToPx(1737e3));
+  const mg=ctx.createRadialGradient(px-mr*.2,py-mr*.2,mr*.08,px,py,mr);
+  mg.addColorStop(0,'#d0c8b0');mg.addColorStop(1,'#4a4030');
+  ctx.beginPath();ctx.arc(px,py,mr,0,Math.PI*2);ctx.fillStyle=mg;ctx.fill();
+  // label
+  ctx.fillStyle='rgba(180,160,255,.6)';ctx.font='10px Courier New';
+  ctx.fillText('MOON',px+mr+4,py+4);
+}
+
+function drawTargetOrbit(){
+  if(!scn)return;
+  const tPx=mToPx(scn.targetR);
+  if(tPx<3||tPx>cW*5)return;
+  const hex=scn.color;
+  const r=parseInt(hex.slice(1,3),16),g2=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  ctx.beginPath();ctx.arc(cX,cY,tPx,0,Math.PI*2);
+  ctx.strokeStyle=`rgba(${r},${g2},${b},.32)`;ctx.lineWidth=2;
+  ctx.setLineDash([7,9]);ctx.stroke();ctx.setLineDash([]);
+  // label
+  ctx.fillStyle=`rgba(${r},${g2},${b},.45)`;ctx.font='9px Courier New';
+  ctx.fillText(scn.id==='geo'?'GEO TARGET':'MOON ORBIT',cX+tPx+5,cY-3);
+}
+
+function drawPredictedOrbit(){
+  const{a,e,omega}=orbElems(sat);
+  if(!a||a<=0||e>=1||!isFinite(a)||!isFinite(e))return;
+  const b=a*Math.sqrt(Math.max(0,1-e*e));
+  const aPx=mToPx(a),bPx=mToPx(b);
+  if(aPx<2||aPx>cW*10)return;
+  const[cpx,cpy]=wToC(-a*e*Math.cos(omega),-a*e*Math.sin(omega));
+  ctx.save();
+  ctx.beginPath();ctx.ellipse(cpx,cpy,aPx,bPx,-omega,0,Math.PI*2);
+  ctx.strokeStyle='rgba(80,150,255,.5)';ctx.lineWidth=1.5;
+  ctx.setLineDash([5,6]);ctx.stroke();ctx.setLineDash([]);
+  ctx.restore();
+}
+
+function getOptAngle(){
+  if(!scn)return 0;
+  const ph=scn.phases[phase];
+  if(ph.optAngle!==null)return ph.optAngle;
+  // moon: burn opposite moon direction
+  return moonAngle+Math.PI;
+}
+
+function inZoneNow(){
+  if(!scn||phase>=scn.phases.length)return false;
+  const ph=scn.phases[phase];
+  if(!ph.canBurn||ph.zoneHalf===0)return false;
+  const opt=getOptAngle();
+  const sa=Math.atan2(sat.y,sat.x);
+  let d=sa-opt;
+  while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;
+  return Math.abs(d)<ph.zoneHalf;
+}
+
+function drawBurnZone(){
+  if(gameState!=='playing'||!scn||phase>=scn.phases.length)return;
+  const ph=scn.phases[phase];
+  if(!ph.canBurn||ph.zoneHalf===0)return;
+  const opt=getOptAngle();
+  // zone radius: current orbit radius (approx)
+  let zR=mToPx(Math.hypot(sat.x,sat.y));
+  if(zR<3||zR>cW*4)return;
+  const inZ=inZoneNow();
+  const pulse=inZ?0.25+0.25*Math.sin(Date.now()/180):0;
+  ctx.save();
+  ctx.beginPath();ctx.arc(cX,cY,zR,-(opt+ph.zoneHalf),-(opt-ph.zoneHalf));
+  ctx.strokeStyle=`rgba(0,255,100,${inZ?.8+pulse:.38})`;
+  ctx.lineWidth=inZ?6:3;
+  ctx.shadowColor='#00ff88';ctx.shadowBlur=inZ?22:7;
+  ctx.stroke();ctx.shadowBlur=0;
+  const lx=cX+zR*Math.cos(-opt),ly=cY+zR*Math.sin(-opt);
+  ctx.fillStyle=`rgba(0,255,120,${.55+pulse*.5})`;
+  ctx.font='bold 10px Courier New';
+  ctx.fillText('BURN',lx+7,ly-4);
+  ctx.restore();
+}
+
+function drawTrail(){
+  if(trail.length<2)return;
+  ctx.save();ctx.lineWidth=1.5;
+  for(let i=1;i<trail.length;i++){
+    const alpha=(i/trail.length)*.55;
+    const[x1,y1]=wToC(trail[i-1].x,trail[i-1].y);
+    const[x2,y2]=wToC(trail[i].x,trail[i].y);
+    ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);
+    ctx.strokeStyle=`rgba(80,140,235,${alpha})`;ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawSatellite(){
+  const[sx,sy]=wToC(sat.x,sat.y);
+  // glow
+  const g=ctx.createRadialGradient(sx,sy,0,sx,sy,22);
+  g.addColorStop(0,burning?'rgba(255,200,80,.7)':'rgba(180,210,255,.55)');
+  g.addColorStop(1,'rgba(80,140,255,0)');
+  ctx.beginPath();ctx.arc(sx,sy,22,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();
+  // dot
+  ctx.beginPath();ctx.arc(sx,sy,5,0,Math.PI*2);
+  ctx.fillStyle=burning?'#ffdd55':'#ffffff';
+  ctx.shadowColor=burning?'#ffaa00':'#88aaff';ctx.shadowBlur=burning?18:10;
+  ctx.fill();ctx.shadowBlur=0;
+  // plume
+  if(burning){
+    const v=Math.hypot(sat.vx,sat.vy);
+    if(v>0){
+      // canvas retrograde angle: atan2(vy_world, -vx_world)
+      const pa=Math.atan2(sat.vy,-sat.vx);
+      const pL=32,pW=9;
+      const ex=sx+Math.cos(pa)*pL,ey=sy+Math.sin(pa)*pL;
+      const pg=ctx.createLinearGradient(sx,sy,ex,ey);
+      pg.addColorStop(0,'rgba(255,240,160,.95)');
+      pg.addColorStop(.25,'rgba(255,180,30,.8)');
+      pg.addColorStop(1,'rgba(200,40,10,0)');
+      ctx.beginPath();ctx.moveTo(sx,sy);
+      ctx.lineTo(ex+Math.sin(pa)*pW,ey-Math.cos(pa)*pW);
+      ctx.lineTo(ex-Math.sin(pa)*pW,ey+Math.cos(pa)*pW);
+      ctx.fillStyle=pg;ctx.shadowColor='rgba(255,160,30,.7)';ctx.shadowBlur=14;
+      ctx.fill();ctx.shadowBlur=0;
+    }
+  }
+}
+
+function drawFlash(){
+  if(burnFlash<=0)return;
+  const a=(burnFlash/20)*.18;
+  ctx.fillStyle=`rgba(255,200,50,${a})`;
+  ctx.fillRect(0,0,cW,cH);
+  burnFlash--;
+}
+
+function drawHUD(){
+  if(gameState!=='playing')return;
+  const r=Math.hypot(sat.x,sat.y);
+  const alt=((r-RE)/1000).toFixed(0);
+  const v=(Math.hypot(sat.vx,sat.vy)/1000).toFixed(2);
+  ctx.fillStyle='rgba(3,5,18,.72)';
+  rRect(8,8,118,54,6);ctx.fill();
+  ctx.font='9px Courier New';ctx.fillStyle='#2a4878';
+  ctx.fillText('ALT',16,25);ctx.fillText('VEL',16,43);
+  ctx.font='bold 12px Courier New';ctx.fillStyle='#7799cc';
+  ctx.fillText(alt+' km',40,25);ctx.fillText(v+' km/s',40,43);
+
+  // approach proximity bar (top center)
+  if(scn&&phase<scn.phases.length&&scn.phases[phase].canBurn){
+    const opt=getOptAngle();
+    const sa=Math.atan2(sat.y,sat.x);
+    let d=sa-opt;
+    while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;
+    const deg=Math.abs(d)*180/Math.PI;
+    const pct=Math.max(0,100-(deg/90)*100);
+    const bw=100,bx=cW/2-bw/2;
+    ctx.fillStyle='rgba(3,5,18,.72)';rRect(bx,8,bw,20,5);ctx.fill();
+    ctx.fillStyle=pct>80?'#00ff88':pct>40?'#ffcc22':'#2244aa';
+    ctx.fillRect(bx+3,13,Math.round((bw-6)*pct/100),10);
+    ctx.fillStyle='rgba(80,160,100,.55)';ctx.font='8px Courier New';
+    ctx.textAlign='center';ctx.fillText(deg.toFixed(0)+'°',cW/2,cH-12);ctx.textAlign='left';
+  }
+}
+
+function rRect(x,y,w,h,r){
+  ctx.beginPath();ctx.moveTo(x+r,y);
+  ctx.lineTo(x+w-r,y);ctx.arcTo(x+w,y,x+w,y+r,r);
+  ctx.lineTo(x+w,y+h-r);ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
+  ctx.lineTo(x+r,y+h);ctx.arcTo(x,y+h,x,y+h-r,r);
+  ctx.lineTo(x,y+r);ctx.arcTo(x,y,x+r,y,r);ctx.closePath();
+}
+
+// ── UI ────────────────────────────────────────────────────────
+function updateUI(){
+  if(!scn){return;}
+  const pct=Math.max(0,fuel/scn.fuelMax*100);
+  const fill=document.getElementById('fl-fill');
+  fill.style.width=pct+'%';
+  fill.style.background=pct>50?'#22cc66':pct>20?'#ffaa22':'#ff4422';
+  document.getElementById('fl-val').textContent=Math.round(fuel)+' m/s';
+  document.getElementById('top-dv').textContent='ΔV '+Math.round(dvUsed);
+  if(gameState==='playing'){
+    const ph=scn.phases[phase];
+    document.getElementById('top-phase').textContent=ph?ph.hint.slice(0,16):'—';
+    document.getElementById('burn-hint').textContent=ph?ph.hint:'—';
+    document.getElementById('burn-hint').style.color=inZoneNow()?'#44ff88':'#1e3060';
+    const btn=document.getElementById('burn-btn');
+    const ph2=scn.phases[phase];
+    if(!ph2||!ph2.canBurn||fuel<=0){
+      btn.className='';
+    } else if(burning){
+      btn.className='firing';
+    } else if(inZoneNow()){
+      btn.className='armed';
+    } else {
+      btn.className='';
+    }
+  }
+}
+
+// ── game logic ────────────────────────────────────────────────
+function startScenario(idx){
+  scnIdx=idx; scn=SCN[idx];
+  const r=RE+scn.startAlt;
+  const v=Math.sqrt(GM/r);
+  sat={x:r,y:0,vx:0,vy:v};
+  moonAngle=scn.moonVis?(Math.PI/3+Math.random()*.8):0;
+  simTime=0; fuel=scn.fuelMax; phase=0; burning=false;
+  trail=[]; lastTrailT=-9999; dvUsed=0; burnFlash=0;
+  closestMoon=Infinity; phaseChangeT=0; endTimer=0;
+  gameState='playing';
+  document.getElementById('title-ov').classList.remove('on');
+  document.getElementById('result-ov').classList.remove('on');
+  document.getElementById('burn-btn').disabled=false;
+  document.getElementById('fl-val').textContent=Math.round(fuel)+' m/s';
+  document.getElementById('top-phase').textContent=scn.phases[0].hint.slice(0,16);
+  resize();
+}
+
+function retry(){ startScenario(scnIdx); }
+function showTitle(){
+  gameState='title'; scn=null; burning=false;
+  document.getElementById('title-ov').classList.add('on');
+  document.getElementById('result-ov').classList.remove('on');
+  document.getElementById('burn-btn').disabled=true;
+  document.getElementById('burn-btn').className='';
+  document.getElementById('burn-hint').textContent='SELECT A MISSION';
+  document.getElementById('burn-hint').style.color='#1e3060';
+  document.getElementById('top-phase').textContent='—';
+  document.getElementById('top-dv').textContent='ΔV —';
+  document.getElementById('fl-fill').style.width='0%';
+  document.getElementById('fl-val').textContent='—';
+}
+
+function applyThrust(){
+  if(fuel<=0)return;
+  const v=Math.hypot(sat.vx,sat.vy);if(v<1)return;
+  const dv=Math.min(THRUST_DV,fuel);
+  sat.vx+=dv*sat.vx/v; sat.vy+=dv*sat.vy/v;
+  fuel-=dv; dvUsed+=dv;
+  burnFlash=4;
+  if(fuel<=0){fuel=0;endMission();}
+}
+
+function checkPhase(){
+  if(!scn||gameState!=='playing')return;
+  const r=Math.hypot(sat.x,sat.y);
+  const alt=r-RE;
+
+  if(scn.id==='geo'){
+    // Phase 0 → 1 (coast): apogee raised to >25000 km
+    if(phase===0){
+      const{ra}=orbElems(sat);
+      if(ra&&ra>RE+25000e3&&simTime>phaseChangeT+200){
+        phase=1; phaseChangeT=simTime; trail=[];
+      }
+    }
+    // Phase 1 → 2 (burn at apogee): satellite altitude > 20000 km
+    if(phase===1&&alt>20000e3&&simTime>phaseChangeT+300){
+      phase=2; phaseChangeT=simTime;
+      autoZoom();
+    }
+    // End: phase 2 and fuel runs out OR orbit circularized
+    if(phase===2){
+      const{e}=orbElems(sat);
+      if(e<0.03&&alt>30000e3&&simTime>phaseChangeT+300){
+        endMission();
+      }
+    }
+  }
+
+  if(scn.id==='moon'){
+    // Track closest approach to Moon
+    const mx=R_MOON*Math.cos(moonAngle),my=R_MOON*Math.sin(moonAngle);
+    const d=Math.hypot(sat.x-mx,sat.y-my);
+    if(d<closestMoon) closestMoon=d;
+    // End: satellite past Moon or escaping
+    if(r>R_MOON*1.25||(r>RE+500e3&&Math.hypot(sat.vx,sat.vy)>Math.sqrt(2*GM/r))){
+      endMission();
+    }
+  }
+
+  // Crash
+  if(r<RE*.99) endMission();
+}
+
+function endMission(){
+  if(gameState!=='playing')return;
+  gameState='result'; burning=false;
+  let score=0,d1='',d2='';
+
+  if(scn.id==='geo'){
+    const{a,e}=orbElems(sat);
+    const altKm=a>0?(a-RE)/1000:0;
+    const tAlt=(scn.targetR-RE)/1000;
+    const altErr=Math.abs(altKm-tAlt)/tAlt;
+    const eccPen=Math.max(0,1-e*12);
+    const altPen=Math.max(0,1-altErr*2.5);
+    score=Math.round((eccPen*.55+altPen*.45)*10000);
+    d1=`Altitude: ${altKm.toFixed(0)} km  (target ${tAlt.toFixed(0)} km)`;
+    d2=`Eccentricity: ${e.toFixed(4)}  ΔV used: ${Math.round(dvUsed)} m/s`;
+  } else {
+    const missKm=Math.max(0,(closestMoon-1737e3)/1000);
+    const maxMiss=200000;
+    score=Math.round(Math.max(0,1-missKm/maxMiss)*10000);
+    d1=`Closest: ${(closestMoon/1000).toFixed(0)} km from Earth center`;
+    d2=`Miss: ${missKm.toFixed(0)} km from Moon surface`;
+  }
+
+  let grade,col;
+  if(score>=9000){grade='S';col='#ffee44';}
+  else if(score>=7000){grade='A';col='#44ff88';}
+  else if(score>=5000){grade='B';col='#66aaff';}
+  else if(score>=2500){grade='C';col='#ffaa55';}
+  else{grade='D';col='#ff6655';}
+
+  document.getElementById('rg').textContent=grade;
+  document.getElementById('rg').style.color=col;
+  document.getElementById('rp').textContent=score.toLocaleString()+' pt';
+  document.getElementById('rd1').textContent=d1;
+  document.getElementById('rd2').textContent=d2;
+  document.getElementById('result-ov').classList.add('on');
+}
+
+// ── touch ─────────────────────────────────────────────────────
+const bb=document.getElementById('burn-btn');
+function onBurnStart(e){
+  e.preventDefault();
+  if(gameState==='playing'&&scn&&phase<scn.phases.length&&scn.phases[phase].canBurn&&fuel>0)
+    burning=true;
+}
+function onBurnEnd(e){e.preventDefault();burning=false;}
+bb.addEventListener('touchstart',onBurnStart,{passive:false});
+bb.addEventListener('touchend',onBurnEnd,{passive:false});
+bb.addEventListener('touchcancel',onBurnEnd,{passive:false});
+bb.addEventListener('mousedown',e=>{if(gameState==='playing'&&scn&&phase<scn.phases.length&&scn.phases[phase].canBurn&&fuel>0)burning=true;});
+bb.addEventListener('mouseup',()=>burning=false);
+bb.addEventListener('mouseleave',()=>burning=false);
+
+// ── main loop ─────────────────────────────────────────────────
+let lastTs=null;
+
+function loop(ts){
+  if(!lastTs)lastTs=ts;
+  const elapsed=Math.min((ts-lastTs)/1000,.05);
+  lastTs=ts;
+
+  if(gameState==='playing'&&scn){
+    const steps=Math.ceil(scn.simSpeed*elapsed);
+    for(let i=0;i<steps;i++){
+      sat=rk4(sat,1);
+      simTime+=1;
+      if(simTime-lastTrailT>=18){
+        trail.push({x:sat.x,y:sat.y});
+        if(trail.length>TRAIL_MAX)trail.shift();
+        lastTrailT=simTime;
+      }
+      if(scn.moonVis) moonAngle+=MOON_OMEGA;
+    }
+    if(burning&&phase<scn.phases.length&&scn.phases[phase].canBurn&&fuel>0) applyThrust();
+    checkPhase();
+    updateUI();
+  }
+
+  // draw
+  ctx.clearRect(0,0,cW,cH);
+  drawStars();
+  if(scn&&scn.moonVis) drawMoon();
+  drawTargetOrbit();
+  drawPredictedOrbit();
+  drawTrail();
+  drawEarth();
+  if(gameState==='playing') drawBurnZone();
+  drawSatellite();
+  drawFlash();
+  drawHUD();
+
+  // title screen: show animated satellite
+  if(gameState==='title'){
+    const r0=RE+400e3;
+    const ang=ts/2600;
+    const[sx,sy]=wToC(r0*Math.cos(ang),r0*Math.sin(ang));
+    ctx.beginPath();ctx.arc(sx,sy,3.5,0,Math.PI*2);
+    ctx.fillStyle='#88ccff';ctx.shadowColor='#4488ff';ctx.shadowBlur=10;ctx.fill();ctx.shadowBlur=0;
+    // second sat (GEO ring)
+    const r2=RE+35786e3;
+    const ang2=ts/22000;
+    const rpx2=mToPx(r2);
+    if(rpx2>4&&rpx2<cW*3){
+      ctx.beginPath();ctx.arc(cX,cY,rpx2,0,Math.PI*2);
+      ctx.strokeStyle='rgba(255,136,50,.12)';ctx.lineWidth=1.5;ctx.setLineDash([5,10]);ctx.stroke();ctx.setLineDash([]);
+      const[gsx,gsy]=wToC(r2*Math.cos(ang2),r2*Math.sin(ang2));
+      ctx.beginPath();ctx.arc(gsx,gsy,2.5,0,Math.PI*2);
+      ctx.fillStyle='#ff8833';ctx.shadowColor='#ff6600';ctx.shadowBlur=8;ctx.fill();ctx.shadowBlur=0;
+    }
+  }
+
+  requestAnimationFrame(loop);
+}
+
+// ── init ──────────────────────────────────────────────────────
+resize();
+vScale=(RE*16)/Math.min(
+  document.getElementById('cw').clientWidth||390,
+  document.getElementById('cw').clientHeight||500
+);
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
