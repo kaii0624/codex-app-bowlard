@@ -1,0 +1,1311 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <title>Compensation Void AR Lens</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #050814;
+      --panel: rgba(6, 14, 28, 0.58);
+      --panel-strong: rgba(8, 18, 34, 0.78);
+      --line: rgba(132, 198, 255, 0.24);
+      --line-strong: rgba(164, 222, 255, 0.48);
+      --text: #eef7ff;
+      --muted: rgba(224, 240, 255, 0.72);
+      --glow: rgba(92, 193, 255, 0.34);
+      --good: #78ffc8;
+      --wait: #ffe58a;
+      --bad: #ff8fae;
+      font-family: "Avenir Next", "SF Pro Display", "Hiragino Sans", "Yu Gothic", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--bg);
+    }
+
+    body {
+      position: fixed;
+      inset: 0;
+      color: var(--text);
+      user-select: none;
+      touch-action: manipulation;
+      background:
+        radial-gradient(70vmax 55vmax at 14% 10%, rgba(46, 106, 255, 0.18), transparent 58%),
+        radial-gradient(80vmax 60vmax at 86% 92%, rgba(24, 195, 255, 0.1), transparent 62%),
+        linear-gradient(180deg, #07101f, #03060e 62%);
+    }
+
+    button,
+    input {
+      font: inherit;
+      color: inherit;
+    }
+
+    .app {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      background:
+        radial-gradient(50vmax 35vmax at 50% 120%, rgba(0, 120, 255, 0.12), transparent 70%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0));
+    }
+
+    #camera {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #glCanvas,
+    .vignette,
+    .overlay-shell,
+    .error-screen {
+      position: absolute;
+      inset: 0;
+    }
+
+    #glCanvas {
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+      background:
+        radial-gradient(45vmax 35vmax at 50% 50%, rgba(28, 90, 160, 0.15), transparent 70%),
+        linear-gradient(180deg, #06101e, #03060e 70%);
+    }
+
+    .vignette {
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 50% 50%, transparent 32%, rgba(4, 7, 14, 0.08) 64%, rgba(4, 7, 14, 0.34) 100%),
+        linear-gradient(180deg, rgba(0, 0, 0, 0.12), transparent 18%, transparent 82%, rgba(0, 0, 0, 0.16));
+      mix-blend-mode: screen;
+    }
+
+    .marker {
+      position: absolute;
+      inset: auto;
+      width: 0;
+      height: 0;
+      pointer-events: none;
+      opacity: 0;
+      z-index: 5;
+    }
+
+    .marker::before,
+    .marker::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      border-radius: 999px;
+    }
+
+    .marker::before {
+      width: 20px;
+      height: 20px;
+      border: 1px solid rgba(168, 222, 255, 0.8);
+      box-shadow:
+        0 0 0 1px rgba(92, 193, 255, 0.22),
+        0 0 22px rgba(92, 193, 255, 0.3);
+      background: radial-gradient(circle, rgba(150, 224, 255, 0.14), rgba(150, 224, 255, 0));
+    }
+
+    .marker::after {
+      width: 4px;
+      height: 4px;
+      background: rgba(220, 243, 255, 0.96);
+      box-shadow: 0 0 12px rgba(168, 222, 255, 0.9);
+    }
+
+    .marker.pulse {
+      animation: pulse 420ms ease-out;
+    }
+
+    .overlay-shell {
+      z-index: 7;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 12px;
+      padding:
+        max(12px, env(safe-area-inset-top))
+        max(12px, env(safe-area-inset-right))
+        max(12px, env(safe-area-inset-bottom))
+        max(12px, env(safe-area-inset-left));
+      pointer-events: none;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      pointer-events: none;
+    }
+
+    .chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .chip,
+    .status,
+    .panel,
+    .settings-btn,
+    .retry-btn {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.08),
+        0 16px 40px rgba(0, 0, 0, 0.26);
+    }
+
+    .chip,
+    .status {
+      pointer-events: none;
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 0 12px;
+      border-radius: 999px;
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .chip[data-tone="good"] {
+      color: var(--good);
+      border-color: rgba(120, 255, 200, 0.34);
+    }
+
+    .chip[data-tone="wait"] {
+      color: var(--wait);
+      border-color: rgba(255, 229, 138, 0.34);
+    }
+
+    .chip[data-tone="bad"] {
+      color: var(--bad);
+      border-color: rgba(255, 143, 174, 0.34);
+    }
+
+    .settings-btn {
+      pointer-events: auto;
+      width: 48px;
+      height: 48px;
+      flex: 0 0 auto;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      color: var(--text);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.03)),
+        var(--panel);
+      cursor: pointer;
+    }
+
+    .settings-btn:active,
+    .flip-btn:active,
+    .retry-btn:active {
+      transform: translateY(1px);
+    }
+
+    .gear {
+      font-size: 22px;
+      line-height: 1;
+      filter: drop-shadow(0 0 12px rgba(150, 214, 255, 0.35));
+    }
+
+    .panel {
+      pointer-events: auto;
+      justify-self: end;
+      align-self: start;
+      width: min(300px, calc(100vw - 24px));
+      padding: 14px;
+      border-radius: 22px;
+      display: grid;
+      gap: 12px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
+        var(--panel-strong);
+    }
+
+    .panel[hidden] {
+      display: none;
+    }
+
+    .control {
+      display: grid;
+      gap: 9px;
+    }
+
+    .control-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .control-name {
+      color: rgba(236, 247, 255, 0.92);
+    }
+
+    .control-value {
+      color: rgba(151, 222, 255, 0.92);
+      font-variant-numeric: tabular-nums;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 28px;
+      background: transparent;
+      margin: 0;
+    }
+
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 6px;
+      border-radius: 999px;
+      background:
+        linear-gradient(90deg, rgba(86, 173, 255, 0.9), rgba(103, 236, 255, 0.9));
+      box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+        0 0 18px rgba(92, 193, 255, 0.16);
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 22px;
+      height: 22px;
+      margin-top: -8px;
+      border-radius: 50%;
+      border: 1px solid rgba(224, 246, 255, 0.9);
+      background:
+        radial-gradient(circle at 35% 30%, #ffffff 0%, #dff6ff 32%, #89dcff 100%);
+      box-shadow:
+        0 0 0 4px rgba(92, 193, 255, 0.14),
+        0 6px 18px rgba(0, 0, 0, 0.28);
+    }
+
+    input[type="range"]::-moz-range-track {
+      height: 6px;
+      border: 0;
+      border-radius: 999px;
+      background:
+        linear-gradient(90deg, rgba(86, 173, 255, 0.9), rgba(103, 236, 255, 0.9));
+      box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+        0 0 18px rgba(92, 193, 255, 0.16);
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 22px;
+      height: 22px;
+      border: 1px solid rgba(224, 246, 255, 0.9);
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 35% 30%, #ffffff 0%, #dff6ff 32%, #89dcff 100%);
+      box-shadow:
+        0 0 0 4px rgba(92, 193, 255, 0.14),
+        0 6px 18px rgba(0, 0, 0, 0.28);
+    }
+
+    .flip-btn,
+    .retry-btn {
+      min-height: 44px;
+      padding: 0 14px;
+      border-radius: 16px;
+      background:
+        linear-gradient(135deg, rgba(86, 173, 255, 0.12), rgba(103, 236, 255, 0.08)),
+        rgba(9, 18, 34, 0.74);
+      color: rgba(232, 247, 255, 0.96);
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .bottom {
+      align-self: end;
+      display: flex;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .status {
+      width: min(94vw, 520px);
+      justify-content: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .overlay-fade {
+      opacity: 1;
+      transition:
+        opacity 260ms ease,
+        transform 260ms ease;
+    }
+
+    body.ui-dimmed .chip.overlay-fade,
+    body.ui-dimmed .status.overlay-fade {
+      opacity: 0.08;
+    }
+
+    body.ui-dimmed .panel.overlay-fade {
+      opacity: 0.12;
+      transform: translateY(-6px) scale(0.99);
+    }
+
+    body.ui-dimmed .settings-btn.overlay-fade {
+      opacity: 0.46;
+    }
+
+    .error-screen {
+      z-index: 9;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      background:
+        radial-gradient(65vmax 50vmax at 50% 0%, rgba(60, 115, 255, 0.16), transparent 60%),
+        linear-gradient(180deg, rgba(4, 8, 16, 0.88), rgba(3, 6, 12, 0.94));
+    }
+
+    .error-screen[hidden] {
+      display: none;
+    }
+
+    .error-card {
+      width: min(100%, 360px);
+      padding: 24px 20px 20px;
+      border-radius: 26px;
+      border: 1px solid rgba(163, 220, 255, 0.18);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
+        rgba(7, 14, 28, 0.88);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.08),
+        0 28px 60px rgba(0, 0, 0, 0.42);
+      text-align: center;
+    }
+
+    .error-title {
+      font-size: 15px;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: rgba(228, 246, 255, 0.96);
+    }
+
+    .error-detail {
+      margin: 14px 0 18px;
+      font-size: 13px;
+      line-height: 1.65;
+      color: rgba(212, 234, 255, 0.78);
+    }
+
+    @keyframes pulse {
+      0% {
+        opacity: 0;
+        transform: scale(0.72);
+      }
+
+      28% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      100% {
+        opacity: 0;
+        transform: scale(1.6);
+      }
+    }
+
+    @media (max-width: 520px) {
+      .panel {
+        width: min(100%, calc(100vw - 24px));
+      }
+
+      .status {
+        font-size: 10px;
+        letter-spacing: 0.14em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <video id="camera" playsinline muted autoplay></video>
+    <canvas id="glCanvas"></canvas>
+    <div class="vignette" aria-hidden="true"></div>
+    <div class="marker" id="marker" aria-hidden="true"></div>
+
+    <section class="overlay-shell" aria-live="polite">
+      <div class="topbar">
+        <div class="chips">
+          <div class="chip overlay-fade" id="camChip" data-tone="wait">CAM WAIT</div>
+          <div class="chip overlay-fade" id="modeChip">REAR PREF</div>
+        </div>
+        <button class="settings-btn overlay-fade" id="settingsBtn" type="button" aria-controls="panel" aria-expanded="false" aria-label="Settings">
+          <span class="gear" aria-hidden="true">&#9881;</span>
+        </button>
+      </div>
+
+      <section class="panel overlay-fade" id="panel" hidden>
+        <label class="control" for="strengthRange">
+          <span class="control-head">
+            <span class="control-name">M</span>
+            <span class="control-value" id="strengthValue">1.50</span>
+          </span>
+          <input id="strengthRange" type="range" min="0" max="5" step="0.01" value="1.5" />
+        </label>
+
+        <label class="control" for="radiusRange">
+          <span class="control-head">
+            <span class="control-name">R</span>
+            <span class="control-value" id="radiusValue">25%</span>
+          </span>
+          <input id="radiusRange" type="range" min="10" max="50" step="1" value="25" />
+        </label>
+
+        <button class="flip-btn" id="flipBtn" type="button">TO FRONT</button>
+      </section>
+
+      <div class="bottom">
+        <div class="status overlay-fade" id="statusText">camera permission waiting</div>
+      </div>
+    </section>
+
+    <section class="error-screen" id="errorScreen" hidden>
+      <div class="error-card">
+        <div class="error-title" id="errorTitle">Camera Required</div>
+        <p class="error-detail" id="errorDetail">Allow camera access, then retry.</p>
+        <button class="retry-btn" id="retryBtn" type="button">Retry</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const video = document.getElementById("camera");
+    const canvas = document.getElementById("glCanvas");
+    const marker = document.getElementById("marker");
+    const camChip = document.getElementById("camChip");
+    const modeChip = document.getElementById("modeChip");
+    const statusText = document.getElementById("statusText");
+    const settingsBtn = document.getElementById("settingsBtn");
+    const panel = document.getElementById("panel");
+    const strengthRange = document.getElementById("strengthRange");
+    const strengthValue = document.getElementById("strengthValue");
+    const radiusRange = document.getElementById("radiusRange");
+    const radiusValue = document.getElementById("radiusValue");
+    const flipBtn = document.getElementById("flipBtn");
+    const errorScreen = document.getElementById("errorScreen");
+    const errorTitle = document.getElementById("errorTitle");
+    const errorDetail = document.getElementById("errorDetail");
+    const retryBtn = document.getElementById("retryBtn");
+
+    const vertexSource = `
+      attribute vec2 a_position;
+      varying vec2 v_uv;
+
+      void main() {
+        v_uv = a_position * 0.5 + 0.5;
+        gl_Position = vec4(a_position, 0.0, 1.0);
+      }
+    `;
+
+    const fragmentSource = `
+      precision highp float;
+
+      uniform sampler2D u_tex;
+      uniform vec2 u_resolution;
+      uniform vec2 u_video_resolution;
+      uniform vec2 u_center;
+      uniform float u_radius;
+      uniform float u_strength;
+      uniform float u_mirror;
+
+      varying vec2 v_uv;
+
+      vec2 cover_uv(vec2 screen_uv) {
+        vec2 uv = screen_uv;
+        float screen_aspect = u_resolution.x / max(u_resolution.y, 1.0);
+        float video_aspect = u_video_resolution.x / max(u_video_resolution.y, 1.0);
+
+        if (video_aspect > screen_aspect) {
+          float scaled_width = screen_aspect / video_aspect;
+          uv.x = (uv.x - 0.5) * scaled_width + 0.5;
+        } else {
+          float scaled_height = video_aspect / screen_aspect;
+          uv.y = (uv.y - 0.5) * scaled_height + 0.5;
+        }
+
+        if (u_mirror > 0.5) {
+          uv.x = 1.0 - uv.x;
+        }
+
+        return uv;
+      }
+
+      vec3 sample_rgb(vec2 uv) {
+        return texture2D(u_tex, clamp(uv, vec2(0.001), vec2(0.999))).rgb;
+      }
+
+      void main() {
+        vec2 res = u_resolution;
+        float short_side = min(res.x, res.y);
+        vec2 short_to_uv = vec2(short_side / res.x, short_side / res.y);
+
+        vec2 pos = (v_uv * res) / short_side;
+        vec2 center = (u_center * res) / short_side;
+        vec2 dir = pos - center;
+        float d = length(dir);
+
+        float R = max(u_radius, 0.0001);
+        float M = max(u_strength, 0.0);
+        float sigma = max(0.35 * R, 0.0001);
+
+        vec2 n = d > 0.00001 ? dir / d : vec2(0.0);
+        float displacement = 0.0;
+
+        if (d < R) {
+          displacement = (R - d) * min(0.85, 1.0 - exp(-M * 0.7));
+        } else {
+          float edge = d - R;
+          float desired = M * 0.5 * exp(-(edge * edge) / (2.0 * sigma * sigma));
+          float cap = 0.85 * edge;
+          displacement = -min(desired, cap);
+        }
+
+        vec2 warped_uv = v_uv + n * displacement * short_to_uv;
+        vec2 sample_uv = cover_uv(warped_uv);
+
+        float shell_band = max(R * 0.085, 0.008);
+        float shell = exp(-((d - R) * (d - R)) / (2.0 * shell_band * shell_band));
+        float strength_norm = clamp(M / 5.0, 0.0, 1.0);
+        float ca_amount = mix(0.0011, 0.0042, strength_norm) * shell;
+        vec2 ca_shift = n * ca_amount * short_to_uv;
+
+        float r = sample_rgb(sample_uv + ca_shift * 1.7).r;
+        float g = sample_rgb(sample_uv).g;
+        float b = sample_rgb(sample_uv - ca_shift * 1.15).b;
+        vec3 color = vec3(r, g, b);
+
+        float rim = shell * mix(0.08, 0.26, strength_norm);
+        color += vec3(0.02, 0.18, 0.62) * rim;
+
+        gl_FragColor = vec4(color, 1.0);
+      }
+    `;
+
+    const state = {
+      gl: null,
+      program: null,
+      uniforms: null,
+      texture: null,
+      buffer: null,
+      stream: null,
+      devices: [],
+      devicePrefs: {
+        user: "",
+        environment: "",
+      },
+      desiredFacing: "environment",
+      strength: 1.5,
+      radius: 0.25,
+      centerX: 0.5,
+      centerY: 0.5,
+      uiFadeTimer: 0,
+      reconnectTimer: 0,
+      rafId: 0,
+      renderScale: Math.min(window.devicePixelRatio || 1, 1.75),
+      startToken: 0,
+      cameraStarting: false,
+      pointerId: null,
+      textureReady: false,
+    };
+
+    function setCamState(label, tone) {
+      camChip.textContent = label;
+      camChip.dataset.tone = tone || "";
+    }
+
+    function setStatus(text) {
+      statusText.textContent = text;
+    }
+
+    function isLocalhost() {
+      return location.hostname === "localhost" || location.hostname === "127.0.0.1";
+    }
+
+    function showUi() {
+      document.body.classList.remove("ui-dimmed");
+      window.clearTimeout(state.uiFadeTimer);
+      state.uiFadeTimer = window.setTimeout(() => {
+        document.body.classList.add("ui-dimmed");
+      }, 3000);
+    }
+
+    function setPanelOpen(open) {
+      panel.hidden = !open;
+      settingsBtn.setAttribute("aria-expanded", open ? "true" : "false");
+      showUi();
+    }
+
+    function updateControls() {
+      strengthValue.textContent = state.strength.toFixed(2);
+      radiusValue.textContent = `${Math.round(state.radius * 100)}%`;
+    }
+
+    function updateModeUi(label) {
+      modeChip.textContent = label || (state.desiredFacing === "environment" ? "REAR PREF" : "FRONT PREF");
+      flipBtn.textContent = state.desiredFacing === "environment" ? "TO FRONT" : "TO REAR";
+    }
+
+    function pulseMarker() {
+      marker.style.left = `${state.centerX * 100}%`;
+      marker.style.top = `${state.centerY * 100}%`;
+      marker.classList.remove("pulse");
+      void marker.offsetWidth;
+      marker.classList.add("pulse");
+    }
+
+    function setCenterFromPoint(clientX, clientY) {
+      const rect = canvas.getBoundingClientRect();
+      if (!rect.width || !rect.height) {
+        return;
+      }
+      state.centerX = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+      state.centerY = Math.min(1, Math.max(0, (clientY - rect.top) / rect.height));
+      pulseMarker();
+      showUi();
+    }
+
+    function stopTracks(stream) {
+      if (!stream) {
+        return;
+      }
+      for (const track of stream.getTracks()) {
+        try {
+          track.stop();
+        } catch (_) {
+          // ignore
+        }
+      }
+    }
+
+    function stopCurrentStream() {
+      const activeStream = state.stream;
+      state.stream = null;
+      stopTracks(activeStream);
+      try {
+        video.pause();
+      } catch (_) {
+        // ignore
+      }
+      video.srcObject = null;
+      state.textureReady = false;
+    }
+
+    function waitFrame() {
+      return new Promise((resolve) => requestAnimationFrame(() => resolve()));
+    }
+
+    function clearError() {
+      errorScreen.hidden = true;
+    }
+
+    function showError(title, detail) {
+      errorTitle.textContent = title;
+      errorDetail.textContent = detail;
+      errorScreen.hidden = false;
+    }
+
+    function describeCameraError(error) {
+      if (!window.isSecureContext && !isLocalhost()) {
+        return {
+          title: "HTTPS Only",
+          detail: "Open this page over HTTPS or localhost to use the camera.",
+        };
+      }
+
+      const name = String(error && error.name ? error.name : "");
+      if (name === "NotAllowedError" || name === "SecurityError") {
+        return {
+          title: "Camera Blocked",
+          detail: "Allow camera access in the browser and macOS settings, then retry.",
+        };
+      }
+      if (name === "NotReadableError" || name === "AbortError") {
+        return {
+          title: "Camera Busy",
+          detail: "Close FaceTime, Zoom, Meet, or another camera app, then retry.",
+        };
+      }
+      if (name === "NotFoundError" || name === "OverconstrainedError") {
+        return {
+          title: "Camera Missing",
+          detail: "Switch cameras or reconnect the device, then retry.",
+        };
+      }
+      return {
+        title: "Camera Error",
+        detail: error instanceof Error && error.message ? error.message : "Camera start failed. Retry once more.",
+      };
+    }
+
+    function compactLabel(label) {
+      const clean = String(label || "").trim();
+      if (!clean) {
+        return state.desiredFacing === "environment" ? "rear preview" : "front preview";
+      }
+      return clean.length > 40 ? `${clean.slice(0, 37)}...` : clean;
+    }
+
+    function labelLooksFront(label) {
+      return /(front|facetime|built-in|macbook|user|selfie|truedepth|front-facing|内蔵|内建|前面)/i.test(String(label || ""));
+    }
+
+    function labelLooksRear(label) {
+      return /(rear|back|environment|wide|tele|ultra|iphone|continuity|連係|連携|背面|后置)/i.test(String(label || ""));
+    }
+
+    function labelLooksDeskView(label) {
+      return /(desk view|デスクビュー)/i.test(String(label || ""));
+    }
+
+    function classifyCurrentCamera(label) {
+      if (labelLooksDeskView(label)) {
+        return "DESK VIEW";
+      }
+      if (labelLooksRear(label)) {
+        return "REAR CAM";
+      }
+      if (labelLooksFront(label)) {
+        return /(facetime|built-in|macbook)/i.test(String(label || "")) ? "MAC CAM" : "FRONT CAM";
+      }
+      return state.desiredFacing === "environment" ? "REAR PREF" : "FRONT PREF";
+    }
+
+    async function refreshDevicePrefs() {
+      if (!navigator.mediaDevices?.enumerateDevices) {
+        return;
+      }
+      const allDevices = await navigator.mediaDevices.enumerateDevices();
+      const videos = allDevices
+        .filter((device) => device.kind === "videoinput")
+        .map((device) => ({
+          deviceId: String(device.deviceId || ""),
+          label: String(device.label || ""),
+        }));
+
+      state.devices = videos;
+      if (!videos.length) {
+        state.devicePrefs.user = "";
+        state.devicePrefs.environment = "";
+        return;
+      }
+
+      const ranked = videos.map((device, index) => {
+        let frontScore = 0;
+        let rearScore = 0;
+        if (labelLooksFront(device.label)) {
+          frontScore += 5;
+          rearScore -= 3;
+        }
+        if (labelLooksRear(device.label)) {
+          rearScore += 5;
+          frontScore -= 2;
+        }
+        if (labelLooksDeskView(device.label)) {
+          rearScore -= 2;
+        }
+        if (!device.label && videos.length === 1) {
+          frontScore += 1;
+          rearScore += 1;
+        }
+        if (!device.label && videos.length > 1) {
+          frontScore += 0.2;
+          rearScore += 0.2;
+        }
+        return { ...device, frontScore, rearScore, index };
+      });
+
+      const front = [...ranked].sort((a, b) => b.frontScore - a.frontScore || a.index - b.index)[0];
+      const rear = [...ranked].sort((a, b) => b.rearScore - a.rearScore || a.index - b.index)[0];
+
+      state.devicePrefs.user = front && front.frontScore > 0 ? front.deviceId : "";
+      state.devicePrefs.environment = rear && rear.rearScore > 0 ? rear.deviceId : "";
+    }
+
+    function baseVideoConstraints() {
+      return {
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+        frameRate: { ideal: 60, max: 60 },
+      };
+    }
+
+    function relaxedVideoConstraints() {
+      return {
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+      };
+    }
+
+    function buildConstraintAttempts() {
+      const attempts = [];
+      const preferredId = state.devicePrefs[state.desiredFacing];
+
+      if (preferredId) {
+        attempts.push({
+          audio: false,
+          video: {
+            deviceId: { exact: preferredId },
+            ...baseVideoConstraints(),
+          },
+        });
+      }
+
+      attempts.push({
+        audio: false,
+        video: {
+          facingMode: { ideal: state.desiredFacing },
+          ...baseVideoConstraints(),
+        },
+      });
+
+      attempts.push({
+        audio: false,
+        video: {
+          facingMode: state.desiredFacing,
+          ...relaxedVideoConstraints(),
+        },
+      });
+
+      attempts.push({
+        audio: false,
+        video: relaxedVideoConstraints(),
+      });
+
+      attempts.push({
+        audio: false,
+        video: true,
+      });
+
+      return attempts;
+    }
+
+    async function attachStream(stream) {
+      try {
+        video.pause();
+      } catch (_) {
+        // ignore
+      }
+
+      video.srcObject = null;
+      await waitFrame();
+      video.srcObject = stream;
+      await video.play();
+    }
+
+    function queueReconnect(message) {
+      window.clearTimeout(state.reconnectTimer);
+      setCamState("CAM WAIT", "wait");
+      setStatus(message || "camera reconnect");
+      state.reconnectTimer = window.setTimeout(() => {
+        state.reconnectTimer = 0;
+        if (document.hidden) {
+          return;
+        }
+        void startCamera();
+      }, 360);
+    }
+
+    async function startCamera() {
+      const token = ++state.startToken;
+      state.cameraStarting = true;
+      window.clearTimeout(state.reconnectTimer);
+      state.reconnectTimer = 0;
+
+      clearError();
+      setCamState("CAM WAIT", "wait");
+      setStatus("camera permission waiting");
+      updateModeUi();
+
+      if (!window.isSecureContext && !isLocalhost()) {
+        const issue = describeCameraError(new Error("secure context required"));
+        showError(issue.title, issue.detail);
+        setCamState("CAM ERR", "bad");
+        setStatus("https required");
+        state.cameraStarting = false;
+        return;
+      }
+
+      if (!navigator.mediaDevices?.getUserMedia) {
+        showError("Camera Unsupported", "This browser does not support getUserMedia.");
+        setCamState("CAM ERR", "bad");
+        setStatus("camera unsupported");
+        state.cameraStarting = false;
+        return;
+      }
+
+      stopCurrentStream();
+
+      let stream = null;
+      let lastError = null;
+
+      try {
+        await refreshDevicePrefs();
+      } catch (_) {
+        // labels may still be hidden before permission; attempts continue.
+      }
+
+      for (const constraints of buildConstraintAttempts()) {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia(constraints);
+          break;
+        } catch (error) {
+          lastError = error;
+          if (error && error.name === "NotAllowedError") {
+            break;
+          }
+        }
+      }
+
+      if (token !== state.startToken) {
+        stopTracks(stream);
+        state.cameraStarting = false;
+        return;
+      }
+
+      if (!stream) {
+        const issue = describeCameraError(lastError);
+        showError(issue.title, issue.detail);
+        setCamState("CAM ERR", "bad");
+        setStatus(issue.title.toLowerCase());
+        state.cameraStarting = false;
+        return;
+      }
+
+      try {
+        await attachStream(stream);
+      } catch (error) {
+        stopTracks(stream);
+        const issue = describeCameraError(error);
+        showError(issue.title, issue.detail);
+        setCamState("CAM ERR", "bad");
+        setStatus("video play failed");
+        state.cameraStarting = false;
+        return;
+      }
+
+      state.stream = stream;
+      state.textureReady = false;
+
+      try {
+        await refreshDevicePrefs();
+      } catch (_) {
+        // optional enhancement only
+      }
+
+      const track = stream.getVideoTracks()[0];
+      const label = String(track?.label || "");
+
+      setCamState("CAM ON", "good");
+      updateModeUi(classifyCurrentCamera(label));
+      setStatus(compactLabel(label));
+
+      if (track) {
+        track.addEventListener("ended", () => {
+          if (state.stream !== stream) {
+            return;
+          }
+          queueReconnect("camera reconnect");
+        }, { once: true });
+
+        track.addEventListener("mute", () => {
+          if (state.stream !== stream) {
+            return;
+          }
+          setStatus("camera muted");
+        });
+      }
+
+      stream.addEventListener("inactive", () => {
+        if (state.stream !== stream) {
+          return;
+        }
+        queueReconnect("camera reconnect");
+      }, { once: true });
+
+      state.cameraStarting = false;
+    }
+
+    function createShader(gl, type, source) {
+      const shader = gl.createShader(type);
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        const message = gl.getShaderInfoLog(shader) || "Shader compile error";
+        gl.deleteShader(shader);
+        throw new Error(message);
+      }
+      return shader;
+    }
+
+    function initWebGL() {
+      const gl = canvas.getContext("webgl", {
+        alpha: false,
+        antialias: false,
+        depth: false,
+        stencil: false,
+        preserveDrawingBuffer: false,
+      });
+
+      if (!gl) {
+        throw new Error("WebGL unavailable");
+      }
+
+      const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexSource);
+      const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentSource);
+      const program = gl.createProgram();
+      gl.attachShader(program, vertexShader);
+      gl.attachShader(program, fragmentShader);
+      gl.linkProgram(program);
+      gl.deleteShader(vertexShader);
+      gl.deleteShader(fragmentShader);
+
+      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        const message = gl.getProgramInfoLog(program) || "Program link error";
+        gl.deleteProgram(program);
+        throw new Error(message);
+      }
+
+      const buffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+      gl.bufferData(
+        gl.ARRAY_BUFFER,
+        new Float32Array([
+          -1, -1,
+           1, -1,
+          -1,  1,
+          -1,  1,
+           1, -1,
+           1,  1,
+        ]),
+        gl.STATIC_DRAW
+      );
+
+      const texture = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+
+      const uniforms = {
+        position: gl.getAttribLocation(program, "a_position"),
+        tex: gl.getUniformLocation(program, "u_tex"),
+        resolution: gl.getUniformLocation(program, "u_resolution"),
+        videoResolution: gl.getUniformLocation(program, "u_video_resolution"),
+        center: gl.getUniformLocation(program, "u_center"),
+        radius: gl.getUniformLocation(program, "u_radius"),
+        strength: gl.getUniformLocation(program, "u_strength"),
+        mirror: gl.getUniformLocation(program, "u_mirror"),
+      };
+
+      state.gl = gl;
+      state.program = program;
+      state.uniforms = uniforms;
+      state.texture = texture;
+      state.buffer = buffer;
+
+      gl.useProgram(program);
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+      gl.enableVertexAttribArray(uniforms.position);
+      gl.vertexAttribPointer(uniforms.position, 2, gl.FLOAT, false, 0, 0);
+      gl.uniform1i(uniforms.tex, 0);
+    }
+
+    function resizeCanvas() {
+      const gl = state.gl;
+      if (!gl) {
+        return;
+      }
+      const width = Math.max(1, Math.round(window.innerWidth * state.renderScale));
+      const height = Math.max(1, Math.round(window.innerHeight * state.renderScale));
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
+      }
+      gl.viewport(0, 0, width, height);
+    }
+
+    function render() {
+      const gl = state.gl;
+      if (!gl) {
+        return;
+      }
+
+      resizeCanvas();
+
+      gl.clearColor(0.015, 0.03, 0.07, 1);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+
+      if (video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, state.texture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, video);
+
+        gl.useProgram(state.program);
+        gl.uniform2f(state.uniforms.resolution, canvas.width, canvas.height);
+        gl.uniform2f(state.uniforms.videoResolution, video.videoWidth, video.videoHeight);
+        gl.uniform2f(state.uniforms.center, state.centerX, state.centerY);
+        gl.uniform1f(state.uniforms.radius, state.radius);
+        gl.uniform1f(state.uniforms.strength, state.strength);
+        gl.uniform1f(state.uniforms.mirror, state.desiredFacing === "user" ? 1 : 0);
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+      }
+
+      state.rafId = requestAnimationFrame(render);
+    }
+
+    function bindEvents() {
+      settingsBtn.addEventListener("click", (event) => {
+        event.stopPropagation();
+        setPanelOpen(panel.hidden);
+      });
+
+      strengthRange.addEventListener("input", () => {
+        state.strength = Number(strengthRange.value);
+        updateControls();
+        showUi();
+      });
+
+      radiusRange.addEventListener("input", () => {
+        state.radius = Number(radiusRange.value) / 100;
+        updateControls();
+        showUi();
+      });
+
+      flipBtn.addEventListener("click", async () => {
+        state.desiredFacing = state.desiredFacing === "environment" ? "user" : "environment";
+        updateModeUi();
+        showUi();
+        await startCamera();
+      });
+
+      retryBtn.addEventListener("click", async () => {
+        showUi();
+        await startCamera();
+      });
+
+      canvas.addEventListener("pointerdown", (event) => {
+        if (event.button !== undefined && event.button !== 0) {
+          return;
+        }
+        state.pointerId = event.pointerId;
+        canvas.setPointerCapture(event.pointerId);
+        setCenterFromPoint(event.clientX, event.clientY);
+      });
+
+      canvas.addEventListener("pointermove", (event) => {
+        if (state.pointerId !== event.pointerId) {
+          return;
+        }
+        setCenterFromPoint(event.clientX, event.clientY);
+      });
+
+      canvas.addEventListener("pointerup", (event) => {
+        if (state.pointerId !== event.pointerId) {
+          return;
+        }
+        state.pointerId = null;
+      });
+
+      canvas.addEventListener("pointercancel", (event) => {
+        if (state.pointerId !== event.pointerId) {
+          return;
+        }
+        state.pointerId = null;
+      });
+
+      document.addEventListener("pointerdown", showUi, { passive: true });
+      document.addEventListener("pointermove", showUi, { passive: true });
+      document.addEventListener("keydown", showUi);
+
+      window.addEventListener("resize", resizeCanvas);
+      window.addEventListener("orientationchange", resizeCanvas);
+
+      if (navigator.mediaDevices?.addEventListener) {
+        navigator.mediaDevices.addEventListener("devicechange", () => {
+          void refreshDevicePrefs();
+        });
+      }
+
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden && !state.stream) {
+          void startCamera();
+        }
+      });
+
+      window.addEventListener("pagehide", () => {
+        window.clearTimeout(state.reconnectTimer);
+        state.reconnectTimer = 0;
+        cancelAnimationFrame(state.rafId);
+        stopCurrentStream();
+      });
+    }
+
+    async function init() {
+      updateControls();
+      updateModeUi();
+      showUi();
+      pulseMarker();
+
+      try {
+        initWebGL();
+      } catch (error) {
+        showError("WebGL Required", error instanceof Error ? error.message : "WebGL unavailable");
+        setCamState("CAM ERR", "bad");
+        setStatus("webgl unavailable");
+        return;
+      }
+
+      bindEvents();
+      resizeCanvas();
+      render();
+      await startCamera();
+    }
+
+    init();
+  </script>
+</body>
+</html>
